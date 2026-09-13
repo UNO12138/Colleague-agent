@@ -1,0 +1,539 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Colleague Agent · 协作时间线</title>
+  <style>
+    :root {
+      --ink: #111111;
+      --muted: rgba(17, 17, 17, .58);
+      --soft: rgba(17, 17, 17, .08);
+      --line: rgba(17, 17, 17, .12);
+      --panel: #ffffff;
+      --rail: rgba(248, 248, 247, .92);
+      --lime: #c9f66f;
+      --lime-ink: #334411;
+      --blue: #315ee8;
+      --warning: #fff7dc;
+      --shadow: 0 4px 100px 4px rgba(0, 0, 0, .25);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-height: 100%; margin: 0; }
+    body {
+      background: #1d1d1d;
+      color: var(--ink);
+      font-family: "Alibaba PuHuiTi 2.0", "PingFang SC", "Microsoft YaHei", Inter, sans-serif;
+      font-size: 14px;
+      overflow: hidden;
+    }
+    button, textarea { font: inherit; }
+    button { color: inherit; }
+
+    .app-shell {
+      width: min(94vw, 1512px);
+      height: min(92vh, 912px);
+      min-height: 680px;
+      margin: 4vh auto;
+      display: grid;
+      grid-template-columns: 254px minmax(0, 1fr);
+      grid-template-rows: 40px minmax(0, 1fr);
+      position: relative;
+      overflow: hidden;
+      border: .5px solid rgba(104, 104, 104, .53);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, .88);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(60px);
+      transition: grid-template-columns .18s cubic-bezier(.2, .72, .2, 1);
+    }
+    .app-shell.sidebar-collapsed { grid-template-columns: 0 minmax(0, 1fr); }
+
+    .window-bar {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 254px 1fr;
+      align-items: center;
+      user-select: none;
+      transition: grid-template-columns .18s cubic-bezier(.2, .72, .2, 1);
+    }
+    .app-shell.sidebar-collapsed .window-bar { grid-template-columns: 40px 1fr; }
+    .brand-mark {
+      width: 28px;
+      height: 28px;
+      margin-left: 14px;
+      padding: 4px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .brand-mark:hover { background: rgba(0, 0, 0, .06); }
+    .brand-mark:focus-visible { outline: 2px solid rgba(49, 94, 232, .55); outline-offset: 1px; }
+    .brand-mark img { display: block; width: 20px; height: 20px; object-fit: contain; }
+    .window-controls { height: 40px; display: flex; justify-content: flex-end; align-items: center; padding-right: 14px; }
+    .window-controls img { display: block; width: 84.8px; height: 16px; object-fit: contain; }
+
+    .sidebar {
+      grid-column: 1;
+      grid-row: 2;
+      width: 254px;
+      min-width: 0;
+      padding: 4px 12px 18px 12px;
+      background: transparent;
+      overflow: auto;
+      opacity: 1;
+      transform: translateX(0);
+      transition: opacity .12s ease .08s, transform .18s cubic-bezier(.2, .72, .2, 1);
+      will-change: opacity, transform;
+    }
+    .app-shell.sidebar-collapsed .sidebar {
+      opacity: 0;
+      transform: translateX(-18px);
+      pointer-events: none;
+      transition-delay: 0s;
+    }
+    .product-name { margin: 6px 8px 15px; font-size: 18px; font-weight: 500; letter-spacing: -.2px; }
+    .side-action, .project-row, .conversation-row {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      border-radius: 10px;
+      cursor: pointer;
+      text-align: left;
+    }
+    .side-action {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 12px;
+      font-size: 14px;
+      font-weight: 400;
+    }
+    .side-action:hover, .project-row:hover, .conversation-row:hover { background: rgba(0, 0, 0, .045); }
+    .with-icon { display: flex; align-items: center; gap: 12px; min-width: 0; }
+    .figma-icon { width: 18px; height: 18px; object-fit: contain; flex: 0 0 auto; }
+    .section-label { margin: 17px 10px 7px; color: var(--muted); font-size: 16px; font-weight: 400; }
+    .project-row { padding: 8px 12px; font-size: 14px; font-weight: 400; }
+    .project-row .row-title, .conversation-row { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .project-tools { display: flex; gap: 8px; opacity: .56; }
+    .conversation-list { display: grid; gap: 2px; margin: 2px 0 8px; }
+    .conversation-row { padding: 8px 12px 8px 34px; font-size: 14px; font-weight: 400; }
+    .conversation-row.active { display: flex; align-items: center; justify-content: space-between; gap: 9px; background: rgba(0, 0, 0, .08); }
+    .conversation-row.active > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .conversation-status { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: #4ca95a; box-shadow: 0 0 0 3px rgba(76, 169, 90, .12); }
+
+    .workspace {
+      grid-column: 2;
+      grid-row: 2;
+      margin: 0 7px 7px 0;
+      min-width: 0;
+      display: grid;
+      grid-template-rows: 50px minmax(0, 1fr);
+      overflow: hidden;
+      border: 1px solid rgba(17, 17, 17, .2);
+      border-radius: 8px;
+      background: var(--panel);
+      transition: margin-left .18s cubic-bezier(.2, .72, .2, 1);
+    }
+    .app-shell.sidebar-collapsed .workspace { margin-left: 8px; }
+    .workspace-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      border-bottom: 1px solid var(--line);
+    }
+    .header-title { min-width: 0; }
+    .header-title strong { display: block; font-size: 15px; font-weight: 550; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .agent-presence { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 12px; }
+    .presence-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ca95a; box-shadow: 0 0 0 4px rgba(76, 169, 90, .12); }
+
+    .chat-view { min-height: 0; position: relative; overflow: hidden; }
+    .timeline-scroll { height: 100%; overflow-y: auto; padding: 0 32px 150px; scroll-behavior: smooth; }
+    .timeline { width: min(100%, 760px); margin: 0 auto; padding-top: 40px; position: relative; }
+    .date-marker { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; color: var(--muted); font-size: 11px; }
+    .date-marker::before, .date-marker::after { content: ""; height: 1px; flex: 1; background: var(--line); }
+
+    .user-message { display: flex; justify-content: flex-end; margin-bottom: 26px; }
+    .user-bubble { max-width: 70%; padding: 12px 16px; border-radius: 16px 16px 4px 16px; background: #111; color: #fff; line-height: 1.6; }
+
+    .timeline-item { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; position: relative; }
+    .timeline-item + .timeline-item { margin-top: 18px; }
+    .timeline-item::before { content: ""; position: absolute; left: 13px; top: 30px; bottom: -18px; width: 1px; background: var(--line); }
+    .timeline-item.last::before { display: none; }
+    .avatar {
+      width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center;
+      background: #111; color: #fff; font-size: 11px; font-weight: 700; z-index: 1;
+    }
+    .event-label { display: flex; align-items: center; gap: 7px; height: 28px; margin-bottom: 8px; font-size: 12px; color: var(--muted); }
+    .event-label strong { color: var(--ink); font-weight: 560; }
+    .status-chip { padding: 3px 7px; border-radius: 999px; background: #edf7ed; color: #2f6c3a; font-size: 10px; font-weight: 650; letter-spacing: .03em; }
+
+    .agent-brief {
+      max-width: 680px;
+      margin: 0 4px 18px;
+      color: #292929;
+      font-size: 15px;
+      line-height: 1.72;
+    }
+    .agent-brief p { margin: 0 0 8px; }
+    .brief-finish { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
+    .brief-finish::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #4ca95a; }
+    .work-card {
+      position: sticky;
+      top: 4px;
+      z-index: 4;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: #fff;
+      box-shadow: 0 10px 30px rgba(17, 17, 17, .055);
+      overflow: hidden;
+    }
+    .work-card-head { display: flex; justify-content: space-between; gap: 18px; padding: 14px 20px 11px; }
+    .eyebrow { color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    .work-card p { margin: 0; color: var(--muted); line-height: 1.55; }
+    .progress-number { font-size: 22px; font-weight: 620; white-space: nowrap; }
+    .progress-number small { color: var(--muted); font-size: 12px; font-weight: 400; }
+    .progress-track { height: 5px; margin: 0 20px; overflow: hidden; border-radius: 10px; background: var(--soft); }
+    .progress-fill { width: 75%; height: 100%; border-radius: inherit; background: #111; transition: width .45s ease; }
+    .step-list { padding: 14px 20px 10px; display: grid; gap: 10px; }
+    .step { display: grid; grid-template-columns: 17px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+    .step-mark { width: 16px; height: 16px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; font-size: 9px; }
+    .step.done .step-mark { background: #111; color: #fff; border-color: #111; }
+    .step.active .step-mark { border: 4px solid #111; }
+    .step span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .step time { color: var(--muted); font-size: 11px; }
+    .card-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      max-height: 62px;
+      padding: 14px 20px 18px;
+      overflow: hidden;
+      opacity: 1;
+      transform: translateY(0);
+      transition: max-height .28s ease, padding .28s ease, opacity .18s ease, transform .28s ease;
+    }
+    .work-card.is-stuck .card-actions {
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      opacity: 0;
+      transform: translateY(-6px);
+      pointer-events: none;
+    }
+    .work-card.is-stuck .step-list { padding-bottom: 16px; }
+    .btn {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #fff;
+      padding: 8px 12px;
+      line-height: 1;
+      cursor: pointer;
+      transition: .18s ease;
+    }
+    .btn:hover { border-color: rgba(17, 17, 17, .3); transform: translateY(-1px); }
+    .btn.primary { background: #111; border-color: #111; color: #fff; }
+    .btn.subtle { border-color: transparent; color: var(--muted); }
+
+    .aside-conversation {
+      width: min(88%, 600px);
+      margin: 14px 0 0 20px;
+      padding-left: 18px;
+      border-left: 2px solid rgba(49, 94, 232, .18);
+      transition: opacity .2s ease, transform .2s ease;
+    }
+    .aside-conversation[hidden] { display: none; }
+    .aside-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--blue); font-size: 11px; font-weight: 650; letter-spacing: .04em; }
+    .aside-heading::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
+    .aside-copy { margin: 0 0 9px; padding: 10px 13px; border-radius: 12px; background: #f5f7fd; color: #27314c; line-height: 1.55; }
+    .aside-copy.user { margin-top: 9px; margin-left: 15%; background: #f0f0ee; color: #222; }
+    .aside-copy.agent { margin-right: 8%; }
+    .aside-copy.proactive {
+      margin-right: 3%;
+      border: 1px solid rgba(49, 94, 232, .14);
+      background: #fff;
+    }
+    .proactive-label { display: block; margin-bottom: 5px; color: var(--blue); font-size: 10px; font-weight: 700; letter-spacing: .05em; }
+    .aside-meta { display: block; margin-top: 5px; color: rgba(39, 49, 76, .5); font-size: 10px; }
+    .intent-card { margin-top: 10px; padding: 14px; border: 1px solid #eadb9a; border-radius: 13px; background: var(--warning); }
+    .intent-card strong { display: block; margin-bottom: 4px; font-size: 13px; }
+    .intent-card p { margin: 0 0 11px; color: #675a2d; font-size: 12px; line-height: 1.5; }
+    .intent-diff { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; font-size: 12px; }
+    .intent-diff del { color: var(--muted); }
+    .intent-diff ins { color: #3f5c12; text-decoration: none; font-weight: 650; }
+    .intent-actions { display: flex; gap: 7px; }
+    .intent-actions .btn { padding: 7px 10px; font-size: 12px; }
+
+    .task-update { display: none; margin-top: 10px; padding: 15px 16px; border: 1px solid #cddfa7; border-radius: 13px; background: #f5faea; }
+    .task-update.show { display: flex; align-items: center; justify-content: space-between; gap: 16px; animation: rise .35s ease both; }
+    .task-update strong { display: block; margin-bottom: 4px; font-size: 14px; }
+    .task-update span { color: #5b6b38; font-size: 12px; }
+    .update-badge { padding: 5px 9px; border-radius: 999px; background: var(--lime); color: var(--lime-ink); font-size: 10px; font-weight: 700; white-space: nowrap; }
+    @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    .composer-wrap { position: absolute; z-index: 6; right: 0; bottom: 0; left: 0; padding: 16px 32px 22px; pointer-events: none; }
+    .composer-wrap::before { content: ""; position: absolute; z-index: -1; inset: 0 14px 0 0; background: linear-gradient(to top, #fff 78%, rgba(255,255,255,0)); }
+    .composer { position: relative; width: min(100%, 760px); margin: 0 auto; border: 1px solid rgba(17, 17, 17, .16); border-radius: 16px; background: #fff; box-shadow: 0 10px 32px rgba(0, 0, 0, .07); overflow: hidden; }
+    .composer { pointer-events: auto; }
+    .composer textarea { width: 100%; height: 54px; padding: 16px 16px 6px; resize: none; border: 0; outline: 0; color: var(--ink); }
+    .composer textarea::placeholder { color: rgba(17,17,17,.38); }
+    .composer-footer { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px 8px 12px; }
+    .composer-mode { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; }
+    .mode-dot { width: 6px; height: 6px; border-radius: 50%; background: #888; }
+    .send { width: 32px; height: 32px; border: 0; border-radius: 10px; background: #111; color: #fff; cursor: pointer; font-size: 16px; }
+
+    .toast { position: absolute; left: 50%; bottom: 26px; z-index: 10; padding: 10px 14px; border-radius: 11px; background: #111; color: #fff; transform: translate(-50%, 14px); opacity: 0; pointer-events: none; transition: .22s ease; box-shadow: 0 8px 28px rgba(0,0,0,.2); }
+    .toast.show { transform: translate(-50%, 0); opacity: 1; }
+
+    @media (max-width: 950px) {
+      body { overflow: auto; }
+      .app-shell { width: 100%; height: 100vh; min-height: 680px; margin: 0; border-radius: 0; grid-template-columns: 210px 1fr; }
+      .window-bar { grid-template-columns: 210px 1fr; }
+      .sidebar { width: 210px; }
+      .timeline-scroll, .composer-wrap { padding-left: 20px; padding-right: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app-shell">
+    <header class="window-bar" aria-label="窗口控制栏">
+      <button class="brand-mark" id="sidebarToggle" type="button" aria-label="收起项目导航" aria-expanded="true"><img src="./figma-sidebar-toggle.svg" alt="" /></button>
+      <div class="window-controls" aria-hidden="true"><img src="./figma-window-controls.svg" alt="" /></div>
+    </header>
+
+    <aside class="sidebar" aria-label="项目导航">
+      <div class="product-name">Colleague agent</div>
+      <button class="side-action" type="button">
+        <span class="with-icon"><img class="figma-icon" src="https://www.figma.com/api/mcp/asset/7e617dee-0eba-4824-ab79-7ae11deb9f48.svg" alt="" />新对话</span>
+      </button>
+
+      <div class="section-label">项目</div>
+      <button class="project-row" type="button"><span class="with-icon"><img class="figma-icon" src="https://www.figma.com/api/mcp/asset/cfd59b3a-c06e-4be4-b1c7-83edfcde3b7b.svg" alt="" /><span class="row-title">科比和詹姆斯对比</span></span></button>
+      <button class="project-row" type="button">
+        <span class="with-icon"><img class="figma-icon" src="https://www.figma.com/api/mcp/asset/c79f11fe-189f-4c39-a7ae-f4aed3185ba5.svg" alt="" /><span class="row-title">体验与智能产品创新</span></span>
+      </button>
+      <div class="conversation-list">
+        <button class="conversation-row active" type="button"><span>这个对话我们来解决周二的汇报问题</span><span class="conversation-status" title="Agent 正在工作" aria-label="Agent 正在工作"></span></button>
+        <button class="conversation-row" type="button">9/2 结课汇报</button>
+        <button class="conversation-row" type="button">9/7 结课 ppt 制作</button>
+      </div>
+
+      <div class="section-label">最近</div>
+      <div class="conversation-list">
+        <button class="conversation-row" type="button">这个对话我们来解决周二的汇报问题</button>
+        <button class="conversation-row" type="button">9/2 结课汇报</button>
+        <button class="conversation-row" type="button">9/7 结课 ppt 制作</button>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <header class="workspace-header">
+        <div class="header-title">
+          <strong>这个对话我们来解决周二的汇报问题</strong>
+        </div>
+        <div class="agent-presence"><span class="presence-dot"></span><span>ALEX 正在工作</span></div>
+      </header>
+
+      <div class="chat-view">
+        <div class="timeline-scroll" id="timelineScroll">
+          <div class="timeline">
+            <div class="date-marker">今天 14:42</div>
+
+            <div class="user-message">
+              <div class="user-bubble">请帮我梳理周二汇报的竞品部分，先覆盖 4 个协作类产品。</div>
+            </div>
+
+            <article class="timeline-item">
+              <div class="avatar">A</div>
+              <div>
+                <div class="agent-brief">
+                  <p>我先确认一下这次任务：你需要为周二汇报整理协作类产品的竞品部分，范围是 4 个产品；重点不是简单罗列功能，而是看它们如何组织任务、沟通进展，以及让协作中的变化被团队感知。</p>
+                  <p>我会先拆解每个产品的核心协作模式，再横向归纳共性与差异，最后整理成可以直接进入汇报的结论。</p>
+                  <span class="brief-finish">任务 brief 已确认，开始执行</span>
+                </div>
+                <section class="work-card" id="workCard" aria-label="正在进行的工作">
+                  <div class="work-card-head">
+                    <div>
+                      <div class="eyebrow">竞品研究</div>
+                      <p id="currentStep">正在分析 Linear 的任务状态与协作沟通模式。</p>
+                    </div>
+                    <div class="progress-number"><span id="progressCurrent">3</span><small> / <span id="progressTotal">4</span></small></div>
+                  </div>
+                  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+                  <div class="step-list">
+                    <div class="step done"><span class="step-mark">✓</span><span>Notion · 异步信息如何进入团队协作</span><time>14:31</time></div>
+                    <div class="step done"><span class="step-mark">✓</span><span>Figma · 多人编辑如何形成实时同步</span><time>14:36</time></div>
+                    <div class="step active" id="linearStep"><span class="step-mark"></span><span id="activeStepLabel">Linear · 任务状态如何成为团队沟通</span><time>进行中</time></div>
+                    <div class="step" id="miroStep"><span class="step-mark"></span><span>Miro · 画布共创如何沉淀团队共识</span><time>等待</time></div>
+                  </div>
+                  <div class="card-actions">
+                    <button class="btn subtle" id="advanceBtn" type="button">模拟推进</button>
+                    <button class="btn" id="askBtn" type="button">问问 Alex</button>
+                  </div>
+                </section>
+
+                <section class="aside-conversation" id="asideConversation">
+                  <div class="aside-heading">即时交流 · 不改变当前任务</div>
+                  <p class="aside-copy proactive"><span class="proactive-label">ALEX 主动同步</span>我刚发现 Linear 把“状态变化”直接变成了团队沟通的一部分，而不是额外写一份进度报告。这个点可能会成为汇报中很有价值的一条工作结论。<span class="aside-meta">来自当前分析 · 主任务持续运行</span></p>
+                  <p class="aside-copy user">为什么先分析 Linear？</p>
+                  <p class="aside-copy agent">它的任务状态与协作沟通结合得最紧，适合用来对照我们的“对话如何进入工作流”。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
+                  <p class="aside-copy user">那把它再增加一个“商业模式”的分析维度。</p>
+                  <div class="intent-card" id="intentCard">
+                    <strong>这句话可能会改变当前任务</strong>
+                    <p>Alex 可以把它作为正式要求加入竞品分析。确认前，当前任务不会改变。</p>
+                    <div class="intent-diff"><del>Linear · 交互模式</del><span>→</span><ins>Linear · 交互模式 + 商业模式</ins></div>
+                    <div class="intent-actions">
+                      <button class="btn primary" id="applyBtn" type="button">应用到主任务</button>
+                      <button class="btn" id="discussBtn" type="button">只是讨论</button>
+                    </div>
+                  </div>
+                  <section class="task-update" id="taskUpdate" hidden>
+                    <div><strong>已进入主任务 · 增加“商业模式”分析维度</strong><span>这次即时调整已应用到 Linear 的当前分析中，原任务继续执行，不会创建新的工作阶段。</span></div>
+                    <div class="update-badge">已应用</div>
+                  </section>
+                </section>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="composer-wrap">
+          <form class="composer" id="composer">
+            <textarea id="messageInput" aria-label="发送消息" placeholder="告诉 Alex 你想推进什么，或直接问问当前进展…"></textarea>
+            <div class="composer-footer">
+              <div class="composer-mode"><span class="mode-dot"></span><span>系统会在执行前确认会改变任务的内容</span></div>
+              <button class="send" type="submit" aria-label="发送">↑</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </main>
+
+  <script>
+    const appShell = document.querySelector('.app-shell');
+    const sidebarToggle = document.getElementById('sidebarToggle');
+    const askBtn = document.getElementById('askBtn');
+    const aside = document.getElementById('asideConversation');
+    const applyBtn = document.getElementById('applyBtn');
+    const discussBtn = document.getElementById('discussBtn');
+    const intentCard = document.getElementById('intentCard');
+    const taskUpdate = document.getElementById('taskUpdate');
+    const timelineScroll = document.getElementById('timelineScroll');
+    const advanceBtn = document.getElementById('advanceBtn');
+    const progressCurrent = document.getElementById('progressCurrent');
+    const progressTotal = document.getElementById('progressTotal');
+    const progressFill = document.getElementById('progressFill');
+    const currentStep = document.getElementById('currentStep');
+    const activeStepLabel = document.getElementById('activeStepLabel');
+    const linearStep = document.getElementById('linearStep');
+    const miroStep = document.getElementById('miroStep');
+    const workCard = document.getElementById('workCard');
+    const composer = document.getElementById('composer');
+    const messageInput = document.getElementById('messageInput');
+    const toast = document.getElementById('toast');
+
+    let progress = 3;
+    let total = 4;
+
+    sidebarToggle.addEventListener('click', () => {
+      const collapsed = appShell.classList.toggle('sidebar-collapsed');
+      sidebarToggle.setAttribute('aria-expanded', String(!collapsed));
+      sidebarToggle.setAttribute('aria-label', collapsed ? '展开项目导航' : '收起项目导航');
+    });
+
+    function notify(message) {
+      toast.textContent = message;
+      toast.classList.add('show');
+      window.clearTimeout(notify.timer);
+      notify.timer = window.setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    function scrollToLatest() {
+      requestAnimationFrame(() => timelineScroll.scrollTo({ top: timelineScroll.scrollHeight, behavior: 'smooth' }));
+    }
+
+    function syncStickyCardState() {
+      const containerTop = timelineScroll.getBoundingClientRect().top;
+      const cardTop = workCard.getBoundingClientRect().top;
+      workCard.classList.toggle('is-stuck', timelineScroll.scrollTop > 0 && cardTop <= containerTop + 5);
+    }
+
+    timelineScroll.addEventListener('scroll', syncStickyCardState, { passive: true });
+
+    askBtn.addEventListener('click', () => {
+      const isHidden = aside.hidden;
+      aside.hidden = !isHidden;
+      askBtn.textContent = isHidden ? '收起交流' : '问问 Alex';
+      if (isHidden) scrollToLatest();
+    });
+
+    applyBtn.addEventListener('click', () => {
+      intentCard.style.opacity = '.55';
+      intentCard.style.pointerEvents = 'none';
+      window.setTimeout(() => {
+        intentCard.remove();
+        currentStep.textContent = '正在分析 Linear 的任务状态、协作沟通与商业模式。';
+        activeStepLabel.textContent = 'Linear · 任务状态、协作沟通与商业模式';
+        taskUpdate.hidden = false;
+        taskUpdate.classList.add('show');
+        notify('任务已更新，主进程继续运行');
+        scrollToLatest();
+      }, 450);
+    });
+
+    discussBtn.addEventListener('click', () => {
+      intentCard.innerHTML = '<strong>保留为即时交流</strong><p>没有修改任务，Alex 仍按原计划继续分析。</p>';
+      notify('未改变当前任务');
+    });
+
+    advanceBtn.addEventListener('click', () => {
+      if (progress < total) progress += 1;
+      progressCurrent.textContent = progress;
+      progressFill.style.width = `${(progress / total) * 100}%`;
+      currentStep.textContent = progress === total ? '4 个竞品材料已完成，正在归纳跨产品协作规律。' : 'Miro：正在核对便签移动、评论与成员提醒如何进入活动记录。';
+      if (progress < total) {
+        linearStep.classList.remove('active');
+        linearStep.classList.add('done');
+        linearStep.querySelector('.step-mark').textContent = '✓';
+        linearStep.querySelector('time').textContent = '14:42';
+        miroStep.classList.add('active');
+        miroStep.querySelector('time').textContent = '进行中';
+      }
+      document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = `主任务仍在继续 · 当前 ${progress}/${total}`);
+      notify(progress === total ? '竞品材料整理完成' : `主进程已推进到 ${progress}/${total}`);
+    });
+
+    composer.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const value = messageInput.value.trim();
+      if (!value) return;
+      aside.hidden = false;
+      askBtn.textContent = '收起交流';
+      const message = document.createElement('p');
+      message.className = 'aside-copy user';
+      message.textContent = value;
+      aside.appendChild(message);
+      messageInput.value = '';
+      notify('已作为即时交流发送，不会中断主任务');
+      scrollToLatest();
+    });
+
+    messageInput.addEventListener('keydown', (event) => {
+      if (event.key !== 'Enter' || event.shiftKey || event.isComposing || event.keyCode === 229) return;
+      event.preventDefault();
+      composer.requestSubmit();
+    });
+  </script>
+</body>
+</html>
