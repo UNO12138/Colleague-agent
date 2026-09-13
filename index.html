@@ -659,7 +659,8 @@
         messageInput.value = '';
         messageInput.placeholder = '继续补充或调整本次任务规划…';
         notify('补充内容已加入任务 brief');
-        scrollToLatest();
+        // 复述 brief 阶段的修改只更新当前内容，不改变用户正在阅读的位置。
+        // 下滑动画仅由“确认并开始执行”触发，避免修改规划时页面突然跳到底部。
         return;
       }
       aside.hidden = false;
