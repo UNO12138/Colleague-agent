@@ -24,3 +24,4 @@ python -m http.server 4173
 - `index.html`：单文件可交互原型。
 - `figma-sidebar-toggle.svg`：侧栏收起按钮图标。
 - `figma-window-controls.svg`：窗口控制图标组。
+
