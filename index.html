@@ -6,7 +6,8 @@
   <title>Colleague Agent · 协作时间线</title>
   <style>
     :root {
-      --ink: #111111;
+      --ink: #2b2b2b;
+      --deep: #393939;
       --muted: rgba(17, 17, 17, .58);
       --soft: rgba(17, 17, 17, .08);
       --line: rgba(17, 17, 17, .12);
@@ -22,7 +23,7 @@
     * { box-sizing: border-box; }
     html, body { width: 100%; min-height: 100%; margin: 0; }
     body {
-      background: #1d1d1d;
+      background: #242424;
       color: var(--ink);
       font-family: "Alibaba PuHuiTi 2.0", "PingFang SC", "Microsoft YaHei", Inter, sans-serif;
       font-size: 14px;
@@ -121,6 +122,7 @@
     .project-tools { display: flex; gap: 8px; opacity: .56; }
     .conversation-list { display: grid; gap: 2px; margin: 2px 0 8px; }
     .conversation-row { padding: 8px 12px 8px 34px; font-size: 14px; font-weight: 400; }
+    .section-label + .conversation-list .conversation-row { padding-left: 16px; }
     .conversation-row.active { display: flex; align-items: center; justify-content: space-between; gap: 9px; background: rgba(0, 0, 0, .08); }
     .conversation-row.active > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .conversation-status { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: #4ca95a; box-shadow: 0 0 0 3px rgba(76, 169, 90, .12); }
@@ -152,13 +154,13 @@
     .presence-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ca95a; box-shadow: 0 0 0 4px rgba(76, 169, 90, .12); }
 
     .chat-view { min-height: 0; position: relative; overflow: hidden; }
-    .timeline-scroll { height: 100%; overflow-y: auto; padding: 0 32px 150px; scroll-behavior: smooth; }
+    .timeline-scroll { height: 100%; overflow-y: auto; padding: 0 32px 150px; scroll-behavior: auto; }
     .timeline { width: min(100%, 760px); margin: 0 auto; padding-top: 40px; position: relative; }
     .date-marker { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; color: var(--muted); font-size: 11px; }
     .date-marker::before, .date-marker::after { content: ""; height: 1px; flex: 1; background: var(--line); }
 
     .user-message { display: flex; justify-content: flex-end; margin-bottom: 26px; }
-    .user-bubble { max-width: 70%; padding: 12px 16px; border-radius: 16px 16px 4px 16px; background: #111; color: #fff; line-height: 1.6; }
+    .user-bubble { max-width: 70%; padding: 12px 16px; border-radius: 16px 16px 4px 16px; background: #eef4ff; color: #27314c; line-height: 1.6; }
 
     .timeline-item { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; position: relative; }
     .timeline-item + .timeline-item { margin-top: 18px; }
@@ -166,7 +168,7 @@
     .timeline-item.last::before { display: none; }
     .avatar {
       width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center;
-      background: #111; color: #fff; font-size: 11px; font-weight: 700; z-index: 1;
+      background: var(--deep); color: #fff; font-size: 11px; font-weight: 700; z-index: 1;
     }
     .event-label { display: flex; align-items: center; gap: 7px; height: 28px; margin-bottom: 8px; font-size: 12px; color: var(--muted); }
     .event-label strong { color: var(--ink); font-weight: 560; }
@@ -181,7 +183,23 @@
     }
     .agent-brief p { margin: 0 0 8px; }
     .brief-finish { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
+    .brief-finish[hidden] { display: none; }
     .brief-finish::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #4ca95a; }
+    .brief-adjustment { margin: 12px 0 0; color: #314779; font-size: 13px; }
+    .brief-adjustment[hidden] { display: none; }
+    .execution-stage {
+      visibility: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.1s ease, visibility 0s linear 1.1s;
+    }
+    .execution-stage.active {
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
+      transition: opacity 1.1s ease, visibility 0s linear 0s;
+    }
+    .brief-confirmed { animation: rise .3s ease both; }
     .work-card {
       position: sticky;
       top: 4px;
@@ -198,12 +216,12 @@
     .progress-number { font-size: 22px; font-weight: 620; white-space: nowrap; }
     .progress-number small { color: var(--muted); font-size: 12px; font-weight: 400; }
     .progress-track { height: 5px; margin: 0 20px; overflow: hidden; border-radius: 10px; background: var(--soft); }
-    .progress-fill { width: 75%; height: 100%; border-radius: inherit; background: #111; transition: width .45s ease; }
+    .progress-fill { width: 75%; height: 100%; border-radius: inherit; background: var(--deep); transition: width .45s ease; }
     .step-list { padding: 14px 20px 10px; display: grid; gap: 10px; }
     .step { display: grid; grid-template-columns: 17px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
     .step-mark { width: 16px; height: 16px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; font-size: 9px; }
-    .step.done .step-mark { background: #111; color: #fff; border-color: #111; }
-    .step.active .step-mark { border: 4px solid #111; }
+    .step.done .step-mark { background: var(--deep); color: #fff; border-color: var(--deep); }
+    .step.active .step-mark { border: 4px solid var(--deep); }
     .step span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .step time { color: var(--muted); font-size: 11px; }
     .card-actions {
@@ -240,7 +258,7 @@
       transition: .18s ease;
     }
     .btn:hover { border-color: rgba(17, 17, 17, .3); transform: translateY(-1px); }
-    .btn.primary { background: #111; border-color: #111; color: #fff; }
+    .btn.primary { background: var(--deep); border-color: var(--deep); color: #fff; }
     .btn.subtle { border-color: transparent; color: var(--muted); }
 
     .aside-conversation {
@@ -254,8 +272,8 @@
     .aside-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--blue); font-size: 11px; font-weight: 650; letter-spacing: .04em; }
     .aside-heading::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
     .aside-copy { margin: 0 0 9px; padding: 10px 13px; border-radius: 12px; background: #f5f7fd; color: #27314c; line-height: 1.55; }
-    .aside-copy.user { margin-top: 9px; margin-left: 15%; background: #f0f0ee; color: #222; }
-    .aside-copy.agent { margin-right: 8%; }
+    .aside-copy.user { margin-top: 9px; margin-left: 15%; background: #eef4ff; color: #27314c; }
+    .aside-copy.agent { margin-right: 8%; border: 1px solid rgba(49, 94, 232, .18); background: #fff; }
     .aside-copy.proactive {
       margin-right: 3%;
       border: 1px solid rgba(49, 94, 232, .14);
@@ -283,14 +301,21 @@
     .composer-wrap::before { content: ""; position: absolute; z-index: -1; inset: 0 14px 0 0; background: linear-gradient(to top, #fff 78%, rgba(255,255,255,0)); }
     .composer { position: relative; width: min(100%, 760px); margin: 0 auto; border: 1px solid rgba(17, 17, 17, .16); border-radius: 16px; background: #fff; box-shadow: 0 10px 32px rgba(0, 0, 0, .07); overflow: hidden; }
     .composer { pointer-events: auto; }
+    .launch-confirm { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 12px 12px 16px; border-bottom: 1px solid var(--line); background: #fafafa; }
+    .launch-confirm[hidden] { display: none; }
+    .launch-confirm-copy { min-width: 0; }
+    .launch-confirm strong { display: block; margin-bottom: 3px; font-size: 13px; font-weight: 650; }
+    .launch-confirm span { display: block; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .launch-confirm .btn { flex: 0 0 auto; }
     .composer textarea { width: 100%; height: 54px; padding: 16px 16px 6px; resize: none; border: 0; outline: 0; color: var(--ink); }
     .composer textarea::placeholder { color: rgba(17,17,17,.38); }
     .composer-footer { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px 8px 12px; }
     .composer-mode { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; }
     .mode-dot { width: 6px; height: 6px; border-radius: 50%; background: #888; }
-    .send { width: 32px; height: 32px; border: 0; border-radius: 10px; background: #111; color: #fff; cursor: pointer; font-size: 16px; }
+    .send { width: 32px; height: 32px; border: 0; border-radius: 10px; background: var(--deep); color: #fff; cursor: pointer; font-size: 16px; }
+    .send.editing { width: 48px; font-size: 12px; font-weight: 600; }
 
-    .toast { position: absolute; left: 50%; bottom: 26px; z-index: 10; padding: 10px 14px; border-radius: 11px; background: #111; color: #fff; transform: translate(-50%, 14px); opacity: 0; pointer-events: none; transition: .22s ease; box-shadow: 0 8px 28px rgba(0,0,0,.2); }
+    .toast { position: absolute; left: 50%; bottom: 26px; z-index: 10; padding: 10px 14px; border-radius: 11px; background: var(--deep); color: #fff; transform: translate(-50%, 14px); opacity: 0; pointer-events: none; transition: .22s ease; box-shadow: 0 8px 28px rgba(0,0,0,.2); }
     .toast.show { transform: translate(-50%, 0); opacity: 1; }
 
     @media (max-width: 950px) {
@@ -348,17 +373,23 @@
             <div class="date-marker">今天 14:42</div>
 
             <div class="user-message">
-              <div class="user-bubble">请帮我梳理周二汇报的竞品部分，先覆盖 4 个协作类产品。</div>
+              <div class="user-bubble">请帮我梳理周二汇报里的协作产品竞品部分，先覆盖 Notion、Figma、Linear 和 Miro。重点比较它们如何组织任务、同步进度，以及让团队感知协作中的变化；最后请整理成可以直接放进汇报的核心结论和产品启发。</div>
             </div>
 
             <article class="timeline-item">
               <div class="avatar">A</div>
               <div>
                 <div class="agent-brief">
-                  <p>我先确认一下这次任务：你需要为周二汇报整理协作类产品的竞品部分，范围是 4 个产品；重点不是简单罗列功能，而是看它们如何组织任务、沟通进展，以及让协作中的变化被团队感知。</p>
-                  <p>我会先拆解每个产品的核心协作模式，再横向归纳共性与差异，最后整理成可以直接进入汇报的结论。</p>
-                  <span class="brief-finish">任务 brief 已确认，开始执行</span>
+                  <div id="briefReview">
+                    <p>我先确认一下我对这次任务的理解。你要准备周二汇报中的协作产品竞品部分，分析对象是 Notion、Figma、Linear 和 Miro，一共 4 个产品。</p>
+                    <p>这次不会停留在功能罗列上。我会重点看每个产品如何承接和组织任务、团队成员怎样同步进度，以及状态变化、评论或编辑行为如何被其他协作者及时感知。</p>
+                    <p>具体推进时，我会先逐个拆解它们最有代表性的协作机制，再横向比较这些机制的共同点、差异和各自的取舍。执行过程中，我会持续告诉你当前分析到了哪个产品，并同步值得写进汇报的阶段性发现。</p>
+                    <p>最后我会把结果收束成可以直接放入汇报的竞品结论，并补充这些产品对我们设计协作体验的启发。如果这个理解没有偏差，你确认后我就按这个规划开始。</p>
+                  </div>
+                  <div class="brief-adjustment" id="briefAdjustment" hidden></div>
+                  <span class="brief-finish brief-confirmed" id="briefConfirmed" hidden>任务 brief 已确认，开始执行</span>
                 </div>
+                <div class="execution-stage" id="executionStage" aria-hidden="true">
                 <section class="work-card" id="workCard" aria-label="正在进行的工作">
                   <div class="work-card-head">
                     <div>
@@ -369,8 +400,8 @@
                   </div>
                   <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
                   <div class="step-list">
-                    <div class="step done"><span class="step-mark">✓</span><span>Notion · 异步信息如何进入团队协作</span><time>14:31</time></div>
-                    <div class="step done"><span class="step-mark">✓</span><span>Figma · 多人编辑如何形成实时同步</span><time>14:36</time></div>
+                    <div class="step done" id="notionStep"><span class="step-mark">✓</span><span>Notion · 异步信息如何进入团队协作</span><time>14:31</time></div>
+                    <div class="step done" id="figmaStep"><span class="step-mark">✓</span><span>Figma · 多人编辑如何形成实时同步</span><time>14:36</time></div>
                     <div class="step active" id="linearStep"><span class="step-mark"></span><span id="activeStepLabel">Linear · 任务状态如何成为团队沟通</span><time>进行中</time></div>
                     <div class="step" id="miroStep"><span class="step-mark"></span><span>Miro · 画布共创如何沉淀团队共识</span><time>等待</time></div>
                   </div>
@@ -400,6 +431,7 @@
                     <div class="update-badge">已应用</div>
                   </section>
                 </section>
+                </div>
               </div>
             </article>
           </div>
@@ -407,10 +439,14 @@
 
         <div class="composer-wrap">
           <form class="composer" id="composer">
-            <textarea id="messageInput" aria-label="发送消息" placeholder="告诉 Alex 你想推进什么，或直接问问当前进展…"></textarea>
+            <div class="launch-confirm" id="launchConfirm">
+              <div class="launch-confirm-copy"><strong>任务规划待确认</strong><span>确认后 Alex 将按上述规划开始执行</span></div>
+              <button class="btn primary" id="confirmBriefBtn" type="button">确认并开始执行</button>
+            </div>
+            <textarea id="messageInput" aria-label="发送消息" placeholder="补充或调整本次任务的目标、范围或交付要求…"></textarea>
             <div class="composer-footer">
-              <div class="composer-mode"><span class="mode-dot"></span><span>系统会在执行前确认会改变任务的内容</span></div>
-              <button class="send" type="submit" aria-label="发送">↑</button>
+              <div class="composer-mode"><span class="mode-dot"></span><span id="composerModeText">发送的补充会先更新任务规划，不会立即执行</span></div>
+              <button class="send editing" id="sendBtn" type="submit" aria-label="修改任务规划">修改</button>
             </div>
           </form>
         </div>
@@ -438,13 +474,30 @@
     const activeStepLabel = document.getElementById('activeStepLabel');
     const linearStep = document.getElementById('linearStep');
     const miroStep = document.getElementById('miroStep');
+    const notionStep = document.getElementById('notionStep');
+    const figmaStep = document.getElementById('figmaStep');
     const workCard = document.getElementById('workCard');
     const composer = document.getElementById('composer');
     const messageInput = document.getElementById('messageInput');
     const toast = document.getElementById('toast');
+    const briefReview = document.getElementById('briefReview');
+    const briefConfirmed = document.getElementById('briefConfirmed');
+    const confirmBriefBtn = document.getElementById('confirmBriefBtn');
+    const executionStage = document.getElementById('executionStage');
+    const presenceText = document.querySelector('.agent-presence span:last-child');
+    const briefAdjustment = document.getElementById('briefAdjustment');
+    const launchConfirm = document.getElementById('launchConfirm');
+    const composerModeText = document.getElementById('composerModeText');
+    const sendBtn = document.getElementById('sendBtn');
 
     let progress = 3;
     let total = 4;
+    let progressTimers = [];
+    let isPositioningWorkCard = false;
+    let preserveExpandedAfterLaunch = false;
+    let taskStarted = false;
+
+    presenceText.textContent = 'ALEX 等待确认';
 
     sidebarToggle.addEventListener('click', () => {
       const collapsed = appShell.classList.toggle('sidebar-collapsed');
@@ -463,13 +516,105 @@
       requestAnimationFrame(() => timelineScroll.scrollTo({ top: timelineScroll.scrollHeight, behavior: 'smooth' }));
     }
 
+    function scrollWorkCardToTop() {
+      const containerTop = timelineScroll.getBoundingClientRect().top;
+      const cardTop = workCard.getBoundingClientRect().top;
+      const targetTop = timelineScroll.scrollTop + cardTop - containerTop - 4;
+      const startTop = timelineScroll.scrollTop;
+      const destination = Math.max(0, targetTop);
+      const distance = destination - startTop;
+      const duration = 760;
+      const startedAt = performance.now();
+      isPositioningWorkCard = true;
+      preserveExpandedAfterLaunch = true;
+      workCard.classList.remove('is-stuck');
+
+      function animateScroll(now) {
+        const elapsed = Math.min(1, (now - startedAt) / duration);
+        const eased = (1 - Math.cos(Math.PI * elapsed)) / 2;
+        timelineScroll.scrollTop = startTop + distance * eased;
+        if (elapsed < 1) {
+          requestAnimationFrame(animateScroll);
+        } else {
+          isPositioningWorkCard = false;
+        }
+      }
+
+      requestAnimationFrame(animateScroll);
+    }
+
+    function renderProgress(nextProgress) {
+      progress = nextProgress;
+      progressCurrent.textContent = progress;
+      progressFill.style.width = `${(progress / total) * 100}%`;
+
+      const steps = [notionStep, figmaStep, linearStep, miroStep];
+      steps.forEach((step, index) => {
+        const position = index + 1;
+        const mark = step.querySelector('.step-mark');
+        const time = step.querySelector('time');
+        step.classList.remove('done', 'active');
+        mark.textContent = '';
+        if (position < progress) {
+          step.classList.add('done');
+          mark.textContent = '✓';
+          time.textContent = position === 1 ? '14:31' : position === 2 ? '14:36' : '14:42';
+        } else if (position === progress) {
+          step.classList.add('active');
+          time.textContent = '进行中';
+        } else {
+          time.textContent = '等待';
+        }
+      });
+
+      const descriptions = {
+        1: '正在分析 Notion 如何通过页面与数据库组织异步协作。',
+        2: '正在分析 Figma 如何让多人编辑与反馈保持实时同步。',
+        3: '正在分析 Linear 的任务状态与协作沟通模式。',
+        4: '正在分析 Miro 如何通过画布共创沉淀团队共识。'
+      };
+      currentStep.textContent = descriptions[progress];
+      document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = `主任务仍在继续 · 当前 ${progress}/${total}`);
+    }
+
+    function startProgressDemo() {
+      progressTimers.forEach(timer => window.clearTimeout(timer));
+      progressTimers = [];
+      renderProgress(1);
+      progressTimers.push(window.setTimeout(() => renderProgress(2), 2000));
+      progressTimers.push(window.setTimeout(() => renderProgress(3), 4000));
+    }
+
     function syncStickyCardState() {
+      if (isPositioningWorkCard || preserveExpandedAfterLaunch) {
+        workCard.classList.remove('is-stuck');
+        return;
+      }
       const containerTop = timelineScroll.getBoundingClientRect().top;
       const cardTop = workCard.getBoundingClientRect().top;
       workCard.classList.toggle('is-stuck', timelineScroll.scrollTop > 0 && cardTop <= containerTop + 5);
     }
 
     timelineScroll.addEventListener('scroll', syncStickyCardState, { passive: true });
+    timelineScroll.addEventListener('wheel', () => { preserveExpandedAfterLaunch = false; }, { passive: true });
+    timelineScroll.addEventListener('touchstart', () => { preserveExpandedAfterLaunch = false; }, { passive: true });
+
+    confirmBriefBtn.addEventListener('click', () => {
+      taskStarted = true;
+      executionStage.setAttribute('aria-hidden', 'false');
+      launchConfirm.hidden = true;
+      presenceText.textContent = 'ALEX 正在工作';
+      messageInput.placeholder = '告诉 Alex 你想推进什么，或直接问问当前进展…';
+      composerModeText.textContent = '系统会在执行前确认会改变任务的内容';
+      sendBtn.textContent = '↑';
+      sendBtn.classList.remove('editing');
+      sendBtn.setAttribute('aria-label', '发送');
+      startProgressDemo();
+      requestAnimationFrame(() => {
+        scrollWorkCardToTop();
+        executionStage.classList.add('active');
+      });
+    });
 
     askBtn.addEventListener('click', () => {
       const isHidden = aside.hidden;
@@ -498,19 +643,9 @@
     });
 
     advanceBtn.addEventListener('click', () => {
-      if (progress < total) progress += 1;
-      progressCurrent.textContent = progress;
-      progressFill.style.width = `${(progress / total) * 100}%`;
-      currentStep.textContent = progress === total ? '4 个竞品材料已完成，正在归纳跨产品协作规律。' : 'Miro：正在核对便签移动、评论与成员提醒如何进入活动记录。';
-      if (progress < total) {
-        linearStep.classList.remove('active');
-        linearStep.classList.add('done');
-        linearStep.querySelector('.step-mark').textContent = '✓';
-        linearStep.querySelector('time').textContent = '14:42';
-        miroStep.classList.add('active');
-        miroStep.querySelector('time').textContent = '进行中';
-      }
-      document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = `主任务仍在继续 · 当前 ${progress}/${total}`);
+      progressTimers.forEach(timer => window.clearTimeout(timer));
+      progressTimers = [];
+      if (progress < total) renderProgress(progress + 1);
       notify(progress === total ? '竞品材料整理完成' : `主进程已推进到 ${progress}/${total}`);
     });
 
@@ -518,6 +653,15 @@
       event.preventDefault();
       const value = messageInput.value.trim();
       if (!value) return;
+      if (!taskStarted) {
+        briefAdjustment.textContent = `收到，我会把“${value}”补充进任务规划，其余范围和交付方式保持不变。确认后我再开始执行。`;
+        briefAdjustment.hidden = false;
+        messageInput.value = '';
+        messageInput.placeholder = '继续补充或调整本次任务规划…';
+        notify('补充内容已加入任务 brief');
+        scrollToLatest();
+        return;
+      }
       aside.hidden = false;
       askBtn.textContent = '收起交流';
       const message = document.createElement('p');
