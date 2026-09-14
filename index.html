@@ -23,7 +23,12 @@
     * { box-sizing: border-box; }
     html, body { width: 100%; min-height: 100%; margin: 0; }
     body {
-      background: #242424;
+      background-color: #315b86;
+      background-image: url('./desktop-background.png');
+      background-position: center;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-attachment: fixed;
       color: var(--ink);
       font-family: "Alibaba PuHuiTi 2.0", "PingFang SC", "Microsoft YaHei", Inter, sans-serif;
       font-size: 14px;
@@ -42,9 +47,9 @@
       grid-template-rows: 40px minmax(0, 1fr);
       position: relative;
       overflow: hidden;
-      border: .5px solid rgba(104, 104, 104, .53);
+      border: .5px solid rgba(17, 17, 17, .16);
       border-radius: 9px;
-      background: rgba(255, 255, 255, .88);
+      background: rgba(246, 250, 255, .88);
       box-shadow: var(--shadow);
       backdrop-filter: blur(60px);
       transition: grid-template-columns .18s cubic-bezier(.2, .72, .2, 1);
@@ -125,7 +130,18 @@
     .section-label + .conversation-list .conversation-row { padding-left: 16px; }
     .conversation-row.active { display: flex; align-items: center; justify-content: space-between; gap: 9px; background: rgba(0, 0, 0, .08); }
     .conversation-row.active > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .conversation-status { width: 7px; height: 7px; flex: 0 0 auto; border-radius: 50%; background: #4ca95a; box-shadow: 0 0 0 3px rgba(76, 169, 90, .12); }
+    .conversation-status {
+      width: 14px;
+      height: 14px;
+      flex: 0 0 auto;
+      border: 2px solid rgba(17, 17, 17, .16);
+      border-top-color: rgba(17, 17, 17, .58);
+      border-radius: 50%;
+      animation: conversation-working .8s linear infinite;
+    }
+    @keyframes conversation-working { to { transform: rotate(360deg); } }
+    .conversation-status.complete { border: 0; background: rgba(17, 17, 17, .1); animation: none; }
+    .conversation-status.complete::after { content: "✓"; width: 100%; height: 100%; display: grid; place-items: center; color: rgba(17, 17, 17, .58); font-size: 10px; font-weight: 700; }
 
     .workspace {
       grid-column: 2;
@@ -135,7 +151,7 @@
       display: grid;
       grid-template-rows: 50px minmax(0, 1fr);
       overflow: hidden;
-      border: 1px solid rgba(17, 17, 17, .2);
+      border: 1px solid rgba(17, 17, 17, .16);
       border-radius: 8px;
       background: var(--panel);
       transition: margin-left .18s cubic-bezier(.2, .72, .2, 1);
@@ -154,7 +170,12 @@
     .presence-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ca95a; box-shadow: 0 0 0 4px rgba(76, 169, 90, .12); }
 
     .chat-view { min-height: 0; position: relative; overflow: hidden; }
-    .timeline-scroll { height: 100%; overflow-y: auto; padding: 0 32px 150px; scroll-behavior: auto; }
+    .timeline-scroll { height: 100%; overflow-y: auto; overflow-anchor: none; padding: 0 32px 150px; scroll-behavior: auto; scrollbar-width: thin; scrollbar-color: rgba(43,43,43,.16) transparent; }
+    .timeline-scroll::-webkit-scrollbar { width: 7px; }
+    .timeline-scroll::-webkit-scrollbar-track { background: transparent; }
+    .timeline-scroll::-webkit-scrollbar-thumb { min-height: 48px; border-radius: 999px; background: rgba(43,43,43,.14); }
+    .timeline-scroll::-webkit-scrollbar-thumb:hover { background: rgba(43,43,43,.22); }
+    .timeline-scroll::-webkit-scrollbar-button { display: none; width: 0; height: 0; }
     .timeline { width: min(100%, 760px); margin: 0 auto; padding-top: 40px; position: relative; }
     .date-marker { display: flex; align-items: center; gap: 12px; margin-bottom: 26px; color: var(--muted); font-size: 11px; }
     .date-marker::before, .date-marker::after { content: ""; height: 1px; flex: 1; background: var(--line); }
@@ -162,14 +183,8 @@
     .user-message { display: flex; justify-content: flex-end; margin-bottom: 26px; }
     .user-bubble { max-width: 70%; padding: 12px 16px; border-radius: 16px 16px 4px 16px; background: #eef4ff; color: #27314c; line-height: 1.6; }
 
-    .timeline-item { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; position: relative; }
+    .timeline-item { position: relative; }
     .timeline-item + .timeline-item { margin-top: 18px; }
-    .timeline-item::before { content: ""; position: absolute; left: 13px; top: 30px; bottom: -18px; width: 1px; background: var(--line); }
-    .timeline-item.last::before { display: none; }
-    .avatar {
-      width: 28px; height: 28px; border-radius: 9px; display: grid; place-items: center;
-      background: var(--deep); color: #fff; font-size: 11px; font-weight: 700; z-index: 1;
-    }
     .event-label { display: flex; align-items: center; gap: 7px; height: 28px; margin-bottom: 8px; font-size: 12px; color: var(--muted); }
     .event-label strong { color: var(--ink); font-weight: 560; }
     .status-chip { padding: 3px 7px; border-radius: 999px; background: #edf7ed; color: #2f6c3a; font-size: 10px; font-weight: 650; letter-spacing: .03em; }
@@ -188,18 +203,15 @@
     .brief-adjustment { margin: 12px 0 0; color: #314779; font-size: 13px; }
     .brief-adjustment[hidden] { display: none; }
     .execution-stage {
-      visibility: hidden;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 1.1s ease, visibility 0s linear 1.1s;
+      display: none;
     }
     .execution-stage.active {
-      visibility: visible;
-      opacity: 1;
-      pointer-events: auto;
-      transition: opacity 1.1s ease, visibility 0s linear 0s;
+      display: block;
+      animation: reveal-stage 1.1s ease both;
     }
+    @keyframes reveal-stage { from { opacity: 0; } to { opacity: 1; } }
     .brief-confirmed { animation: rise .3s ease both; }
+    .work-card-sentinel { height: 1px; margin-bottom: -1px; pointer-events: none; }
     .work-card {
       position: sticky;
       top: 4px;
@@ -209,15 +221,17 @@
       background: #fff;
       box-shadow: 0 10px 30px rgba(17, 17, 17, .055);
       overflow: hidden;
+      will-change: transform;
     }
-    .work-card-head { display: flex; justify-content: space-between; gap: 18px; padding: 14px 20px 11px; }
-    .eyebrow { color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; }
+    .work-card-head { display: flex; justify-content: space-between; gap: 18px; padding: 14px 20px 11px; transition: padding .22s ease; }
+    .eyebrow { max-height: 18px; overflow: hidden; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; opacity: 1; transition: max-height .22s ease, opacity .16s ease; }
     .work-card p { margin: 0; color: var(--muted); line-height: 1.55; }
     .progress-number { font-size: 22px; font-weight: 620; white-space: nowrap; }
     .progress-number small { color: var(--muted); font-size: 12px; font-weight: 400; }
     .progress-track { height: 5px; margin: 0 20px; overflow: hidden; border-radius: 10px; background: var(--soft); }
     .progress-fill { width: 75%; height: 100%; border-radius: inherit; background: var(--deep); transition: width .45s ease; }
-    .step-list { padding: 14px 20px 10px; display: grid; gap: 10px; }
+    .work-card-meta { min-height: 28px; display: flex; align-items: center; padding: 7px 20px 0; }
+    .step-list { max-height: 180px; padding: 14px 20px 10px; display: grid; gap: 10px; overflow: hidden; opacity: 1; transition: max-height .34s cubic-bezier(.2, .72, .2, 1), padding .34s cubic-bezier(.2, .72, .2, 1), opacity .22s ease; }
     .step { display: grid; grid-template-columns: 17px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
     .step-mark { width: 16px; height: 16px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; font-size: 9px; }
     .step.done .step-mark { background: var(--deep); color: #fff; border-color: var(--deep); }
@@ -226,15 +240,17 @@
     .step time { color: var(--muted); font-size: 11px; }
     .card-actions {
       display: flex;
+      align-items: center;
       justify-content: flex-end;
       gap: 8px;
       max-height: 62px;
-      padding: 14px 20px 18px;
+      padding: 14px 20px 0;
       overflow: hidden;
       opacity: 1;
       transform: translateY(0);
-      transition: max-height .28s ease, padding .28s ease, opacity .18s ease, transform .28s ease;
+      transition: max-height .34s cubic-bezier(.2, .72, .2, 1), padding .34s cubic-bezier(.2, .72, .2, 1), opacity .22s ease, transform .34s cubic-bezier(.2, .72, .2, 1);
     }
+    .elapsed-time { color: var(--muted); font-size: 14px; line-height: 1.4; }
     .work-card.is-stuck .card-actions {
       max-height: 0;
       padding-top: 0;
@@ -243,7 +259,16 @@
       transform: translateY(-6px);
       pointer-events: none;
     }
-    .work-card.is-stuck .step-list { padding-bottom: 16px; }
+    .work-card.is-stuck .work-card-head { align-items: center; padding-top: 13px; padding-bottom: 13px; }
+    .work-card.is-stuck .eyebrow { max-height: 0; opacity: 0; }
+    .work-card.is-stuck .step-list { max-height: 0; padding-top: 0; padding-bottom: 0; opacity: 0; pointer-events: none; }
+    .work-card-toggle-row { height: 28px; display: flex; align-items: center; justify-content: center; }
+    .work-card-toggle { width: 30px; height: 22px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 8px; background: transparent; cursor: pointer; }
+    .work-card-toggle:hover { background: rgba(17,17,17,.05); }
+    .work-card-toggle img { width: 16px; height: 16px; display: block; filter: invert(1); opacity: .56; transition: transform .22s cubic-bezier(.2, .72, .2, 1), opacity .22s ease; }
+    .work-card-toggle:hover img { opacity: .78; }
+    .work-card.is-stuck .work-card-toggle img { transform: rotate(180deg); }
+    .work-card.is-stuck .work-card-toggle-row { height: 26px; }
     .btn {
       min-height: 34px;
       display: inline-flex;
@@ -271,9 +296,9 @@
     .aside-conversation[hidden] { display: none; }
     .aside-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--blue); font-size: 11px; font-weight: 650; letter-spacing: .04em; }
     .aside-heading::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
-    .aside-copy { margin: 0 0 9px; padding: 10px 13px; border-radius: 12px; background: #f5f7fd; color: #27314c; line-height: 1.55; }
-    .aside-copy.user { margin-top: 9px; margin-left: 15%; background: #eef4ff; color: #27314c; }
-    .aside-copy.agent { margin-right: 8%; border: 1px solid rgba(49, 94, 232, .18); background: #fff; }
+    .aside-copy { width: fit-content; max-width: 92%; margin: 0 0 9px; padding: 10px 13px; border-radius: 12px; background: #f5f7fd; color: #27314c; line-height: 1.55; }
+    .aside-copy.user { max-width: 82%; margin-top: 9px; margin-left: auto; margin-right: 0; background: #eef4ff; color: #27314c; }
+    .aside-copy.agent { margin-right: auto; border: 1px solid rgba(49, 94, 232, .18); background: #fff; }
     .aside-copy.proactive {
       margin-right: 3%;
       border: 1px solid rgba(49, 94, 232, .14);
@@ -297,21 +322,59 @@
     .update-badge { padding: 5px 9px; border-radius: 999px; background: var(--lime); color: var(--lime-ink); font-size: 10px; font-weight: 700; white-space: nowrap; }
     @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
+    .decision-record { display: flex; align-items: center; gap: 8px; margin: 12px 0 0 20px; color: var(--muted); font-size: 11px; }
+    .decision-record[hidden] { display: none; }
+    .decision-record::before { content: "✓"; width: 17px; height: 17px; display: grid; place-items: center; border-radius: 50%; background: #edf7ed; color: #2f6c3a; font-size: 10px; font-weight: 700; }
+    .decision-record.denied::before { content: "×"; background: #f1f1f1; color: #777; }
+
+    .completion-card { margin: 16px 0 0; }
+    .completion-card[hidden] { display: none; }
+    .completion-card.show { animation: rise .35s ease both; }
+    .completion-message { margin-bottom: 10px; }
+    .file-card { width: min(92%, 520px); display: grid; grid-template-columns: 38px minmax(0, 1fr) 18px; align-items: center; gap: 11px; padding: 11px; border: 1px solid rgba(17,17,17,.14); border-radius: 11px; background: #fff; text-align: left; cursor: pointer; transition: border-color .18s ease, box-shadow .18s ease, transform .12s ease; }
+    .file-card:hover { border-color: rgba(17,17,17,.28); box-shadow: 0 7px 20px rgba(17,17,17,.07); }
+    .file-card:active { transform: scale(.985); box-shadow: 0 3px 10px rgba(17,17,17,.05); }
+    .word-file-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 8px; background: #2b579a; color: #fff; font-size: 17px; font-weight: 700; }
+    .file-card-copy { min-width: 0; }
+    .file-card-copy strong { display: block; overflow: hidden; font-size: 13px; font-weight: 620; text-overflow: ellipsis; white-space: nowrap; }
+    .file-card-copy span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
+    .file-card-arrow { color: var(--muted); font-size: 14px; }
+    .file-path { grid-column: 2 / -1; margin: 1px 0 0; padding-top: 9px; border-top: 1px solid var(--line); color: rgba(17,17,17,.68); font-family: Consolas, "SFMono-Regular", monospace; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
+    .file-path[hidden] { display: none; }
+
     .composer-wrap { position: absolute; z-index: 6; right: 0; bottom: 0; left: 0; padding: 16px 32px 22px; pointer-events: none; }
     .composer-wrap::before { content: ""; position: absolute; z-index: -1; inset: 0 14px 0 0; background: linear-gradient(to top, #fff 78%, rgba(255,255,255,0)); }
-    .composer { position: relative; width: min(100%, 760px); margin: 0 auto; border: 1px solid rgba(17, 17, 17, .16); border-radius: 16px; background: #fff; box-shadow: 0 10px 32px rgba(0, 0, 0, .07); overflow: hidden; }
+    .composer { position: relative; width: min(100%, 760px); margin: 0 auto; border: 1px solid transparent; border-radius: 16px; background: #fff; box-shadow: 0 10px 32px rgba(0, 0, 0, .07); overflow: visible; }
+    .composer::after { content: ""; position: absolute; z-index: 10; inset: -1px; border: 1px solid rgba(17, 17, 17, .16); border-radius: 17px; pointer-events: none; }
     .composer { pointer-events: auto; }
-    .launch-confirm { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 12px 12px 16px; border-bottom: 1px solid var(--line); background: #fafafa; }
+    .launch-confirm { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 12px 12px 16px; border-bottom: 1px solid var(--line); border-radius: 15px 15px 0 0; background: #fafafa; }
     .launch-confirm[hidden] { display: none; }
     .launch-confirm-copy { min-width: 0; }
     .launch-confirm strong { display: block; margin-bottom: 3px; font-size: 13px; font-weight: 650; }
     .launch-confirm span { display: block; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .launch-confirm .btn { flex: 0 0 auto; }
+    .permission-prompt { padding: 12px; border-bottom: 1px solid var(--line); border-radius: 15px 15px 0 0; background: #fafafa; animation: rise .3s ease both; }
+    .permission-prompt[hidden] { display: none; }
+    .permission-prompt-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-left: 4px; }
+    .permission-prompt-copy { min-width: 0; }
+    .permission-prompt strong { display: block; margin-bottom: 3px; font-size: 13px; font-weight: 650; }
+    .permission-prompt span { display: block; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .permission-buttons { display: flex; flex: 0 0 auto; gap: 8px; }
+    .allow-menu { position: relative; }
+    .allow-split { display: flex; }
+    .allow-split .btn:hover { transform: none; }
+    .allow-primary-action { border-radius: 9px 0 0 9px; }
+    .allow-menu-trigger { width: 34px; padding: 0; border-radius: 0 9px 9px 0; border-left-color: rgba(255,255,255,.28); }
+    .allow-menu-icon { width: 16px; height: 16px; display: block; object-fit: contain; }
+    .permission-secondary { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 9; width: 244px; padding: 6px; border: 1px solid var(--line); border-radius: 11px; background: #fff; box-shadow: 0 10px 28px rgba(17,17,17,.14); }
+    .permission-secondary[hidden] { display: none; }
+    .allow-option { width: 100%; padding: 10px; border: 0; border-radius: 7px; background: transparent; text-align: left; cursor: pointer; }
+    .allow-option:hover { background: #f3f3f3; }
+    .allow-option strong { margin-bottom: 3px; font-size: 13px; font-weight: 600; }
+    .allow-option span { color: var(--muted); font-size: 11px; }
     .composer textarea { width: 100%; height: 54px; padding: 16px 16px 6px; resize: none; border: 0; outline: 0; color: var(--ink); }
     .composer textarea::placeholder { color: rgba(17,17,17,.38); }
-    .composer-footer { display: flex; justify-content: space-between; align-items: center; padding: 5px 8px 8px 12px; }
-    .composer-mode { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 11px; }
-    .mode-dot { width: 6px; height: 6px; border-radius: 50%; background: #888; }
+    .composer-footer { display: flex; justify-content: flex-end; align-items: center; min-height: 45px; padding: 5px 8px 8px 12px; }
     .send { width: 32px; height: 32px; border: 0; border-radius: 10px; background: var(--deep); color: #fff; cursor: pointer; font-size: 16px; }
     .send.editing { width: 48px; font-size: 12px; font-weight: 600; }
 
@@ -376,8 +439,7 @@
               <div class="user-bubble">请帮我梳理周二汇报里的协作产品竞品部分，先覆盖 Notion、Figma、Linear 和 Miro。重点比较它们如何组织任务、同步进度，以及让团队感知协作中的变化；最后请整理成可以直接放进汇报的核心结论和产品启发。</div>
             </div>
 
-            <article class="timeline-item">
-              <div class="avatar">A</div>
+            <article class="timeline-item" id="taskTimelineItem">
               <div>
                 <div class="agent-brief">
                   <div id="briefReview">
@@ -390,47 +452,68 @@
                   <span class="brief-finish brief-confirmed" id="briefConfirmed" hidden>任务 brief 已确认，开始执行</span>
                 </div>
                 <div class="execution-stage" id="executionStage" aria-hidden="true">
-                <section class="work-card" id="workCard" aria-label="正在进行的工作">
-                  <div class="work-card-head">
-                    <div>
-                      <div class="eyebrow">竞品研究</div>
-                      <p id="currentStep">正在分析 Linear 的任务状态与协作沟通模式。</p>
+                  <div class="work-card-sentinel" id="workCardSentinel" aria-hidden="true"></div>
+                  <section class="work-card" id="workCard" aria-label="正在进行的工作">
+                    <div class="work-card-head">
+                      <div>
+                        <div class="eyebrow">竞品研究</div>
+                        <p id="currentStep">正在分析 Linear 的任务状态与协作沟通模式。</p>
+                      </div>
+                      <div class="progress-number"><span id="progressCurrent">3</span><small> / <span id="progressTotal">4</span></small></div>
                     </div>
-                    <div class="progress-number"><span id="progressCurrent">3</span><small> / <span id="progressTotal">4</span></small></div>
-                  </div>
-                  <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
-                  <div class="step-list">
-                    <div class="step done" id="notionStep"><span class="step-mark">✓</span><span>Notion · 异步信息如何进入团队协作</span><time>14:31</time></div>
-                    <div class="step done" id="figmaStep"><span class="step-mark">✓</span><span>Figma · 多人编辑如何形成实时同步</span><time>14:36</time></div>
-                    <div class="step active" id="linearStep"><span class="step-mark"></span><span id="activeStepLabel">Linear · 任务状态如何成为团队沟通</span><time>进行中</time></div>
-                    <div class="step" id="miroStep"><span class="step-mark"></span><span>Miro · 画布共创如何沉淀团队共识</span><time>等待</time></div>
-                  </div>
-                  <div class="card-actions">
-                    <button class="btn subtle" id="advanceBtn" type="button">模拟推进</button>
-                    <button class="btn" id="askBtn" type="button">问问 Alex</button>
-                  </div>
-                </section>
-
-                <section class="aside-conversation" id="asideConversation">
-                  <div class="aside-heading">即时交流 · 不改变当前任务</div>
-                  <p class="aside-copy proactive"><span class="proactive-label">ALEX 主动同步</span>我刚发现 Linear 把“状态变化”直接变成了团队沟通的一部分，而不是额外写一份进度报告。这个点可能会成为汇报中很有价值的一条工作结论。<span class="aside-meta">来自当前分析 · 主任务持续运行</span></p>
-                  <p class="aside-copy user">为什么先分析 Linear？</p>
-                  <p class="aside-copy agent">它的任务状态与协作沟通结合得最紧，适合用来对照我们的“对话如何进入工作流”。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
-                  <p class="aside-copy user">那把它再增加一个“商业模式”的分析维度。</p>
-                  <div class="intent-card" id="intentCard">
-                    <strong>这句话可能会改变当前任务</strong>
-                    <p>Alex 可以把它作为正式要求加入竞品分析。确认前，当前任务不会改变。</p>
-                    <div class="intent-diff"><del>Linear · 交互模式</del><span>→</span><ins>Linear · 交互模式 + 商业模式</ins></div>
-                    <div class="intent-actions">
-                      <button class="btn primary" id="applyBtn" type="button">应用到主任务</button>
-                      <button class="btn" id="discussBtn" type="button">只是讨论</button>
+                    <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+                    <div class="work-card-meta"><span class="elapsed-time" id="elapsedTime">已处理 3分钟 22秒</span></div>
+                    <div class="step-list">
+                      <div class="step done" id="notionStep"><span class="step-mark">✓</span><span>Notion · 异步信息如何进入团队协作</span><time>14:31</time></div>
+                      <div class="step done" id="figmaStep"><span class="step-mark">✓</span><span>Figma · 多人编辑如何形成实时同步</span><time>14:36</time></div>
+                      <div class="step active" id="linearStep"><span class="step-mark"></span><span id="activeStepLabel">Linear · 任务状态如何成为团队沟通</span><time>进行中</time></div>
+                      <div class="step" id="miroStep"><span class="step-mark"></span><span>Miro · 画布共创如何沉淀团队共识</span><time>等待</time></div>
                     </div>
-                  </div>
-                  <section class="task-update" id="taskUpdate" hidden>
-                    <div><strong>已进入主任务 · 增加“商业模式”分析维度</strong><span>这次即时调整已应用到 Linear 的当前分析中，原任务继续执行，不会创建新的工作阶段。</span></div>
-                    <div class="update-badge">已应用</div>
+                    <div class="card-actions">
+                      <button class="btn subtle" id="advanceBtn" type="button">模拟推进</button>
+                      <button class="btn" id="askBtn" type="button">问问 Alex</button>
+                    </div>
+                    <div class="work-card-toggle-row">
+                      <button class="work-card-toggle" id="workCardToggle" type="button" aria-label="收起进度详情" aria-expanded="true">
+                        <img src="./allow-menu-chevron.svg" alt="" aria-hidden="true" />
+                      </button>
+                    </div>
                   </section>
-                </section>
+
+                  <section class="aside-conversation" id="asideConversation">
+                    <div class="aside-heading">即时交流 · 不改变当前任务</div>
+                    <p class="aside-copy proactive"><span class="proactive-label">ALEX 主动同步</span>我刚发现 Linear 把“状态变化”直接变成了团队沟通的一部分，而不是额外写一份进度报告。这个点可能会成为汇报中很有价值的一条工作结论。<span class="aside-meta">来自当前分析 · 主任务持续运行</span></p>
+                    <p class="aside-copy user">为什么先分析 Linear？</p>
+                    <p class="aside-copy agent">它的任务状态与协作沟通结合得最紧，适合用来对照我们的“对话如何进入工作流”。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
+                    <p class="aside-copy user">Linear 的状态变化为什么能代替进度汇报？</p>
+                    <p class="aside-copy agent">因为负责人、状态和项目周期都直接绑定在任务上。成员完成一次真实操作，团队看到的进度也会同步更新，不需要再把工作重新整理成一份汇报。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
+                    <p class="aside-copy user">这个机制对我们最直接的启发是什么？</p>
+                    <p class="aside-copy agent">让执行行为本身生成可读的进度，并只在出现偏差、风险或需要决策时主动打断用户。这样既保持团队感知，也不会增加额外汇报负担。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
+                    <p class="aside-copy user">那把它再增加一个“商业模式”的分析维度。</p>
+                    <div class="intent-card" id="intentCard">
+                      <strong>这句话可能会改变当前任务</strong>
+                      <p>Alex 可以把它作为正式要求加入竞品分析。确认前，当前任务不会改变。</p>
+                      <div class="intent-diff"><del>Linear · 交互模式</del><span>→</span><ins>Linear · 交互模式 + 商业模式</ins></div>
+                      <div class="intent-actions">
+                        <button class="btn primary" id="applyBtn" type="button">应用到主任务</button>
+                        <button class="btn" id="discussBtn" type="button">只是讨论</button>
+                      </div>
+                    </div>
+                    <section class="task-update" id="taskUpdate" hidden>
+                      <div><strong>已进入主任务 · 增加“商业模式”分析维度</strong><span>这次即时调整已应用到 Linear 的当前分析中，原任务继续执行，不会创建新的工作阶段。</span></div>
+                      <div class="update-badge">已应用</div>
+                    </section>
+                    <div class="decision-record" id="decisionRecord" hidden></div>
+                    <section class="completion-card" id="completionCard" hidden>
+                      <p class="aside-copy agent completion-message"><span class="proactive-label">ALEX 已完成任务</span>我把四个产品的协作机制、核心差异和产品启发整理进了这份 Word 文档。</p>
+                      <button class="file-card" id="fileCard" type="button" aria-label="协作产品竞品分析 Word 文档，项目文件，周二汇报，协作产品竞品分析点 docx">
+                        <span class="word-file-icon" aria-hidden="true">W</span>
+                        <span class="file-card-copy"><strong>协作产品竞品分析.docx</strong><span>Word 文档</span></span>
+                        <span class="file-card-arrow" aria-hidden="true">↗</span>
+                        <code class="file-path" id="filePath">项目文件\周二汇报\协作产品竞品分析.docx</code>
+                      </button>
+                    </section>
+                  </section>
                 </div>
               </div>
             </article>
@@ -443,9 +526,31 @@
               <div class="launch-confirm-copy"><strong>任务规划待确认</strong><span>确认后 Alex 将按上述规划开始执行</span></div>
               <button class="btn primary" id="confirmBriefBtn" type="button">确认并开始执行</button>
             </div>
+            <div class="permission-prompt" id="permissionEvent" hidden>
+              <div class="permission-prompt-row">
+                <div class="permission-prompt-copy">
+                  <strong>是否访问 Linear 产品的官网查看信息？</strong>
+                  <span>原始请求：是否访问 www.linear.com</span>
+                </div>
+                <div class="permission-buttons">
+                  <button class="btn" id="denyAccessBtn" type="button">拒绝访问</button>
+                  <div class="allow-menu">
+                    <div class="allow-split">
+                      <button class="btn primary allow-primary-action" id="allowAccessBtn" type="button">允许访问</button>
+                      <button class="btn primary allow-menu-trigger" id="allowMoreBtn" type="button" aria-label="选择允许范围" aria-haspopup="menu" aria-expanded="false" aria-controls="permissionSecondary">
+                        <img class="allow-menu-icon" src="./allow-menu-chevron.svg" alt="" aria-hidden="true" />
+                      </button>
+                    </div>
+                    <div class="permission-secondary" id="permissionSecondary" role="menu" hidden>
+                      <button class="allow-option" id="allowOnceOptionBtn" type="button" role="menuitem"><strong>允许单次访问</strong><span>仅允许这一次访问 Linear 官网</span></button>
+                      <button class="allow-option" id="allowTypeAccessBtn" type="button" role="menuitem"><strong>允许此类访问</strong><span>以后访问公开产品官网时不再询问</span></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
             <textarea id="messageInput" aria-label="发送消息" placeholder="补充或调整本次任务的目标、范围或交付要求…"></textarea>
             <div class="composer-footer">
-              <div class="composer-mode"><span class="mode-dot"></span><span id="composerModeText">发送的补充会先更新任务规划，不会立即执行</span></div>
               <button class="send editing" id="sendBtn" type="submit" aria-label="修改任务规划">修改</button>
             </div>
           </form>
@@ -477,6 +582,9 @@
     const notionStep = document.getElementById('notionStep');
     const figmaStep = document.getElementById('figmaStep');
     const workCard = document.getElementById('workCard');
+    const workCardSentinel = document.getElementById('workCardSentinel');
+    const workCardToggle = document.getElementById('workCardToggle');
+    const elapsedTime = document.getElementById('elapsedTime');
     const composer = document.getElementById('composer');
     const messageInput = document.getElementById('messageInput');
     const toast = document.getElementById('toast');
@@ -487,8 +595,17 @@
     const presenceText = document.querySelector('.agent-presence span:last-child');
     const briefAdjustment = document.getElementById('briefAdjustment');
     const launchConfirm = document.getElementById('launchConfirm');
-    const composerModeText = document.getElementById('composerModeText');
     const sendBtn = document.getElementById('sendBtn');
+    const permissionEvent = document.getElementById('permissionEvent');
+    const allowAccessBtn = document.getElementById('allowAccessBtn');
+    const allowOnceOptionBtn = document.getElementById('allowOnceOptionBtn');
+    const denyAccessBtn = document.getElementById('denyAccessBtn');
+    const allowMoreBtn = document.getElementById('allowMoreBtn');
+    const permissionSecondary = document.getElementById('permissionSecondary');
+    const allowTypeAccessBtn = document.getElementById('allowTypeAccessBtn');
+    const decisionRecord = document.getElementById('decisionRecord');
+    const completionCard = document.getElementById('completionCard');
+    const conversationStatus = document.querySelector('.conversation-status');
 
     let progress = 3;
     let total = 4;
@@ -496,6 +613,11 @@
     let isPositioningWorkCard = false;
     let preserveExpandedAfterLaunch = false;
     let taskStarted = false;
+    let taskCompleted = false;
+    let accessRequestTimer;
+    let completionTimer;
+    let elapsedSeconds = 202;
+    let elapsedTimer;
 
     presenceText.textContent = 'ALEX 等待确认';
 
@@ -516,6 +638,84 @@
       requestAnimationFrame(() => timelineScroll.scrollTo({ top: timelineScroll.scrollHeight, behavior: 'smooth' }));
     }
 
+    function setWorkCardCollapsed(collapsed) {
+      workCard.classList.toggle('is-stuck', collapsed);
+      workCardToggle.setAttribute('aria-expanded', String(!collapsed));
+      workCardToggle.setAttribute('aria-label', collapsed ? '展开进度详情' : '收起进度详情');
+    }
+
+    function renderElapsedTime() {
+      const minutes = Math.floor(elapsedSeconds / 60);
+      const seconds = elapsedSeconds % 60;
+      elapsedTime.textContent = `已处理 ${minutes}分钟 ${seconds}秒`;
+    }
+
+    function revealAccessRequest() {
+      if (taskCompleted) return;
+      permissionEvent.hidden = false;
+      permissionSecondary.hidden = true;
+      allowMoreBtn.setAttribute('aria-expanded', 'false');
+      presenceText.textContent = 'ALEX 等待你的授权';
+      notify('Alex 需要确认一个外部访问');
+    }
+
+    function resolveAccessRequest(scope) {
+      const allowed = scope !== 'deny';
+      const allowsType = scope === 'type';
+      window.clearTimeout(accessRequestTimer);
+      permissionEvent.hidden = true;
+      decisionRecord.hidden = false;
+      decisionRecord.classList.toggle('denied', !allowed);
+      decisionRecord.textContent = allowsType
+        ? '已允许此类访问：公开产品官网'
+        : allowed
+          ? '已允许访问 Linear 官网'
+          : '已拒绝访问 Linear 官网，Alex 将使用现有资料继续';
+      presenceText.textContent = 'ALEX 正在工作';
+      currentStep.textContent = allowed
+        ? '正在读取 Linear 官网信息，并继续分析任务状态、协作沟通与商业模式。'
+        : '已跳过 Linear 官网，正在使用现有资料继续分析任务状态、协作沟通与商业模式。';
+      notify(allowsType ? '已允许此类访问' : allowed ? '已允许访问，主任务继续运行' : '已拒绝访问，主任务继续运行');
+      scrollToLatest();
+      window.clearTimeout(completionTimer);
+      completionTimer = window.setTimeout(completeTask, 1800);
+    }
+
+    function completeTask() {
+      if (taskCompleted) return;
+      taskCompleted = true;
+      progressTimers.forEach(timer => window.clearTimeout(timer));
+      progressTimers = [];
+      window.clearTimeout(accessRequestTimer);
+      window.clearTimeout(completionTimer);
+      window.clearInterval(elapsedTimer);
+      permissionEvent.hidden = true;
+      permissionSecondary.hidden = true;
+      allowMoreBtn.setAttribute('aria-expanded', 'false');
+      progress = total;
+      progressCurrent.textContent = total;
+      progressFill.style.width = '100%';
+
+      [notionStep, figmaStep, linearStep, miroStep].forEach((step, index) => {
+        const mark = step.querySelector('.step-mark');
+        const time = step.querySelector('time');
+        step.classList.remove('active');
+        step.classList.add('done');
+        mark.textContent = '✓';
+        time.textContent = ['14:31', '14:36', '14:43', '刚刚'][index];
+      });
+
+      currentStep.textContent = '竞品分析已完成，已生成可交付的 Word 文档。';
+      document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = '任务已完成 · 4/4');
+      presenceText.textContent = 'ALEX 已完成';
+      conversationStatus.classList.add('complete');
+      completionCard.hidden = false;
+      completionCard.classList.add('show');
+      messageInput.placeholder = '继续追问，或基于这份文档发起新的修改…';
+      notify('任务已完成，Word 文档已生成');
+      scrollToLatest();
+    }
+
     function scrollWorkCardToTop() {
       const containerTop = timelineScroll.getBoundingClientRect().top;
       const cardTop = workCard.getBoundingClientRect().top;
@@ -527,7 +727,7 @@
       const startedAt = performance.now();
       isPositioningWorkCard = true;
       preserveExpandedAfterLaunch = true;
-      workCard.classList.remove('is-stuck');
+      setWorkCardCollapsed(false);
 
       function animateScroll(now) {
         const elapsed = Math.min(1, (now - startedAt) / duration);
@@ -585,34 +785,54 @@
       progressTimers.push(window.setTimeout(() => renderProgress(3), 4000));
     }
 
-    function syncStickyCardState() {
-      if (isPositioningWorkCard || preserveExpandedAfterLaunch) {
-        workCard.classList.remove('is-stuck');
-        return;
-      }
-      const containerTop = timelineScroll.getBoundingClientRect().top;
-      const cardTop = workCard.getBoundingClientRect().top;
-      workCard.classList.toggle('is-stuck', timelineScroll.scrollTop > 0 && cardTop <= containerTop + 5);
+    function syncStickyCardFromSentinel() {
+      if (!taskStarted || isPositioningWorkCard || preserveExpandedAfterLaunch) return;
+      const stickyTop = timelineScroll.getBoundingClientRect().top + 4;
+      const sentinelHasPassed = workCardSentinel.getBoundingClientRect().bottom <= stickyTop;
+      setWorkCardCollapsed(sentinelHasPassed);
     }
 
-    timelineScroll.addEventListener('scroll', syncStickyCardState, { passive: true });
-    timelineScroll.addEventListener('wheel', () => { preserveExpandedAfterLaunch = false; }, { passive: true });
-    timelineScroll.addEventListener('touchstart', () => { preserveExpandedAfterLaunch = false; }, { passive: true });
+    const workCardObserver = new IntersectionObserver(syncStickyCardFromSentinel, {
+      root: timelineScroll,
+      rootMargin: '-4px 0px 0px 0px',
+      threshold: 0
+    });
+    workCardObserver.observe(workCardSentinel);
+
+    timelineScroll.addEventListener('wheel', () => {
+      preserveExpandedAfterLaunch = false;
+      requestAnimationFrame(syncStickyCardFromSentinel);
+    }, { passive: true });
+    timelineScroll.addEventListener('touchstart', () => {
+      preserveExpandedAfterLaunch = false;
+      requestAnimationFrame(syncStickyCardFromSentinel);
+    }, { passive: true });
+    workCardToggle.addEventListener('click', () => {
+      const isCollapsed = workCard.classList.contains('is-stuck');
+      preserveExpandedAfterLaunch = isCollapsed;
+      setWorkCardCollapsed(!isCollapsed);
+    });
 
     confirmBriefBtn.addEventListener('click', () => {
       taskStarted = true;
+      window.clearInterval(elapsedTimer);
+      elapsedSeconds = 202;
+      renderElapsedTime();
+      elapsedTimer = window.setInterval(() => {
+        elapsedSeconds += 1;
+        renderElapsedTime();
+      }, 1000);
       executionStage.setAttribute('aria-hidden', 'false');
       launchConfirm.hidden = true;
       presenceText.textContent = 'ALEX 正在工作';
       messageInput.placeholder = '告诉 Alex 你想推进什么，或直接问问当前进展…';
-      composerModeText.textContent = '系统会在执行前确认会改变任务的内容';
       sendBtn.textContent = '↑';
       sendBtn.classList.remove('editing');
       sendBtn.setAttribute('aria-label', '发送');
       startProgressDemo();
+      executionStage.classList.add('active');
       requestAnimationFrame(() => {
-        scrollWorkCardToTop();
-        executionStage.classList.add('active');
+        requestAnimationFrame(scrollWorkCardToTop);
       });
     });
 
@@ -634,8 +854,20 @@
         taskUpdate.classList.add('show');
         notify('任务已更新，主进程继续运行');
         scrollToLatest();
+        window.clearTimeout(accessRequestTimer);
+        accessRequestTimer = window.setTimeout(revealAccessRequest, 1500);
       }, 450);
     });
+
+    allowMoreBtn.addEventListener('click', () => {
+      const expanded = allowMoreBtn.getAttribute('aria-expanded') === 'true';
+      allowMoreBtn.setAttribute('aria-expanded', String(!expanded));
+      permissionSecondary.hidden = expanded;
+    });
+    allowAccessBtn.addEventListener('click', () => resolveAccessRequest('once'));
+    allowOnceOptionBtn.addEventListener('click', () => resolveAccessRequest('once'));
+    allowTypeAccessBtn.addEventListener('click', () => resolveAccessRequest('type'));
+    denyAccessBtn.addEventListener('click', () => resolveAccessRequest('deny'));
 
     discussBtn.addEventListener('click', () => {
       intentCard.innerHTML = '<strong>保留为即时交流</strong><p>没有修改任务，Alex 仍按原计划继续分析。</p>';
@@ -645,7 +877,8 @@
     advanceBtn.addEventListener('click', () => {
       progressTimers.forEach(timer => window.clearTimeout(timer));
       progressTimers = [];
-      if (progress < total) renderProgress(progress + 1);
+      if (progress < total && progress + 1 === total) completeTask();
+      else if (progress < total) renderProgress(progress + 1);
       notify(progress === total ? '竞品材料整理完成' : `主进程已推进到 ${progress}/${total}`);
     });
 
