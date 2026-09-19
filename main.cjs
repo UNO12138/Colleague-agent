@@ -43,9 +43,9 @@ function registerWindowControls() {
 function createWindow() {
   const workArea = screen.getPrimaryDisplay().workAreaSize;
   mainWindow = new BrowserWindow({
-    width: Math.min(1200, workArea.width),
-    height: Math.min(800, workArea.height),
-    minWidth: 960,
+    width: Math.min(960, workArea.width),
+    height: Math.min(680, workArea.height),
+    minWidth: 760,
     minHeight: 680,
     show: false,
     title: 'Colleague Agent',
