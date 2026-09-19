@@ -1,9 +1,9 @@
-<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="106" height="20" viewBox="0 0 106 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="128" height="23.999" viewBox="0 0 128 23.999" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g id="Frame 48">
-<path id="Vector 120" d="M3.33328 10H16.6672" stroke="#393939" stroke-opacity="0.8" stroke-width="1.30494"/>
-<rect id="Rectangle 1329131433" x="47.0141" y="4.01522" width="11.9716" height="11.9696" stroke="#393939" stroke-opacity="0.8" stroke-width="1.36224"/>
+<path id="Vector 120" d="M4 11.9995H20" stroke="#393939" stroke-width="1.56587"/>
+<rect id="Rectangle 1329131433" x="56.8173" y="4.81807" width="14.3654" height="14.3629" stroke="#393939" stroke-width="1.63462"/>
 <g id="Group 47">
-<path id="Union" d="M102.664 4.29297L96.9585 9.99805L102.667 15.7061L101.707 16.666L95.9995 10.958L90.2925 16.666L89.3326 15.7061L95.0396 9.99805L89.3355 4.29297L90.2954 3.33398L95.9995 9.03809L101.704 3.33398L102.664 4.29297Z" fill="#393939" fill-opacity="0.8"/>
+<path id="Union" d="M123.997 5.15234L117.151 11.9971L124 18.8467L122.849 19.999L116 13.1494L109.151 19.999L108 18.8467L114.848 11.9971L108.003 5.15234L109.155 4L116 10.8447L122.845 4L123.997 5.15234Z" fill="#393939"/>
 </g>
 </g>
 </svg>

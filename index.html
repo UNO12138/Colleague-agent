@@ -49,9 +49,10 @@
       overflow: hidden;
       border: .5px solid rgba(17, 17, 17, .16);
       border-radius: 9px;
-      background: rgba(246, 250, 255, .88);
+      background: rgba(246, 250, 255, .80);
       box-shadow: var(--shadow);
-      backdrop-filter: blur(60px);
+      -webkit-backdrop-filter: blur(100px);
+      backdrop-filter: blur(100px);
       transition: grid-template-columns .18s cubic-bezier(.2, .72, .2, 1);
     }
     .app-shell.sidebar-collapsed { grid-template-columns: 0 minmax(0, 1fr); }
@@ -75,12 +76,34 @@
       background: transparent;
       line-height: 1;
       cursor: pointer;
+      -webkit-app-region: no-drag;
     }
     .brand-mark:hover { background: rgba(0, 0, 0, .06); }
     .brand-mark:focus-visible { outline: 2px solid rgba(49, 94, 232, .55); outline-offset: 1px; }
     .brand-mark img { display: block; width: 20px; height: 20px; object-fit: contain; }
-    .window-controls { height: 40px; display: flex; justify-content: flex-end; align-items: center; padding-right: 14px; }
-    .window-controls img { display: block; width: 84.8px; height: 16px; object-fit: contain; }
+    .window-controls { height: 40px; display: flex; justify-content: flex-end; align-items: stretch; }
+    .window-control { display: grid; width: 46px; place-items: center; border: 0; background: transparent; color: var(--ink); cursor: pointer; padding: 0; -webkit-app-region: no-drag; }
+    .window-control-icon { display: block; width: 20px; height: 20px; background-image: url('./figma-window-controls.svg'); background-repeat: no-repeat; background-size: 106.667px 20px; }
+    .window-control-icon.minimize { background-position: 0 0; }
+    .window-control-icon.maximize { background-position: -43.333px 0; }
+    .window-control-icon.close { background-position: -86.667px 0; }
+    .window-control:hover { background: rgba(17, 17, 17, .07); }
+    .window-control.close:hover { background: #d84141; color: #fff; }
+    .window-control.close:hover .window-control-icon { filter: brightness(0) invert(1); }
+    body.electron-window .window-bar { -webkit-app-region: drag; }
+
+    /* The browser keeps the visual title bar; Electron turns it into native window chrome. */
+    body.electron-window { background: transparent; }
+    body.electron-window .app-shell {
+      width: 100%;
+      height: 100vh;
+      min-height: 0;
+      margin: 0;
+      border: 0;
+      border-radius: 0;
+      border: .5px solid rgba(17, 17, 17, .16);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .055);
+    }
 
     .sidebar {
       grid-column: 1;
@@ -121,15 +144,59 @@
     .side-action:hover, .project-row:hover, .conversation-row:hover { background: rgba(0, 0, 0, .045); }
     .with-icon { display: flex; align-items: center; gap: 12px; min-width: 0; }
     .figma-icon { width: 18px; height: 18px; object-fit: contain; flex: 0 0 auto; }
-    .section-label { margin: 17px 10px 7px; color: var(--muted); font-size: 16px; font-weight: 400; }
-    .project-row { padding: 8px 12px; font-size: 14px; font-weight: 400; }
-    .project-row .row-title, .conversation-row { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .project-tools { display: flex; gap: 8px; opacity: .56; }
-    .conversation-list { display: grid; gap: 2px; margin: 2px 0 8px; }
-    .conversation-row { padding: 8px 12px 8px 34px; font-size: 14px; font-weight: 400; }
-    .section-label + .conversation-list .conversation-row { padding-left: 16px; }
-    .conversation-row.active { display: flex; align-items: center; justify-content: space-between; gap: 9px; background: rgba(0, 0, 0, .08); }
-    .conversation-row.active > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sidebar-section-heading { position: relative; display: flex; align-items: center; min-height: 27px; margin: 17px 0 7px; padding: 0 10px; }
+    .section-label { color: var(--muted); font-size: 16px; font-weight: 400; }
+    .sidebar-icon-action {
+      position: absolute;
+      right: 6px;
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      padding: 0;
+      border: 0;
+      border-radius: 7px;
+      background: transparent;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(4px);
+      transition: opacity .18s ease, transform .18s ease, background-color .14s ease;
+    }
+    .sidebar-icon-action img { width: 16px; height: 16px; display: block; }
+    .sidebar-section-heading:hover .sidebar-icon-action,
+    .project-item:hover .sidebar-icon-action,
+    .conversation-item:hover .sidebar-icon-action {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+    .sidebar-icon-action:hover { background: rgba(0, 0, 0, .06); }
+    .sidebar-icon-action:focus-visible { outline: 2px solid rgba(49, 94, 232, .55); outline-offset: 1px; }
+    .project-item, .conversation-item { position: relative; min-width: 0; }
+    .project-row { display: flex; align-items: center; padding: 8px 12px; font-size: 14px; font-weight: 400; }
+    .project-row .with-icon { width: 100%; }
+    .project-row .row-title, .conversation-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; transition: padding-right .18s ease; }
+    .project-item:hover .row-title { padding-right: 56px; }
+    .project-item .sidebar-icon-action { top: 50%; transform: translate(4px, -50%); transition: opacity .18s ease, transform .18s ease, right .18s ease, background-color .14s ease; }
+    .project-item:hover .sidebar-icon-action { transform: translate(0, -50%); }
+    .project-item .pin-project-action { right: 40px; }
+    .project-item .delete-project-action { right: 12px; }
+    .project-item.is-pinned .pin-project-action { right: 12px; opacity: 1; pointer-events: auto; transform: translate(0, -50%); }
+    .project-item.is-pinned:hover .pin-project-action { right: 40px; }
+    .project-item.is-pinned .row-title { padding-right: 56px; }
+    .conversation-list { display: grid; min-width: 0; gap: 2px; margin: 2px 0 8px; }
+    .project-conversations { grid-template-rows: minmax(0, 1fr); overflow: hidden; opacity: 1; transition: grid-template-rows .22s cubic-bezier(.2, .72, .2, 1), margin .22s cubic-bezier(.2, .72, .2, 1), opacity .22s cubic-bezier(.2, .72, .2, 1); }
+    .project-conversation-content { display: grid; min-height: 0; gap: 2px; }
+    .project-conversations.is-collapsed { grid-template-rows: 0fr; margin-top: 0; margin-bottom: 0; opacity: 0; pointer-events: none; }
+    .conversation-row { display: flex; align-items: center; width: 100%; min-width: 0; padding: 8px 12px 8px 34px; font-size: 14px; font-weight: 400; }
+    .sidebar-section-heading + .conversation-list .conversation-row { padding-left: 16px; }
+    .conversation-item.active .conversation-row { justify-content: space-between; gap: 9px; background: rgba(0, 0, 0, .08); }
+    .conversation-title { flex: 1 1 auto; }
+    .conversation-item:hover .conversation-title { padding-right: 20px; }
+    .conversation-item .sidebar-icon-action { top: 50%; right: 12px; transform: translate(4px, -50%); }
+    .conversation-item:hover .sidebar-icon-action { transform: translate(0, -50%); }
+    .conversation-item.active:hover .conversation-status { opacity: 0; transform: scale(.76); }
     .conversation-status {
       width: 14px;
       height: 14px;
@@ -138,10 +205,105 @@
       border-top-color: rgba(17, 17, 17, .58);
       border-radius: 50%;
       animation: conversation-working .8s linear infinite;
+      transition: opacity .18s ease, transform .18s ease;
     }
     @keyframes conversation-working { to { transform: rotate(360deg); } }
     .conversation-status.complete { border: 0; background: rgba(17, 17, 17, .1); animation: none; }
     .conversation-status.complete::after { content: "✓"; width: 100%; height: 100%; display: grid; place-items: center; color: rgba(17, 17, 17, .58); font-size: 10px; font-weight: 700; }
+
+    .project-modal-layer {
+      position: absolute;
+      z-index: 30;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(0, 0, 0, .2);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .22s ease;
+    }
+    .project-modal-layer.is-open { opacity: 1; pointer-events: auto; }
+    .project-modal {
+      width: min(462px, 100%);
+      min-height: 352px;
+      overflow: hidden;
+      border: 1px solid rgba(72, 72, 72, .5);
+      border-radius: 20px;
+      background: #fff;
+      box-shadow: 0 18px 50px rgba(17, 17, 17, .18);
+      opacity: 0;
+      transform: translateY(8px) scale(.98);
+      transition: opacity .22s ease, transform .22s cubic-bezier(.2, .72, .2, 1);
+    }
+    .project-modal-layer.is-open .project-modal { opacity: 1; transform: translateY(0) scale(1); }
+    .project-modal-header {
+      display: flex;
+      height: 64px;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px 0 24px;
+      border-bottom: 1px solid rgba(17, 17, 17, .24);
+      background: #fafafa;
+    }
+    .project-modal-header h2 { margin: 0; color: #111; font-size: 20px; font-weight: 500; }
+    .project-modal-close { display: grid; width: 32px; height: 32px; place-items: center; padding: 0; border: 0; border-radius: 8px; background: transparent; cursor: pointer; }
+    .project-modal-close:hover { background: rgba(17, 17, 17, .06); }
+    .project-modal-close img { width: 20px; height: 20px; display: block; }
+    .project-modal-body { display: grid; gap: 16px; margin: 16px 23px 24px; }
+    .project-field { display: grid; gap: 8px; }
+    .project-field label { color: #484848; font-size: 16px; }
+    .project-name-input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 1px solid rgba(17, 17, 17, .16);
+      border-radius: 16px;
+      outline: 0;
+      background: #fafafa;
+      color: rgba(17, 17, 17, .8);
+      font-size: 18px;
+      line-height: 22px;
+    }
+    .project-name-input::placeholder { color: rgba(17, 17, 17, .5); }
+    .project-name-input:focus { border-color: rgba(17, 17, 17, .16); box-shadow: none; }
+    .project-file-drop {
+      display: grid;
+      height: 131px;
+      place-content: center;
+      justify-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border: 1px dashed rgba(17, 17, 17, .2);
+      border-radius: 16px;
+      background: #fafafa;
+      transition: background-color .18s ease, border-color .18s ease;
+    }
+    .project-file-drop.is-dragover { border-color: rgba(49, 94, 232, .34); background: #eef4ff; }
+    .project-file-copy { display: grid; gap: 4px; justify-items: center; }
+    .project-file-copy strong { max-width: 100%; overflow: hidden; color: rgba(17, 17, 17, .8); font-size: 16px; font-weight: 400; text-overflow: ellipsis; white-space: nowrap; }
+    .project-file-copy span { color: rgba(17, 17, 17, .5); font-size: 14px; }
+    .project-file-drop.has-source .project-file-copy span { display: none; }
+    .choose-folder { display: inline-flex; align-items: center; gap: 8px; padding: 6px 16px; border: 0; border-radius: 8px; background: #393939; color: #fff; font-size: 14px; cursor: pointer; }
+    .choose-folder img { width: 18px; height: 18px; }
+    .choose-folder:hover { background: #202020; }
+    .project-modal-footer { display: flex; justify-content: flex-end; gap: 16px; margin: 0 23px 24px; }
+    .modal-secondary-action, .modal-primary-action, .modal-danger-action { padding: 6px 16px; border: 0; border-radius: 8px; font-size: 14px; cursor: pointer; }
+    .modal-secondary-action { background: transparent; color: rgba(17, 17, 17, .5); }
+    .modal-secondary-action:hover { background: rgba(17, 17, 17, .1); color: #111; }
+    .modal-primary-action { background: #393939; color: #fff; }
+    .modal-primary-action:hover { background: #202020; }
+    .modal-danger-action { background: #f36b6b; color: #fff; }
+    .modal-danger-action:hover { background: #df5555; }
+    .delete-modal-layer { position: absolute; z-index: 31; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(0, 0, 0, .2); opacity: 0; pointer-events: none; transition: opacity .22s ease; }
+    .delete-modal-layer.is-open { opacity: 1; pointer-events: auto; }
+    .delete-modal { width: min(462px, 100%); padding: 24px; border: 1px solid rgba(72, 72, 72, .5); border-radius: 20px; background: #fff; box-shadow: 0 18px 50px rgba(17, 17, 17, .18); opacity: 0; transform: translateY(8px) scale(.98); transition: opacity .22s ease, transform .22s cubic-bezier(.2, .72, .2, 1); }
+    .delete-modal-layer.is-open .delete-modal { opacity: 1; transform: translateY(0) scale(1); }
+    .delete-modal h2 { margin: 0; color: #111; font-size: 20px; font-weight: 500; }
+    .delete-modal p { margin: 12px 0 0; color: rgba(17, 17, 17, .8); font-size: 16px; }
+    .delete-modal-footer { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 15px; }
+    .delete-reminder { display: inline-flex; align-items: center; gap: 8px; padding: 0; border: 0; background: transparent; color: rgba(17, 17, 17, .8); font-size: 14px; cursor: pointer; }
+    .delete-reminder img { width: 14px; height: 14px; }
+    .delete-modal-actions { display: flex; gap: 16px; }
 
     .workspace {
       grid-column: 2;
@@ -150,6 +312,7 @@
       min-width: 0;
       display: grid;
       grid-template-rows: 50px minmax(0, 1fr);
+      position: relative;
       overflow: hidden;
       border: 1px solid rgba(17, 17, 17, .16);
       border-radius: 8px;
@@ -391,34 +554,65 @@
   </style>
 </head>
 <body>
+  <script>
+    if (new URLSearchParams(location.search).has('electron')) {
+      document.body.classList.add('electron-window');
+    }
+  </script>
   <main class="app-shell">
     <header class="window-bar" aria-label="窗口控制栏">
       <button class="brand-mark" id="sidebarToggle" type="button" aria-label="收起项目导航" aria-expanded="true"><img src="./figma-sidebar-toggle.svg" alt="" /></button>
-      <div class="window-controls" aria-hidden="true"><img src="./figma-window-controls.svg" alt="" /></div>
+      <div class="window-controls" aria-label="窗口控制">
+        <button class="window-control minimize" id="windowMinimize" type="button" aria-label="最小化">
+          <span class="window-control-icon minimize" aria-hidden="true"></span>
+        </button>
+        <button class="window-control maximize" id="windowMaximize" type="button" aria-label="最大化">
+          <span class="window-control-icon maximize" aria-hidden="true"></span>
+        </button>
+        <button class="window-control close" id="windowClose" type="button" aria-label="关闭">
+          <span class="window-control-icon close" aria-hidden="true"></span>
+        </button>
+      </div>
     </header>
 
     <aside class="sidebar" aria-label="项目导航">
-      <div class="product-name">Colleague agent</div>
+      <div class="product-name">Alex Colleague agent</div>
       <button class="side-action" type="button">
         <span class="with-icon"><img class="figma-icon" src="https://www.figma.com/api/mcp/asset/7e617dee-0eba-4824-ab79-7ae11deb9f48.svg" alt="" />新对话</span>
       </button>
 
-      <div class="section-label">项目</div>
-      <button class="project-row" type="button"><span class="with-icon"><img class="figma-icon" src="https://www.figma.com/api/mcp/asset/cfd59b3a-c06e-4be4-b1c7-83edfcde3b7b.svg" alt="" /><span class="row-title">科比和詹姆斯对比</span></span></button>
-      <button class="project-row" type="button">
-        <span class="with-icon"><img class="figma-icon" src="https://www.figma.com/api/mcp/asset/c79f11fe-189f-4c39-a7ae-f4aed3185ba5.svg" alt="" /><span class="row-title">体验与智能产品创新</span></span>
-      </button>
-      <div class="conversation-list">
-        <button class="conversation-row active" type="button"><span>这个对话我们来解决周二的汇报问题</span><span class="conversation-status" title="Agent 正在工作" aria-label="Agent 正在工作"></span></button>
-        <button class="conversation-row" type="button">9/2 结课汇报</button>
-        <button class="conversation-row" type="button">9/7 结课 ppt 制作</button>
+      <div class="sidebar-section-heading">
+        <div class="section-label">项目</div>
+        <button class="sidebar-icon-action" id="newProjectBtn" type="button" aria-label="新建项目"><img src="./new-project.svg" data-active-src="./new-project-active.svg" alt="" /></button>
+      </div>
+      <div class="project-item">
+        <button class="project-row" type="button"><span class="with-icon"><img class="figma-icon project-state-icon" src="./project-collapsed.svg" data-collapsed-src="./project-collapsed.svg" data-expanded-src="./project-expanded.svg" alt="" /><span class="row-title">科比和詹姆斯对比</span></span></button>
+        <button class="sidebar-icon-action pin-project-action" type="button" aria-label="置顶项目：科比和詹姆斯对比"><img src="./pin-project.svg" data-active-src="./pin-project-active.svg" alt="" /></button>
+        <button class="sidebar-icon-action delete-project-action" type="button" aria-label="删除项目：科比和詹姆斯对比"><img src="./delete-project.svg" data-active-src="./delete-active.svg" alt="" /></button>
+      </div>
+      <div class="project-item is-expanded" data-project-id="product-innovation">
+        <button class="project-row" type="button" aria-expanded="true" aria-controls="productInnovationConversations">
+          <span class="with-icon"><img class="figma-icon project-state-icon" src="./project-expanded.svg" data-collapsed-src="./project-collapsed.svg" data-expanded-src="./project-expanded.svg" alt="" /><span class="row-title">体验与智能产品创新</span></span>
+        </button>
+        <button class="sidebar-icon-action pin-project-action" type="button" aria-label="置顶项目：体验与智能产品创新"><img src="./pin-project.svg" data-active-src="./pin-project-active.svg" alt="" /></button>
+        <button class="sidebar-icon-action delete-project-action" type="button" aria-label="删除项目：体验与智能产品创新"><img src="./delete-project.svg" data-active-src="./delete-active.svg" alt="" /></button>
+      </div>
+      <div class="conversation-list project-conversations" id="productInnovationConversations" data-project-id="product-innovation">
+        <div class="project-conversation-content">
+          <div class="conversation-item active"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span><span class="conversation-status" title="Agent 正在工作" aria-label="Agent 正在工作"></span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
+          <div class="conversation-item"><button class="conversation-row" type="button"><span class="conversation-title">9/2 结课汇报</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：9/2 结课汇报"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
+          <div class="conversation-item"><button class="conversation-row" type="button"><span class="conversation-title">9/7 结课 ppt 制作</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：9/7 结课 ppt 制作"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
+        </div>
       </div>
 
-      <div class="section-label">最近</div>
+      <div class="sidebar-section-heading">
+        <div class="section-label">最近</div>
+        <button class="sidebar-icon-action" id="newConversationBtn" type="button" aria-label="新建对话"><img src="./new-conversation.svg" data-active-src="./new-conversation-active.svg" alt="" /></button>
+      </div>
       <div class="conversation-list">
-        <button class="conversation-row" type="button">这个对话我们来解决周二的汇报问题</button>
-        <button class="conversation-row" type="button">9/2 结课汇报</button>
-        <button class="conversation-row" type="button">9/7 结课 ppt 制作</button>
+        <div class="conversation-item"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
+        <div class="conversation-item"><button class="conversation-row" type="button"><span class="conversation-title">9/2 结课汇报</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：9/2 结课汇报"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
+        <div class="conversation-item"><button class="conversation-row" type="button"><span class="conversation-title">9/7 结课 ppt 制作</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：9/7 结课 ppt 制作"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
       </div>
     </aside>
 
@@ -556,12 +750,48 @@
           </form>
         </div>
       </div>
+
+      <div class="project-modal-layer" id="projectModalLayer" aria-hidden="true">
+        <section class="project-modal" role="dialog" aria-modal="true" aria-labelledby="projectModalTitle">
+          <header class="project-modal-header">
+            <h2 id="projectModalTitle">创建新项目</h2>
+            <button class="project-modal-close" id="projectModalClose" type="button" aria-label="关闭创建新项目弹窗"><img src="./modal-close.svg" alt="" /></button>
+          </header>
+          <div class="project-modal-body">
+            <div class="project-field">
+              <label for="projectNameInput">项目名称</label>
+              <input class="project-name-input" id="projectNameInput" type="text" placeholder="新项目名称" />
+            </div>
+            <div class="project-field">
+              <label>源文件</label>
+              <div class="project-file-drop" id="projectFileDrop">
+                <div class="project-file-copy"><strong id="projectSourcePath">拖放文件</strong><span>文件夹、文档、PDF等</span></div>
+                <button class="choose-folder" id="chooseProjectFolderBtn" type="button"><img src="./select-folder.svg" alt="" /><span id="chooseFolderText">选择文件夹</span></button>
+                <input id="projectSourceInput" type="file" hidden multiple />
+              </div>
+            </div>
+          </div>
+          <footer class="project-modal-footer"><button class="modal-secondary-action" id="cancelProjectBtn" type="button">取消</button><button class="modal-primary-action" id="createProjectBtn" type="button">创建项目</button></footer>
+        </section>
+      </div>
+
+      <div class="delete-modal-layer" id="deleteModalLayer" aria-hidden="true">
+        <section class="delete-modal" role="dialog" aria-modal="true" aria-labelledby="deleteModalTitle">
+          <h2 id="deleteModalTitle">是否删除？</h2>
+          <p id="deleteModalDescription">删除后，该对话将不可恢复。</p>
+          <footer class="delete-modal-footer">
+            <button class="delete-reminder" id="deleteReminderBtn" type="button" aria-label="今天不再提示" aria-pressed="false"><img id="deleteReminderIcon" src="./delete-dialog-option.svg" alt="" /><span>今天不再提示</span></button>
+            <div class="delete-modal-actions"><button class="modal-secondary-action" id="cancelDeleteBtn" type="button">取消</button><button class="modal-danger-action" id="confirmDeleteBtn" type="button">删除该对话</button></div>
+          </footer>
+        </section>
+      </div>
     </section>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </main>
 
   <script>
+    (() => {
     const appShell = document.querySelector('.app-shell');
     const sidebarToggle = document.getElementById('sidebarToggle');
     const askBtn = document.getElementById('askBtn');
@@ -606,6 +836,43 @@
     const decisionRecord = document.getElementById('decisionRecord');
     const completionCard = document.getElementById('completionCard');
     const conversationStatus = document.querySelector('.conversation-status');
+    const desktopWindow = window.desktopWindow;
+    const windowMinimize = document.getElementById('windowMinimize');
+    const windowMaximize = document.getElementById('windowMaximize');
+    const windowClose = document.getElementById('windowClose');
+    const newProjectBtn = document.getElementById('newProjectBtn');
+    const newConversationBtn = document.getElementById('newConversationBtn');
+    const projectModalLayer = document.getElementById('projectModalLayer');
+    const projectModalClose = document.getElementById('projectModalClose');
+    const projectNameInput = document.getElementById('projectNameInput');
+    const chooseProjectFolderBtn = document.getElementById('chooseProjectFolderBtn');
+    const projectSourceInput = document.getElementById('projectSourceInput');
+    const projectFileDrop = document.getElementById('projectFileDrop');
+    const projectSourcePath = document.getElementById('projectSourcePath');
+    const chooseFolderText = document.getElementById('chooseFolderText');
+    const createProjectBtn = document.getElementById('createProjectBtn');
+    const cancelProjectBtn = document.getElementById('cancelProjectBtn');
+    const deleteModalLayer = document.getElementById('deleteModalLayer');
+    const deleteModalDescription = document.getElementById('deleteModalDescription');
+    const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    const deleteReminderBtn = document.getElementById('deleteReminderBtn');
+    const deleteReminderIcon = document.getElementById('deleteReminderIcon');
+
+    function syncMaximizeLabel(isMaximized) {
+      windowMaximize.setAttribute('aria-label', isMaximized ? '还原窗口' : '最大化');
+    }
+
+    if (desktopWindow) {
+      desktopWindow.isMaximized().then(syncMaximizeLabel).catch(() => {});
+      windowMinimize.addEventListener('click', () => desktopWindow.minimize());
+      windowMaximize.addEventListener('click', async () => {
+        const wasMaximized = await desktopWindow.isMaximized();
+        desktopWindow.toggleMaximize();
+        syncMaximizeLabel(!wasMaximized);
+      });
+      windowClose.addEventListener('click', () => desktopWindow.close());
+    }
 
     let progress = 3;
     let total = 4;
@@ -633,6 +900,261 @@
       window.clearTimeout(notify.timer);
       notify.timer = window.setTimeout(() => toast.classList.remove('show'), 1800);
     }
+
+    function showProjectModal() {
+      projectModalLayer.classList.add('is-open');
+      projectModalLayer.setAttribute('aria-hidden', 'false');
+      window.setTimeout(() => projectNameInput.focus(), 180);
+    }
+
+    function hideProjectModal() {
+      projectModalLayer.classList.remove('is-open');
+      projectModalLayer.setAttribute('aria-hidden', 'true');
+      newProjectBtn.focus();
+    }
+
+    const deleteReminderStorageKey = 'alex-colleague-agent-delete-reminder-date';
+    const today = new Date().toLocaleDateString('en-CA');
+    let skipDeleteConfirmation = window.localStorage.getItem(deleteReminderStorageKey) === today;
+    let pendingDeletion = null;
+
+    function renderDeleteReminder() {
+      deleteReminderBtn.setAttribute('aria-pressed', String(skipDeleteConfirmation));
+      deleteReminderIcon.src = skipDeleteConfirmation
+        ? './delete-dialog-option-selected.svg'
+        : './delete-dialog-option.svg';
+    }
+
+    function performDeletion(item, type) {
+      if (type === '项目') {
+        const projectId = item.dataset.projectId;
+        const conversations = projectId ? document.querySelector(`.project-conversations[data-project-id="${projectId}"]`) : null;
+        removeSidebarItems([item, conversations]);
+      } else {
+        removeSidebarItem(item);
+      }
+    }
+
+    function showDeleteModal(item, type) {
+      if (skipDeleteConfirmation) {
+        performDeletion(item, type);
+        return;
+      }
+      pendingDeletion = { item, type };
+      deleteModalDescription.textContent = `删除后，该${type}将不可恢复。`;
+      confirmDeleteBtn.textContent = `删除该${type}`;
+      deleteModalLayer.classList.add('is-open');
+      deleteModalLayer.setAttribute('aria-hidden', 'false');
+      window.setTimeout(() => cancelDeleteBtn.focus(), 180);
+    }
+
+    function hideDeleteModal() {
+      deleteModalLayer.classList.remove('is-open');
+      deleteModalLayer.setAttribute('aria-hidden', 'true');
+      pendingDeletion = null;
+    }
+
+    renderDeleteReminder();
+
+    function setPressedIcon(button, pressed) {
+      const icon = button.querySelector('img[data-active-src]');
+      if (!icon) return;
+      if (!icon.dataset.defaultSrc) icon.dataset.defaultSrc = icon.getAttribute('src');
+      icon.src = pressed ? icon.dataset.activeSrc : icon.dataset.defaultSrc;
+    }
+
+    function bindPressedIcon(button) {
+      button.addEventListener('pointerdown', () => setPressedIcon(button, true));
+      ['pointerup', 'pointercancel', 'pointerleave'].forEach(eventName => {
+        button.addEventListener(eventName, () => setPressedIcon(button, false));
+      });
+    }
+
+    document.querySelectorAll('.sidebar-icon-action').forEach(bindPressedIcon);
+
+    function removeSidebarItems(items) {
+      const movableItems = Array.from(document.querySelectorAll('.sidebar > .project-item, .sidebar > .conversation-list, .sidebar > .sidebar-section-heading'));
+      const previousPositions = new Map(movableItems.map(element => [element, element.getBoundingClientRect()]));
+      const removals = items.filter(Boolean).map(item => item.animate(
+          [{ opacity: 1, transform: 'translateX(0)' }, { opacity: 0, transform: 'translateX(-6px)' }],
+          { duration: 160, easing: 'ease-out', fill: 'forwards' },
+        ).finished.then(() => item.remove()));
+      Promise.all(removals).then(() => {
+        movableItems.forEach(element => {
+          if (!element.isConnected) return;
+          const before = previousPositions.get(element);
+          const after = element.getBoundingClientRect();
+          const distance = before.top - after.top;
+          if (!distance) return;
+          element.animate(
+            [{ transform: `translateY(${distance}px)` }, { transform: 'translateY(0)' }],
+            { duration: 220, easing: 'cubic-bezier(.2, .72, .2, 1)' },
+          );
+        });
+      });
+    }
+
+    function removeSidebarItem(item) {
+      removeSidebarItems([item]);
+    }
+
+    newProjectBtn.addEventListener('click', showProjectModal);
+    projectModalClose.addEventListener('click', hideProjectModal);
+    cancelProjectBtn.addEventListener('click', hideProjectModal);
+    projectModalLayer.addEventListener('click', event => {
+      if (event.target === projectModalLayer) hideProjectModal();
+    });
+    deleteModalLayer.addEventListener('click', event => {
+      if (event.target === deleteModalLayer) hideDeleteModal();
+    });
+    let selectedProjectSources = [];
+
+    function setProjectSources(paths) {
+      selectedProjectSources = paths.filter(Boolean);
+      if (!selectedProjectSources.length) return;
+      projectSourcePath.textContent = selectedProjectSources.join('、');
+      projectSourcePath.title = selectedProjectSources.join('\n');
+      projectFileDrop.classList.remove('is-dragover');
+      projectFileDrop.classList.add('has-source');
+      chooseFolderText.textContent = '重新选择';
+    }
+
+    function sourcePathForFile(file) {
+      try {
+        return desktopWindow?.getFilePath?.(file) || file.webkitRelativePath || file.name;
+      } catch {
+        return file.webkitRelativePath || file.name;
+      }
+    }
+
+    chooseProjectFolderBtn.addEventListener('click', async () => {
+      const paths = await desktopWindow?.chooseProjectSource?.();
+      if (paths?.length) setProjectSources(paths);
+      else if (!desktopWindow?.chooseProjectSource) projectSourceInput.click();
+    });
+    projectSourceInput.addEventListener('change', () => {
+      setProjectSources(Array.from(projectSourceInput.files, sourcePathForFile));
+    });
+    ['dragenter', 'dragover'].forEach(eventName => {
+      projectFileDrop.addEventListener(eventName, event => {
+        event.preventDefault();
+        projectFileDrop.classList.add('is-dragover');
+      });
+    });
+    projectFileDrop.addEventListener('dragleave', event => {
+      if (!projectFileDrop.contains(event.relatedTarget)) projectFileDrop.classList.remove('is-dragover');
+    });
+    projectFileDrop.addEventListener('drop', event => {
+      event.preventDefault();
+      setProjectSources(Array.from(event.dataTransfer.files, sourcePathForFile));
+    });
+    document.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && projectModalLayer.classList.contains('is-open')) hideProjectModal();
+      if (event.key === 'Escape' && deleteModalLayer.classList.contains('is-open')) hideDeleteModal();
+    });
+
+    function restoreProjectPosition(item) {
+      const originalNext = item.originalNextProject;
+      if (originalNext?.isConnected) originalNext.before(item);
+    }
+
+    function togglePinnedProject(item) {
+      if (item.classList.contains('is-pinned')) {
+        item.classList.remove('is-pinned');
+        restoreProjectPosition(item);
+        notify('已取消置顶项目');
+        return;
+      }
+
+      const currentPinned = document.querySelector('.project-item.is-pinned');
+      if (currentPinned) {
+        currentPinned.classList.remove('is-pinned');
+        restoreProjectPosition(currentPinned);
+      }
+      item.originalNextProject = item.nextElementSibling?.matches('.project-item') ? item.nextElementSibling : null;
+      const firstProject = document.querySelector('.project-item');
+      if (item !== firstProject) firstProject.before(item);
+      item.classList.add('is-pinned');
+      notify('项目已置顶');
+    }
+
+    function bindProjectItem(item) {
+      const pinButton = item.querySelector('.pin-project-action');
+      const deleteButton = item.querySelector('.delete-project-action');
+      const projectRow = item.querySelector('.project-row');
+      bindPressedIcon(pinButton);
+      bindPressedIcon(deleteButton);
+      pinButton.addEventListener('click', () => togglePinnedProject(item));
+      deleteButton.addEventListener('click', () => {
+        showDeleteModal(item, '项目');
+      });
+      projectRow.addEventListener('click', () => {
+        const projectId = item.dataset.projectId;
+        const conversations = projectId ? document.querySelector(`.project-conversations[data-project-id="${projectId}"]`) : null;
+        const expanded = conversations
+          ? conversations.classList.contains('is-collapsed')
+          : !item.classList.contains('is-expanded');
+        if (conversations) conversations.classList.toggle('is-collapsed', !expanded);
+        item.classList.toggle('is-expanded', expanded);
+        projectRow.setAttribute('aria-expanded', String(expanded));
+        const icon = item.querySelector('.project-state-icon');
+        if (icon) icon.src = expanded ? icon.dataset.expandedSrc : icon.dataset.collapsedSrc;
+      });
+    }
+
+    document.querySelectorAll('.project-item').forEach(bindProjectItem);
+    document.querySelectorAll('.delete-conversation-action').forEach(button => {
+      button.addEventListener('click', () => showDeleteModal(button.closest('.conversation-item'), '对话'));
+    });
+
+    cancelDeleteBtn.addEventListener('click', hideDeleteModal);
+    deleteReminderBtn.addEventListener('click', () => {
+      skipDeleteConfirmation = !skipDeleteConfirmation;
+      if (skipDeleteConfirmation) window.localStorage.setItem(deleteReminderStorageKey, today);
+      else window.localStorage.removeItem(deleteReminderStorageKey);
+      renderDeleteReminder();
+    });
+    confirmDeleteBtn.addEventListener('click', () => {
+      if (!pendingDeletion) return;
+      const { item, type } = pendingDeletion;
+      hideDeleteModal();
+      performDeletion(item, type);
+    });
+
+    function escapeHtml(value) {
+      return value.replace(/[&<>'"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
+    }
+
+    function createProjectItem(name) {
+      const item = document.createElement('div');
+      const safeName = escapeHtml(name);
+      item.className = 'project-item';
+      item.innerHTML = `<button class="project-row" type="button" aria-expanded="false"><span class="with-icon"><img class="figma-icon project-state-icon" src="./project-collapsed.svg" data-collapsed-src="./project-collapsed.svg" data-expanded-src="./project-expanded.svg" alt="" /><span class="row-title">${safeName}</span></span></button><button class="sidebar-icon-action pin-project-action" type="button" aria-label="置顶项目：${safeName}"><img src="./pin-project.svg" data-active-src="./pin-project-active.svg" alt="" /></button><button class="sidebar-icon-action delete-project-action" type="button" aria-label="删除项目：${safeName}"><img src="./delete-project.svg" data-active-src="./delete-active.svg" alt="" /></button>`;
+      bindProjectItem(item);
+      return item;
+    }
+
+    createProjectBtn.addEventListener('click', () => {
+      const name = projectNameInput.value.trim() || '新项目';
+      const project = createProjectItem(name);
+      const pinnedProject = document.querySelector('.project-item.is-pinned');
+      const firstProject = document.querySelector('.project-item');
+      if (pinnedProject) pinnedProject.after(project);
+      else firstProject.before(project);
+      hideProjectModal();
+      projectNameInput.value = '';
+      projectSourceInput.value = '';
+      selectedProjectSources = [];
+      projectSourcePath.textContent = '拖放文件';
+      projectSourcePath.removeAttribute('title');
+      projectFileDrop.classList.remove('has-source');
+      chooseFolderText.textContent = '选择文件夹';
+      notify(`已创建项目：${name}`);
+    });
+    newConversationBtn.addEventListener('click', () => {
+      history.pushState({ view: 'new-conversation' }, '', '/new-conversation');
+      notify('已进入新对话路径：/new-conversation');
+    });
 
     function scrollToLatest() {
       requestAnimationFrame(() => timelineScroll.scrollTo({ top: timelineScroll.scrollHeight, behavior: 'smooth' }));
@@ -912,6 +1434,13 @@
       event.preventDefault();
       composer.requestSubmit();
     });
+
+    window.addEventListener('keydown', (event) => {
+      if (event.key !== 'F5') return;
+      event.preventDefault();
+      window.location.reload();
+    });
+    })();
   </script>
 </body>
 </html>
