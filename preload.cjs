@@ -5,6 +5,6 @@ contextBridge.exposeInMainWorld('desktopWindow', Object.freeze({
   toggleMaximize: () => ipcRenderer.send('window:toggle-maximize'),
   close: () => ipcRenderer.send('window:close'),
   isMaximized: () => ipcRenderer.invoke('window:is-maximized'),
-  chooseProjectSource: () => ipcRenderer.invoke('project:choose-source'),
+  chooseProjectFolder: () => ipcRenderer.invoke('project:choose-folder'),
   getFilePath: (file) => webUtils.getPathForFile(file),
 }));

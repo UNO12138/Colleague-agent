@@ -31,10 +31,12 @@ function registerWindowControls() {
     isTrustedSender(event) ? mainWindow.isMaximized() : false,
   );
 
-  ipcMain.handle('project:choose-source', async (event) => {
+  ipcMain.handle('project:choose-folder', async (event) => {
     if (!isTrustedSender(event)) return [];
     const selection = await dialog.showOpenDialog(mainWindow, {
-      properties: ['openFile', 'openDirectory', 'multiSelections'],
+      title: '选择项目文件夹',
+      buttonLabel: '选择此文件夹',
+      properties: ['openDirectory', 'createDirectory'],
     });
     return selection.canceled ? [] : selection.filePaths;
   });

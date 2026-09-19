@@ -208,8 +208,7 @@
       transition: opacity .18s ease, transform .18s ease;
     }
     @keyframes conversation-working { to { transform: rotate(360deg); } }
-    .conversation-status.complete { border: 0; background: rgba(17, 17, 17, .1); animation: none; }
-    .conversation-status.complete::after { content: "✓"; width: 100%; height: 100%; display: grid; place-items: center; color: rgba(17, 17, 17, .58); font-size: 10px; font-weight: 700; }
+    .conversation-status.complete { display: none; }
 
     .project-modal-layer {
       position: absolute;
@@ -359,7 +358,15 @@
       font-size: 15px;
       line-height: 1.72;
     }
-    .agent-brief p { margin: 0 0 8px; }
+    .agent-brief p { margin: 0; }
+    #briefReview { display: block; }
+    .brief-intro, .brief-answer-intro { margin: 0 0 8px; color: #202020; font-size: 15px; font-weight: 400; line-height: 1.68; }
+    .brief-points, .brief-answer-points { margin: 0; padding-left: 26px; }
+    .brief-points li, .brief-answer-points li { margin: 5px 0; padding-left: 5px; color: #292929; font-weight: 400; line-height: 1.68; }
+    .brief-points li::marker, .brief-answer-points li::marker { color: #292929; font-size: .94em; font-variant-numeric: tabular-nums; }
+    .brief-closing { margin: 9px 0 0; color: #292929; font-size: 15px; font-weight: 400; line-height: 1.68; }
+    .agent-brief strong, .brief-revision-answer strong { color: #202020; font-weight: 620; }
+    .agent-brief code, .brief-revision-answer code { display: inline; padding: 2px 6px; border-radius: 6px; background: rgba(17, 17, 17, .075); color: #292929; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: .91em; line-height: inherit; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
     .brief-finish { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
     .brief-finish[hidden] { display: none; }
     .brief-finish::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #4ca95a; }
@@ -369,8 +376,8 @@
     .brief-revision-user.is-revealing { animation: stream-in .4s cubic-bezier(.2, .72, .2, 1) both; }
     .brief-revision-user .user-bubble { font-size: 14px; }
     .agent-thinking-status { margin: 0 4px 12px; }
-    .brief-revision-answer { margin: 0 4px 20px; color: #292929; font-size: 15px; line-height: 1.72; white-space: pre-wrap; }
-    .brief-revision-answer.is-streaming::after { content: ""; display: inline-block; width: 2px; height: 1em; margin-left: 3px; background: #4457de; vertical-align: -2px; animation: caret-blink .8s steps(1) infinite; }
+    .brief-revision-answer { margin: 0 4px 20px; color: #292929; font-size: 15px; line-height: 1.72; }
+    .brief-revision-answer.is-streaming .brief-answer-points li:last-child::after { content: ""; display: inline-block; width: 2px; height: 1em; margin-left: 3px; background: #4457de; vertical-align: -2px; animation: caret-blink .8s steps(1) infinite; }
     @keyframes caret-blink { 50% { opacity: 0; } }
     .execution-stage {
       display: none;
@@ -403,7 +410,7 @@
     .work-card-meta { min-height: 28px; display: flex; align-items: center; padding: 7px 20px 0; }
     .step-list { max-height: 180px; padding: 14px 20px 10px; display: grid; gap: 10px; overflow: hidden; opacity: 1; transition: max-height .34s cubic-bezier(.2, .72, .2, 1), padding .34s cubic-bezier(.2, .72, .2, 1), opacity .22s ease; }
     .step { display: grid; grid-template-columns: 17px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
-    .step-mark { width: 16px; height: 16px; display: grid; place-items: center; border: 1px solid var(--line); border-radius: 50%; font-size: 9px; }
+    .step-mark { width: 16px; height: 16px; display: grid; place-items: center; border: 1px solid rgba(17, 17, 17, .1); border-radius: 50%; background: #fff; font-size: 9px; }
     .step.done .step-mark { background: var(--deep); color: #fff; border-color: var(--deep); }
     .step.active .step-mark { border: 4px solid var(--deep); }
     .step span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -553,6 +560,12 @@
     .allow-option span { display: block; color: rgba(17,17,17,.58); font-size: 13px; line-height: 15px; white-space: normal; }
     .composer textarea { display: block; width: 100%; height: 54px; padding: 16px 16px 6px; resize: none; border: 0; outline: 0; color: var(--ink); font-size: 14px; line-height: 19px; background: transparent; }
     .composer textarea::placeholder { color: rgba(17,17,17,.38); }
+    .composer-attachments { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px 16px 0; }
+    .composer-attachments[hidden] { display: none; }
+    .attachment-chip { max-width: 220px; display: inline-flex; align-items: center; gap: 7px; padding: 6px 8px 6px 10px; border: 1px solid rgba(17,17,17,.12); border-radius: 8px; background: #f7f7f7; color: rgba(17,17,17,.76); font-size: 12px; }
+    .attachment-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .attachment-remove { width: 16px; height: 16px; display: grid; place-items: center; flex: 0 0 auto; padding: 0; border: 0; border-radius: 4px; background: transparent; color: rgba(17,17,17,.48); cursor: pointer; font: inherit; }
+    .attachment-remove:hover { background: rgba(17,17,17,.08); color: rgba(17,17,17,.8); }
     .composer-footer { display: flex; justify-content: space-between; align-items: center; min-height: 52px; padding: 8px 12px 12px; border-radius: 0 0 15px 15px; background: #fff; overflow: hidden; }
     .composer-tools, .composer-actions, .model-picker { display: flex; align-items: center; }
     .composer-tools { gap: 8px; min-width: 0; }
@@ -617,7 +630,7 @@
         <div class="section-label">项目</div>
         <button class="sidebar-icon-action" id="newProjectBtn" type="button" aria-label="新建项目"><img src="./new-project.svg" data-active-src="./new-project-active.svg" alt="" /></button>
       </div>
-      <div class="project-item">
+      <div class="project-item" data-project-id="basketball-comparison">
         <button class="project-row" type="button"><span class="with-icon"><img class="figma-icon project-state-icon" src="./project-collapsed.svg" data-collapsed-src="./project-collapsed.svg" data-expanded-src="./project-expanded.svg" alt="" /><span class="row-title">科比和詹姆斯对比</span></span></button>
         <button class="sidebar-icon-action pin-project-action" type="button" aria-label="置顶项目：科比和詹姆斯对比"><img src="./pin-project.svg" data-active-src="./pin-project-active.svg" alt="" /></button>
         <button class="sidebar-icon-action delete-project-action" type="button" aria-label="删除项目：科比和詹姆斯对比"><img src="./delete-project.svg" data-active-src="./delete-active.svg" alt="" /></button>
@@ -631,9 +644,7 @@
       </div>
       <div class="conversation-list project-conversations" id="productInnovationConversations" data-project-id="product-innovation">
         <div class="project-conversation-content">
-          <div class="conversation-item active"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span><span class="conversation-status" title="Agent 正在工作" aria-label="Agent 正在工作"></span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
-          <div class="conversation-item"><button class="conversation-row" type="button"><span class="conversation-title">9/2 结课汇报</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：9/2 结课汇报"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
-          <div class="conversation-item"><button class="conversation-row" type="button"><span class="conversation-title">9/7 结课 ppt 制作</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：9/7 结课 ppt 制作"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
+          <div class="conversation-item active" data-conversation-id="weekly-report"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span><span class="conversation-status" title="Agent 正在工作" aria-label="Agent 正在工作"></span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
         </div>
       </div>
 
@@ -642,9 +653,7 @@
         <button class="sidebar-icon-action" id="newConversationBtn" type="button" aria-label="新建对话"><img src="./new-conversation.svg" data-active-src="./new-conversation-active.svg" alt="" /></button>
       </div>
       <div class="conversation-list">
-        <div class="conversation-item"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
-        <div class="conversation-item"><button class="conversation-row" type="button"><span class="conversation-title">9/2 结课汇报</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：9/2 结课汇报"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
-        <div class="conversation-item"><button class="conversation-row" type="button"><span class="conversation-title">9/7 结课 ppt 制作</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：9/7 结课 ppt 制作"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
+        <div class="conversation-item active" data-conversation-id="weekly-report"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span><span class="conversation-status" title="Agent 正在工作" aria-label="Agent 正在工作"></span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
       </div>
     </aside>
 
@@ -669,10 +678,15 @@
               <div>
                 <div class="agent-brief">
                   <div id="briefReview">
-                    <p>我先确认一下我对这次任务的理解。你要准备周二汇报中的协作产品竞品部分，分析对象是 Notion、Figma、Linear 和 Miro，一共 4 个产品。</p>
-                    <p>这次不会停留在功能罗列上。我会重点看每个产品如何承接和组织任务、团队成员怎样同步进度，以及状态变化、评论或编辑行为如何被其他协作者及时感知。</p>
-                    <p>具体推进时，我会先逐个拆解它们最有代表性的协作机制，再横向比较这些机制的共同点、差异和各自的取舍。执行过程中，我会持续告诉你当前分析到了哪个产品，并同步值得写进汇报的阶段性发现。</p>
-                    <p>最后我会把结果收束成可以直接放入汇报的竞品结论，并补充这些产品对我们设计协作体验的启发。如果这个理解没有偏差，你确认后我就按这个规划开始。</p>
+                    <p class="brief-intro">我对这次任务的理解是：</p>
+                    <ol class="brief-points">
+                      <li><strong>任务目标：</strong>准备周二汇报中的协作产品竞品部分。</li>
+                      <li><strong>调研对象：</strong>覆盖 <code>Notion</code>、<code>Figma</code>、<code>Linear</code> 和 <code>Miro</code>，一共 4 个产品。</li>
+                      <li><strong>分析重点：</strong>比较它们如何组织任务、同步进度，以及让团队感知状态、评论和编辑行为的变化。</li>
+                      <li><strong>推进方式：</strong>先拆解各产品最有代表性的协作机制，再横向比较共同点、差异与取舍，并同步阶段性发现。</li>
+                      <li><strong>最终交付：</strong>整理成可以直接放入汇报的竞品结论，并补充对协作体验设计的产品启发，输出为 <code>Word 文档</code>。</li>
+                    </ol>
+                    <p class="brief-closing">如果这个理解没有偏差，你确认后我就按这个规划开始。</p>
                   </div>
                   <div class="brief-revision-stream" id="briefRevisionStream" aria-live="polite"></div>
                   <span class="brief-finish brief-confirmed" id="briefConfirmed" hidden>任务 brief 已确认，开始执行</span>
@@ -780,15 +794,17 @@
                 </div>
               </div>
             </div>
+            <div class="composer-attachments" id="composerAttachments" hidden></div>
+            <input id="composerAttachmentInput" type="file" hidden multiple />
             <textarea id="messageInput" aria-label="发送消息" placeholder="补充或调整本次任务的目标、范围或交付要求…"></textarea>
             <div class="composer-footer">
               <div class="composer-tools">
-                <button class="composer-icon-button" type="button" aria-label="添加附件"><img src="./assets/composer/attach.svg" alt="" /></button>
+                <button class="composer-icon-button" id="attachFileBtn" type="button" aria-label="添加附件"><img src="./assets/composer/attach.svg" alt="" /></button>
                 <img class="composer-divider" src="./assets/composer/divider.svg" alt="" aria-hidden="true" />
-                <button class="model-picker" type="button" aria-label="选择模型和推理强度">
+                <button class="model-picker" type="button" aria-label="选择主进程模型和推理强度" title="主进程任务模型">
                   <img src="./assets/composer/agent.svg" alt="" aria-hidden="true" />
-                  <span class="model-name" id="modelName">DeepSeek · V4 Flash</span>
-                  <span class="model-effort" id="modelStatus">本地</span>
+                  <span class="model-name" id="modelName">Codex · GPT-6 Astra</span>
+                  <span class="model-effort" id="modelStatus">中</span>
                   <img class="model-chevron" src="./assets/composer/model-chevron.svg" alt="" aria-hidden="true" />
                 </button>
               </div>
@@ -817,7 +833,7 @@
               <div class="project-file-drop" id="projectFileDrop">
                 <div class="project-file-copy"><strong id="projectSourcePath">拖放文件</strong><span>文件夹、文档、PDF等</span></div>
                 <button class="choose-folder" id="chooseProjectFolderBtn" type="button"><img src="./select-folder.svg" alt="" /><span id="chooseFolderText">选择文件夹</span></button>
-                <input id="projectSourceInput" type="file" hidden multiple />
+                <input id="projectSourceInput" type="file" hidden webkitdirectory directory multiple />
               </div>
             </div>
           </div>
@@ -879,7 +895,9 @@
     const launchConfirm = document.getElementById('launchConfirm');
     const sendBtn = document.getElementById('sendBtn');
     const voiceIcon = document.getElementById('voiceIcon');
-    const modelStatus = document.getElementById('modelStatus');
+    const attachFileBtn = document.getElementById('attachFileBtn');
+    const composerAttachmentInput = document.getElementById('composerAttachmentInput');
+    const composerAttachments = document.getElementById('composerAttachments');
     const permissionEvent = document.getElementById('permissionEvent');
     const permissionTitle = document.getElementById('permissionTitle');
     const permissionCommand = document.getElementById('permissionCommand');
@@ -892,7 +910,7 @@
     const allowTypeAccessBtn = document.getElementById('allowTypeAccessBtn');
     const decisionRecord = document.getElementById('decisionRecord');
     const completionCard = document.getElementById('completionCard');
-    const conversationStatus = document.querySelector('.conversation-status');
+    const conversationStatuses = Array.from(document.querySelectorAll('.conversation-status'));
     const desktopWindow = window.desktopWindow;
     const windowMinimize = document.getElementById('windowMinimize');
     const windowMaximize = document.getElementById('windowMaximize');
@@ -947,7 +965,6 @@
     let currentPlanText = briefReview.innerText.trim();
 
     const LOCAL_AGENT_URL = 'http://127.0.0.1:8787/agent';
-    const LOCAL_AGENT_HEALTH_URL = 'http://127.0.0.1:8787/health';
 
     presenceText.textContent = 'ALEX 等待确认';
 
@@ -993,7 +1010,6 @@
       const timeout = window.setTimeout(() => controller.abort(), 17000);
       composer.classList.add('is-agent-busy');
       sendBtn.disabled = true;
-      modelStatus.textContent = '思考中…';
       try {
         const response = await fetch(LOCAL_AGENT_URL, {
           method: 'POST',
@@ -1012,10 +1028,8 @@
         });
         if (!response.ok) throw new Error('Agent unavailable');
         const payload = await response.json();
-        modelStatus.textContent = '本地';
         return payload.result;
       } catch {
-        modelStatus.textContent = '规则回退';
         notify('Alex 暂时无法连接，已使用本地规则继续');
         return localFallback(mode, message, extraContext);
       } finally {
@@ -1025,18 +1039,52 @@
       }
     }
 
-    async function checkLocalAgent() {
-      try {
-        const response = await fetch(LOCAL_AGENT_HEALTH_URL);
-        if (!response.ok) throw new Error('Agent unavailable');
-        const health = await response.json();
-        modelStatus.textContent = health.configured ? 'API' : '未配置';
-      } catch {
-        modelStatus.textContent = '未连接';
-      }
+    let selectedComposerFiles = [];
+
+    function syncComposerFileInput() {
+      if (typeof DataTransfer === 'undefined') return;
+      const transfer = new DataTransfer();
+      selectedComposerFiles.forEach(file => transfer.items.add(file));
+      composerAttachmentInput.files = transfer.files;
     }
 
-    checkLocalAgent();
+    function renderComposerAttachments() {
+      composerAttachments.replaceChildren();
+      selectedComposerFiles.forEach((file, index) => {
+        const chip = document.createElement('div');
+        chip.className = 'attachment-chip';
+        const name = document.createElement('span');
+        name.className = 'attachment-name';
+        name.textContent = file.name;
+        name.title = file.name;
+        const remove = document.createElement('button');
+        remove.className = 'attachment-remove';
+        remove.type = 'button';
+        remove.setAttribute('aria-label', `移除附件：${file.name}`);
+        remove.textContent = '×';
+        remove.addEventListener('click', () => {
+          selectedComposerFiles.splice(index, 1);
+          syncComposerFileInput();
+          renderComposerAttachments();
+        });
+        chip.append(name, remove);
+        composerAttachments.appendChild(chip);
+      });
+      composerAttachments.hidden = selectedComposerFiles.length === 0;
+    }
+
+    function clearComposerAttachments() {
+      selectedComposerFiles = [];
+      composerAttachmentInput.value = '';
+      renderComposerAttachments();
+    }
+
+    attachFileBtn.addEventListener('click', () => composerAttachmentInput.click());
+    composerAttachmentInput.addEventListener('change', () => {
+      selectedComposerFiles = Array.from(composerAttachmentInput.files || []);
+      renderComposerAttachments();
+      if (selectedComposerFiles.length) notify(`已添加 ${selectedComposerFiles.length} 个文件`);
+    });
 
     sidebarToggle.addEventListener('click', () => {
       const collapsed = appShell.classList.toggle('sidebar-collapsed');
@@ -1080,18 +1128,58 @@
       return { status, answer };
     }
 
-    function streamPlanningAnswer(entry, text) {
+    function appendPlanningEmphasis(container, text) {
+      const emphasisPattern = /(“[^”]{2,18}”|周二汇报|Notion|Figma|Linear|Miro|Codex|Word 文档|任务 brief|工作机制|协作机制|核心结论|竞品结论|产品启发|交付物)/giu;
+      const codePattern = /^(Notion|Figma|Linear|Miro|Codex|Word 文档)$/iu;
+      let cursor = 0;
+      for (const match of text.matchAll(emphasisPattern)) {
+        if (match.index > cursor) container.append(document.createTextNode(text.slice(cursor, match.index)));
+        const emphasis = document.createElement(codePattern.test(match[0]) ? 'code' : 'strong');
+        emphasis.textContent = match[0];
+        container.appendChild(emphasis);
+        cursor = match.index + match[0].length;
+      }
+      if (cursor < text.length) container.append(document.createTextNode(text.slice(cursor)));
+    }
+
+    function renderPlanningTypography(element, sections, visibleLength = Infinity) {
+      element.replaceChildren();
+      const intro = document.createElement('p');
+      intro.className = 'brief-answer-intro';
+      intro.textContent = '调整后的任务理解是：';
+      element.appendChild(intro);
+      const list = document.createElement('ol');
+      list.className = 'brief-answer-points';
+      const labels = ['本次修改：', '当前任务：'];
+      let remaining = visibleLength;
+      sections.forEach((section, index) => {
+        if (remaining <= 0 && index > 0) return;
+        const visibleText = section.slice(0, Math.max(0, remaining));
+        const item = document.createElement('li');
+        const label = document.createElement('strong');
+        label.textContent = labels[index] || '补充信息：';
+        item.appendChild(label);
+        appendPlanningEmphasis(item, visibleText);
+        list.appendChild(item);
+        remaining -= section.length;
+      });
+      element.appendChild(list);
+    }
+
+    function streamPlanningAnswer(entry, sections) {
       entry.status.remove();
       const element = entry.answer;
-      element.textContent = '';
+      element.replaceChildren();
       element.classList.add('is-streaming');
+      const normalizedSections = sections.filter(Boolean);
+      const totalLength = normalizedSections.reduce((sum, section) => sum + section.length, 0);
       let cursor = 0;
-      const chunkSize = Math.max(1, Math.ceil(text.length / 120));
+      const chunkSize = Math.max(1, Math.ceil(totalLength / 120));
       const timer = window.setInterval(() => {
-        cursor = Math.min(text.length, cursor + chunkSize);
-        element.textContent = text.slice(0, cursor);
+        cursor = Math.min(totalLength, cursor + chunkSize);
+        renderPlanningTypography(element, normalizedSections, cursor);
         if (cursor % (chunkSize * 8) === 0) scrollToLatest();
-        if (cursor >= text.length) {
+        if (cursor >= totalLength) {
           window.clearInterval(timer);
           element.classList.remove('is-streaming');
           scrollToLatest();
@@ -1112,9 +1200,33 @@
     }
 
     const deleteReminderStorageKey = 'alex-colleague-agent-delete-reminder-date';
+    const sidebarStateStorageKey = 'alex-colleague-agent-sidebar-state-v1';
     const today = new Date().toLocaleDateString('en-CA');
     let skipDeleteConfirmation = window.localStorage.getItem(deleteReminderStorageKey) === today;
     let pendingDeletion = null;
+    let sidebarState = (() => {
+      try {
+        return JSON.parse(window.localStorage.getItem(sidebarStateStorageKey)) || {
+          activeConversationId: 'weekly-report',
+          expandedProjectIds: ['product-innovation'],
+          pinnedProjectId: ''
+        };
+      } catch {
+        return { activeConversationId: 'weekly-report', expandedProjectIds: ['product-innovation'], pinnedProjectId: '' };
+      }
+    })();
+
+    function persistSidebarState() {
+      window.localStorage.setItem(sidebarStateStorageKey, JSON.stringify(sidebarState));
+    }
+
+    function setActiveConversation(conversationId) {
+      document.querySelectorAll('.conversation-item[data-conversation-id]').forEach(item => {
+        item.classList.toggle('active', item.dataset.conversationId === conversationId);
+      });
+      sidebarState.activeConversationId = conversationId;
+      persistSidebarState();
+    }
 
     function renderDeleteReminder() {
       deleteReminderBtn.setAttribute('aria-pressed', String(skipDeleteConfirmation));
@@ -1129,7 +1241,15 @@
         const conversations = projectId ? document.querySelector(`.project-conversations[data-project-id="${projectId}"]`) : null;
         removeSidebarItems([item, conversations]);
       } else {
-        removeSidebarItem(item);
+        const conversationId = item.dataset.conversationId;
+        const linkedItems = conversationId
+          ? Array.from(document.querySelectorAll(`.conversation-item[data-conversation-id="${conversationId}"]`))
+          : [item];
+        removeSidebarItems(linkedItems);
+        if (sidebarState.activeConversationId === conversationId) {
+          sidebarState.activeConversationId = '';
+          persistSidebarState();
+        }
       }
     }
 
@@ -1226,12 +1346,14 @@
     }
 
     chooseProjectFolderBtn.addEventListener('click', async () => {
-      const paths = await desktopWindow?.chooseProjectSource?.();
+      const paths = await desktopWindow?.chooseProjectFolder?.();
       if (paths?.length) setProjectSources(paths);
-      else if (!desktopWindow?.chooseProjectSource) projectSourceInput.click();
+      else if (!desktopWindow?.chooseProjectFolder) projectSourceInput.click();
     });
     projectSourceInput.addEventListener('change', () => {
-      setProjectSources(Array.from(projectSourceInput.files, sourcePathForFile));
+      const files = Array.from(projectSourceInput.files || []);
+      const folderNames = Array.from(new Set(files.map(file => file.webkitRelativePath?.split('/')[0]).filter(Boolean)));
+      setProjectSources(folderNames.length ? folderNames : files.map(sourcePathForFile));
     });
     ['dragenter', 'dragover'].forEach(eventName => {
       projectFileDrop.addEventListener(eventName, event => {
@@ -1260,6 +1382,8 @@
       if (item.classList.contains('is-pinned')) {
         item.classList.remove('is-pinned');
         restoreProjectPosition(item);
+        sidebarState.pinnedProjectId = '';
+        persistSidebarState();
         notify('已取消置顶项目');
         return;
       }
@@ -1273,6 +1397,8 @@
       const firstProject = document.querySelector('.project-item');
       if (item !== firstProject) firstProject.before(item);
       item.classList.add('is-pinned');
+      sidebarState.pinnedProjectId = item.dataset.projectId || '';
+      persistSidebarState();
       notify('项目已置顶');
     }
 
@@ -1297,13 +1423,45 @@
         projectRow.setAttribute('aria-expanded', String(expanded));
         const icon = item.querySelector('.project-state-icon');
         if (icon) icon.src = expanded ? icon.dataset.expandedSrc : icon.dataset.collapsedSrc;
+        if (projectId) {
+          const expandedProjects = new Set(sidebarState.expandedProjectIds || []);
+          if (expanded) expandedProjects.add(projectId);
+          else expandedProjects.delete(projectId);
+          sidebarState.expandedProjectIds = Array.from(expandedProjects);
+          persistSidebarState();
+        }
       });
     }
 
+    function bindConversationItem(item) {
+      const row = item.querySelector('.conversation-row');
+      if (!row) return;
+      row.addEventListener('click', () => setActiveConversation(item.dataset.conversationId));
+    }
+
+    function restoreSidebarState() {
+      const expandedProjects = new Set(sidebarState.expandedProjectIds || ['product-innovation']);
+      document.querySelectorAll('.project-item[data-project-id]').forEach(item => {
+        const projectId = item.dataset.projectId;
+        const conversations = document.querySelector(`.project-conversations[data-project-id="${projectId}"]`);
+        if (!conversations) return;
+        const expanded = expandedProjects.has(projectId);
+        item.classList.toggle('is-expanded', expanded);
+        conversations.classList.toggle('is-collapsed', !expanded);
+        const row = item.querySelector('.project-row');
+        row?.setAttribute('aria-expanded', String(expanded));
+        const icon = item.querySelector('.project-state-icon');
+        if (icon) icon.src = expanded ? icon.dataset.expandedSrc : icon.dataset.collapsedSrc;
+      });
+      setActiveConversation(sidebarState.activeConversationId || 'weekly-report');
+    }
+
     document.querySelectorAll('.project-item').forEach(bindProjectItem);
+    document.querySelectorAll('.conversation-item[data-conversation-id]').forEach(bindConversationItem);
     document.querySelectorAll('.delete-conversation-action').forEach(button => {
       button.addEventListener('click', () => showDeleteModal(button.closest('.conversation-item'), '对话'));
     });
+    restoreSidebarState();
 
     cancelDeleteBtn.addEventListener('click', hideDeleteModal);
     deleteReminderBtn.addEventListener('click', () => {
@@ -1536,7 +1694,7 @@
       currentStep.textContent = '竞品分析已完成，已生成可交付的 Word 文档。';
       document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = '任务已完成 · 4/4');
       presenceText.textContent = 'ALEX 已完成';
-      conversationStatus.classList.add('complete');
+      conversationStatuses.forEach(status => status.classList.add('complete'));
       aside.appendChild(completionCard);
       completionCard.hidden = false;
       completionCard.classList.add('show');
@@ -1749,6 +1907,7 @@
       if (sendBtn.disabled) return;
       const value = messageInput.value.trim();
       if (!value) return;
+      const attachments = selectedComposerFiles.map(file => ({ name: file.name, size: file.size, type: file.type || 'application/octet-stream' }));
       if (!taskStarted) {
         appendPlanningUserMessage(value);
         const answer = appendPlanningAnswer();
@@ -1756,15 +1915,17 @@
         messageInput.placeholder = '继续补充或调整本次任务规划…';
         const result = await callLocalAgent('plan_revision', value, {
           currentPlan: currentPlanText,
+          attachments,
           outputRequirement: '输出两个简洁自然段，不加标题或列表。message 作为第一段，只讲本次修改及新的侧重点；planSummary 作为第二段，只浓缩未变化的任务对象、使用场景、推进方式和交付物，不要再次描述被修改的重点，也不要重复第一段的关键词或同义表达。'
         });
+        clearComposerAttachments();
         const revisedPlan = result.planSummary || `${currentPlanText}\n\n本次补充：${value}`;
         const changeSummary = (result.message || `本次将任务要求调整为：${value}`)
           .replace(/^(收到|好的|明白了|明白)[，,。\s]*/u, '')
           .replace(/^我会把/u, '')
           .trim();
         currentPlanText = [changeSummary, revisedPlan].filter(Boolean).join(' ');
-        streamPlanningAnswer(answer, [changeSummary, revisedPlan].filter(Boolean).join('\n\n'));
+        streamPlanningAnswer(answer, [changeSummary, revisedPlan]);
         notify('Alex 已更新任务 brief');
         return;
       }
@@ -1783,9 +1944,11 @@
         currentTaskBrief: currentPlanText,
         currentTaskState: getCurrentTaskState(),
         progressAction,
+        attachments,
         recentConversation,
         responseRequirement: '只回应用户这一次新增的问题或意图。结合近期对话，已经说过的背景和进度不要再次完整复述；用户没有明确询问进度、且答案不依赖进度时，完全不要提任务状态。任务状态必须以 currentTaskState 为准，不得沿用旧进度，也不要声称知道本地网络是否正常。progressAction 非空表示前端已执行用户明确要求的进度操作，简洁确认即可，不要把它识别成范围修改。意图分类仅用于 kind 字段。'
       });
+      clearComposerAttachments();
       thinking.remove();
       appendAgentMessage(result.message, result.kind === 'discussion' ? '即时交流 · 未改变当前任务' : '本地 Agent · 已识别意图');
       if (progressAction === 'completed_task') completeTask();
