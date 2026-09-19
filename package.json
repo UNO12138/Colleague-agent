@@ -5,7 +5,9 @@
   "description": "Browser and Electron prototype of the Colleague Agent collaboration timeline",
   "main": "main.cjs",
   "scripts": {
+    "agent": "node --env-file-if-exists=.env.local agent-server.cjs",
     "dev": "vite --host 127.0.0.1",
+    "dev:demo": "concurrently -k \"vite --host 127.0.0.1\" \"node --env-file-if-exists=.env.local agent-server.cjs\"",
     "start": "electron .",
     "dev:desktop": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && cross-env ELECTRON_RENDERER_URL=http://127.0.0.1:5173 electron .\""
   },

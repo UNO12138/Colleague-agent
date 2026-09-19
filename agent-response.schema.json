@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "kind": {
+      "type": "string",
+      "enum": ["plan_revision", "discussion", "task_change", "decision_request"]
+    },
+    "message": { "type": "string" },
+    "planSummary": { "type": "string" },
+    "changeSummary": { "type": "string" },
+    "decision": {
+      "type": "object",
+      "properties": {
+        "required": { "type": "boolean" },
+        "title": { "type": "string" },
+        "detail": { "type": "string" },
+        "command": { "type": "string" },
+        "subject": { "type": "string" },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "maxItems": 3
+        }
+      },
+      "required": ["required", "title", "detail", "command", "subject", "tags"],
+      "additionalProperties": false
+    }
+  },
+  "required": ["kind", "message", "planSummary", "changeSummary", "decision"],
+  "additionalProperties": false
+}

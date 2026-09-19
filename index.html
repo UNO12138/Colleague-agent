@@ -30,7 +30,7 @@
       background-repeat: no-repeat;
       background-attachment: fixed;
       color: var(--ink);
-      font-family: "Alibaba PuHuiTi 2.0", "PingFang SC", "Microsoft YaHei", Inter, sans-serif;
+      font-family: Inter, "PingFang SC", "Microsoft YaHei", sans-serif;
       font-size: 14px;
       overflow: hidden;
     }
@@ -333,7 +333,7 @@
     .presence-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ca95a; box-shadow: 0 0 0 4px rgba(76, 169, 90, .12); }
 
     .chat-view { min-height: 0; position: relative; overflow: hidden; }
-    .timeline-scroll { height: 100%; overflow-y: auto; overflow-anchor: none; padding: 0 32px 150px; scroll-behavior: auto; scrollbar-width: thin; scrollbar-color: rgba(43,43,43,.16) transparent; }
+    .timeline-scroll { height: 100%; overflow-y: auto; overflow-anchor: none; padding: 0 32px var(--composer-safe-space, 150px); scroll-behavior: auto; scrollbar-width: thin; scrollbar-color: rgba(43,43,43,.16) transparent; }
     .timeline-scroll::-webkit-scrollbar { width: 7px; }
     .timeline-scroll::-webkit-scrollbar-track { background: transparent; }
     .timeline-scroll::-webkit-scrollbar-thumb { min-height: 48px; border-radius: 999px; background: rgba(43,43,43,.14); }
@@ -363,8 +363,15 @@
     .brief-finish { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
     .brief-finish[hidden] { display: none; }
     .brief-finish::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #4ca95a; }
-    .brief-adjustment { margin: 12px 0 0; color: #314779; font-size: 13px; }
-    .brief-adjustment[hidden] { display: none; }
+    .brief-revision-stream { margin-top: 20px; }
+    .brief-revision-stream:empty { display: none; }
+    .brief-revision-user { display: flex; justify-content: flex-end; margin: 18px 0; }
+    .brief-revision-user.is-revealing { animation: stream-in .4s cubic-bezier(.2, .72, .2, 1) both; }
+    .brief-revision-user .user-bubble { font-size: 14px; }
+    .agent-thinking-status { margin: 0 4px 12px; }
+    .brief-revision-answer { margin: 0 4px 20px; color: #292929; font-size: 15px; line-height: 1.72; white-space: pre-wrap; }
+    .brief-revision-answer.is-streaming::after { content: ""; display: inline-block; width: 2px; height: 1em; margin-left: 3px; background: #4457de; vertical-align: -2px; animation: caret-blink .8s steps(1) infinite; }
+    @keyframes caret-blink { 50% { opacity: 0; } }
     .execution-stage {
       display: none;
     }
@@ -450,13 +457,15 @@
     .btn.subtle { border-color: transparent; color: var(--muted); }
 
     .aside-conversation {
-      width: min(88%, 600px);
-      margin: 14px 0 0 20px;
+      width: calc(100% - 56px);
+      margin: 14px 28px 0;
       padding-left: 18px;
       border-left: 2px solid rgba(49, 94, 232, .18);
       transition: opacity .2s ease, transform .2s ease;
     }
     .aside-conversation[hidden] { display: none; }
+    .aside-stream-item.is-revealing { animation: stream-in .4s cubic-bezier(.2, .72, .2, 1) both; }
+    @keyframes stream-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
     .aside-heading { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; color: var(--blue); font-size: 11px; font-weight: 650; letter-spacing: .04em; }
     .aside-heading::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
     .aside-copy { width: fit-content; max-width: 92%; margin: 0 0 9px; padding: 10px 13px; border-radius: 12px; background: #f5f7fd; color: #27314c; line-height: 1.55; }
@@ -507,39 +516,62 @@
 
     .composer-wrap { position: absolute; z-index: 6; right: 0; bottom: 0; left: 0; padding: 16px 32px 22px; pointer-events: none; }
     .composer-wrap::before { content: ""; position: absolute; z-index: -1; inset: 0 14px 0 0; background: linear-gradient(to top, #fff 78%, rgba(255,255,255,0)); }
-    .composer { position: relative; width: min(100%, 760px); margin: 0 auto; border: 1px solid transparent; border-radius: 16px; background: #fff; box-shadow: 0 10px 32px rgba(0, 0, 0, .07); overflow: visible; }
-    .composer::after { content: ""; position: absolute; z-index: 10; inset: -1px; border: 1px solid rgba(17, 17, 17, .16); border-radius: 17px; pointer-events: none; }
+    .composer { position: relative; width: min(100%, 760px); margin: 0 auto; border: 1px solid rgba(17, 17, 17, .16); border-radius: 16px; background: #fff; box-shadow: 0 10px 32px rgba(0, 0, 0, .07); overflow: visible; }
     .composer { pointer-events: auto; }
-    .launch-confirm { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 12px 12px 12px 16px; border-bottom: 1px solid var(--line); border-radius: 15px 15px 0 0; background: #fafafa; }
+    .launch-confirm { display: flex; align-items: center; justify-content: space-between; gap: 18px; min-height: 78px; padding: 20px 12px 20px 16px; border-bottom: 1px solid var(--line); border-radius: 15px 15px 0 0; background: #fafafa; overflow: hidden; }
     .launch-confirm[hidden] { display: none; }
     .launch-confirm-copy { min-width: 0; }
-    .launch-confirm strong { display: block; margin-bottom: 3px; font-size: 13px; font-weight: 650; }
-    .launch-confirm span { display: block; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .launch-confirm .btn { flex: 0 0 auto; }
-    .permission-prompt { padding: 12px; border-bottom: 1px solid var(--line); border-radius: 15px 15px 0 0; background: #fafafa; animation: rise .3s ease both; }
+    .launch-confirm strong { display: block; margin-bottom: 8px; font-size: 16px; font-weight: 650; line-height: 18px; }
+    .launch-confirm span { display: block; color: rgba(17,17,17,.58); font-size: 14px; line-height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .launch-confirm .btn { min-height: 36px; flex: 0 0 auto; padding: 8px 16px; border-color: rgba(68,87,222,.6); border-radius: 10px; background: rgba(68,87,222,.16); color: #4457de; font-size: 14px; font-weight: 650; line-height: 18px; }
+    .launch-confirm .btn:hover { border-color: #4457de; background: rgba(68,87,222,.22); }
+    .permission-prompt { min-height: 102px; padding: 20px 12px 20px 16px; border-bottom: 1px solid var(--line); border-radius: 15px 15px 0 0; background: #fafafa; animation: rise .3s ease both; }
     .permission-prompt[hidden] { display: none; }
-    .permission-prompt-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding-left: 4px; }
+    .permission-prompt-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
     .permission-prompt-copy { min-width: 0; }
-    .permission-prompt strong { display: block; margin-bottom: 3px; font-size: 13px; font-weight: 650; }
-    .permission-prompt span { display: block; color: var(--muted); font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .permission-prompt strong { display: block; margin-bottom: 8px; font-size: 16px; font-weight: 650; line-height: 18px; white-space: nowrap; }
+    .permission-command { display: block; color: rgba(17,17,17,.58); font-family: inherit; font-size: 14px; line-height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .permission-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
+    .permission-tag { display: inline-flex; align-items: center; justify-content: center; padding: 4px 8px; border-radius: 9px; background: rgba(68,87,222,.12); color: rgba(68,87,222,.8); font-size: 13px; font-weight: 650; line-height: 18px; white-space: nowrap; }
     .permission-buttons { display: flex; flex: 0 0 auto; gap: 8px; }
+    .permission-buttons .btn { min-height: 36px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 650; line-height: 18px; }
+    .permission-buttons .decision-deny { gap: 4px; }
+    .permission-buttons .allow-primary-action { min-height: 36px; display: flex; align-items: center; gap: 4px; padding: 7px 8px 7px 16px; border: 1px solid rgba(68,87,222,.6); border-radius: 10px; background: rgba(68,87,222,.16); color: #4457de; transition: .18s ease; }
+    .permission-buttons .allow-primary-action:hover { border-color: #4457de; background: rgba(68,87,222,.22); transform: translateY(-1px); }
+    .allow-main { display: flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+    .key-hint { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 18px; padding: 0 8px; border-radius: 4px; background: rgba(17,17,17,.08); color: rgba(17,17,17,.4); font-size: 12px; font-weight: 400; line-height: 18px; }
+    .allow-primary-action .key-hint { min-width: 48px; background: rgba(68,87,222,.16); color: rgba(68,87,222,.8); }
     .allow-menu { position: relative; }
-    .allow-split { display: flex; }
-    .allow-split .btn:hover { transform: none; }
-    .allow-primary-action { border-radius: 9px 0 0 9px; }
-    .allow-menu-trigger { width: 34px; padding: 0; border-radius: 0 9px 9px 0; border-left-color: rgba(255,255,255,.28); }
+    .allow-menu-trigger { width: 16px; height: 16px; margin-left: 4px; padding: 0; border: 0; background: transparent; }
     .allow-menu-icon { width: 16px; height: 16px; display: block; object-fit: contain; }
-    .permission-secondary { position: absolute; right: 0; bottom: calc(100% + 8px); z-index: 9; width: 244px; padding: 6px; border: 1px solid var(--line); border-radius: 11px; background: #fff; box-shadow: 0 10px 28px rgba(17,17,17,.14); }
+    .permission-secondary { position: absolute; right: 0; bottom: calc(100% + 10px); z-index: 12; width: 240px; padding: 16px; border: 1px solid rgba(17,17,17,.16); border-radius: 10px; background: #fff; box-shadow: 0 10px 16px rgba(0,0,0,.07); }
     .permission-secondary[hidden] { display: none; }
-    .allow-option { width: 100%; padding: 10px; border: 0; border-radius: 7px; background: transparent; text-align: left; cursor: pointer; }
-    .allow-option:hover { background: #f3f3f3; }
-    .allow-option strong { margin-bottom: 3px; font-size: 13px; font-weight: 600; }
-    .allow-option span { color: var(--muted); font-size: 11px; }
-    .composer textarea { width: 100%; height: 54px; padding: 16px 16px 6px; resize: none; border: 0; outline: 0; color: var(--ink); }
+    .allow-option { width: 100%; padding: 0; border: 0; border-radius: 7px; background: transparent; text-align: left; cursor: pointer; }
+    .allow-option + .allow-option { margin-top: 20px; }
+    .allow-option:hover strong { color: #4457de; }
+    .allow-option strong { display: block; margin-bottom: 8px; font-size: 14px; font-weight: 650; line-height: 18px; }
+    .allow-option span { display: block; color: rgba(17,17,17,.58); font-size: 13px; line-height: 15px; white-space: normal; }
+    .composer textarea { display: block; width: 100%; height: 54px; padding: 16px 16px 6px; resize: none; border: 0; outline: 0; color: var(--ink); font-size: 14px; line-height: 19px; background: transparent; }
     .composer textarea::placeholder { color: rgba(17,17,17,.38); }
-    .composer-footer { display: flex; justify-content: flex-end; align-items: center; min-height: 45px; padding: 5px 8px 8px 12px; }
-    .send { width: 32px; height: 32px; border: 0; border-radius: 10px; background: var(--deep); color: #fff; cursor: pointer; font-size: 16px; }
-    .send.editing { width: 48px; font-size: 12px; font-weight: 600; }
+    .composer-footer { display: flex; justify-content: space-between; align-items: center; min-height: 52px; padding: 8px 12px 12px; border-radius: 0 0 15px 15px; background: #fff; overflow: hidden; }
+    .composer-tools, .composer-actions, .model-picker { display: flex; align-items: center; }
+    .composer-tools { gap: 8px; min-width: 0; }
+    .composer-actions { gap: 12px; flex: 0 0 auto; }
+    .composer-icon-button { width: 20px; height: 20px; display: grid; flex: 0 0 auto; place-items: center; padding: 0; border: 0; background: transparent; cursor: pointer; }
+    .composer-icon-button img { display: block; width: 20px; height: 20px; }
+    .composer-divider { display: block; width: 1px; height: 20px; }
+    .model-picker { min-width: 0; gap: 4px; border: 0; padding: 0; background: transparent; cursor: pointer; }
+    .model-picker > img:first-child { width: 20px; height: 20px; flex: 0 0 auto; }
+    .model-name { color: rgba(17,17,17,.8); font-size: 14px; line-height: 15px; white-space: nowrap; }
+    .model-effort { color: rgba(17,17,17,.5); font-size: 14px; line-height: 15px; white-space: nowrap; }
+    .model-chevron { width: 16px; height: 16px; transform: scaleY(-1); }
+    .send { width: 32px; min-width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 0; border: 0; border-radius: 10px; background: #4457de; color: #fff; cursor: pointer; font-family: Inter, sans-serif; font-size: 16px; font-weight: 500; line-height: 22px; }
+    .send:hover { background: #394bc8; }
+    .send:disabled { cursor: wait; opacity: .62; }
+    .composer.is-agent-busy textarea { cursor: wait; }
+    .send.editing { min-width: 78px; width: auto; padding: 8px 16px; font-family: inherit; font-size: 14px; font-weight: 560; line-height: 16px; }
+    .send-edit-icon { display: block; width: 14px; height: 14px; }
+    .send-icon { display: block; width: 16px; height: 16px; }
 
     .toast { position: absolute; left: 50%; bottom: 26px; z-index: 10; padding: 10px 14px; border-radius: 11px; background: var(--deep); color: #fff; transform: translate(-50%, 14px); opacity: 0; pointer-events: none; transition: .22s ease; box-shadow: 0 8px 28px rgba(0,0,0,.2); }
     .toast.show { transform: translate(-50%, 0); opacity: 1; }
@@ -642,7 +674,7 @@
                     <p>具体推进时，我会先逐个拆解它们最有代表性的协作机制，再横向比较这些机制的共同点、差异和各自的取舍。执行过程中，我会持续告诉你当前分析到了哪个产品，并同步值得写进汇报的阶段性发现。</p>
                     <p>最后我会把结果收束成可以直接放入汇报的竞品结论，并补充这些产品对我们设计协作体验的启发。如果这个理解没有偏差，你确认后我就按这个规划开始。</p>
                   </div>
-                  <div class="brief-adjustment" id="briefAdjustment" hidden></div>
+                  <div class="brief-revision-stream" id="briefRevisionStream" aria-live="polite"></div>
                   <span class="brief-finish brief-confirmed" id="briefConfirmed" hidden>任务 brief 已确认，开始执行</span>
                 </div>
                 <div class="execution-stage" id="executionStage" aria-hidden="true">
@@ -676,15 +708,15 @@
 
                   <section class="aside-conversation" id="asideConversation">
                     <div class="aside-heading">即时交流 · 不改变当前任务</div>
-                    <p class="aside-copy proactive"><span class="proactive-label">ALEX 主动同步</span>我刚发现 Linear 把“状态变化”直接变成了团队沟通的一部分，而不是额外写一份进度报告。这个点可能会成为汇报中很有价值的一条工作结论。<span class="aside-meta">来自当前分析 · 主任务持续运行</span></p>
-                    <p class="aside-copy user">为什么先分析 Linear？</p>
-                    <p class="aside-copy agent">它的任务状态与协作沟通结合得最紧，适合用来对照我们的“对话如何进入工作流”。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
-                    <p class="aside-copy user">Linear 的状态变化为什么能代替进度汇报？</p>
-                    <p class="aside-copy agent">因为负责人、状态和项目周期都直接绑定在任务上。成员完成一次真实操作，团队看到的进度也会同步更新，不需要再把工作重新整理成一份汇报。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
-                    <p class="aside-copy user">这个机制对我们最直接的启发是什么？</p>
-                    <p class="aside-copy agent">让执行行为本身生成可读的进度，并只在出现偏差、风险或需要决策时主动打断用户。这样既保持团队感知，也不会增加额外汇报负担。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
-                    <p class="aside-copy user">那把它再增加一个“商业模式”的分析维度。</p>
-                    <div class="intent-card" id="intentCard">
+                    <p class="aside-copy proactive aside-stream-item" hidden><span class="proactive-label">ALEX 主动同步</span>我刚发现 Linear 把“状态变化”直接变成了团队沟通的一部分，而不是额外写一份进度报告。这个点可能会成为汇报中很有价值的一条工作结论。<span class="aside-meta">来自当前分析 · 主任务持续运行</span></p>
+                    <p class="aside-copy user aside-stream-item" hidden>为什么先分析 Linear？</p>
+                    <p class="aside-copy agent aside-stream-item" hidden>它的任务状态与协作沟通结合得最紧，适合用来对照我们的“对话如何进入工作流”。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
+                    <p class="aside-copy user aside-stream-item" hidden>Linear 的状态变化为什么能代替进度汇报？</p>
+                    <p class="aside-copy agent aside-stream-item" hidden>因为负责人、状态和项目周期都直接绑定在任务上。成员完成一次真实操作，团队看到的进度也会同步更新，不需要再把工作重新整理成一份汇报。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
+                    <p class="aside-copy user aside-stream-item" hidden>这个机制对我们最直接的启发是什么？</p>
+                    <p class="aside-copy agent aside-stream-item" hidden>让执行行为本身生成可读的进度，并只在出现偏差、风险或需要决策时主动打断用户。这样既保持团队感知，也不会增加额外汇报负担。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
+                    <p class="aside-copy user aside-stream-item" hidden>那把它再增加一个“商业模式”的分析维度。</p>
+                    <div class="intent-card aside-stream-item" id="intentCard" hidden>
                       <strong>这句话可能会改变当前任务</strong>
                       <p>Alex 可以把它作为正式要求加入竞品分析。确认前，当前任务不会改变。</p>
                       <div class="intent-diff"><del>Linear · 交互模式</del><span>→</span><ins>Linear · 交互模式 + 商业模式</ins></div>
@@ -723,21 +755,26 @@
             <div class="permission-prompt" id="permissionEvent" hidden>
               <div class="permission-prompt-row">
                 <div class="permission-prompt-copy">
-                  <strong>是否访问 Linear 产品的官网查看信息？</strong>
-                  <span>原始请求：是否访问 www.linear.com</span>
+                  <strong id="permissionTitle">允许我访问 Linear 产品的官网查看信息吗？这不会修改本地文件</strong>
+                  <code class="permission-command" id="permissionCommand">curl.exe -I --max-time 10 https://example.com</code>
+                  <div class="permission-tags" id="permissionTags" aria-label="权限说明">
+                    <span class="permission-tag">访问外部信息</span>
+                    <span class="permission-tag">低风险</span>
+                    <span class="permission-tag">不涉及外部发送</span>
+                  </div>
                 </div>
                 <div class="permission-buttons">
-                  <button class="btn" id="denyAccessBtn" type="button">拒绝访问</button>
+                  <button class="btn decision-deny" id="denyAccessBtn" type="button"><span>拒绝</span><span class="key-hint" aria-hidden="true">Esc</span></button>
                   <div class="allow-menu">
-                    <div class="allow-split">
-                      <button class="btn primary allow-primary-action" id="allowAccessBtn" type="button">允许访问</button>
-                      <button class="btn primary allow-menu-trigger" id="allowMoreBtn" type="button" aria-label="选择允许范围" aria-haspopup="menu" aria-expanded="false" aria-controls="permissionSecondary">
-                        <img class="allow-menu-icon" src="./allow-menu-chevron.svg" alt="" aria-hidden="true" />
+                    <div class="allow-primary-action">
+                      <button class="allow-main" id="allowAccessBtn" type="button"><span>允许一次</span><span class="key-hint" aria-hidden="true">Enter</span></button>
+                      <button class="allow-menu-trigger" id="allowMoreBtn" type="button" aria-label="选择允许范围" aria-haspopup="menu" aria-expanded="false" aria-controls="permissionSecondary">
+                        <img class="allow-menu-icon" src="./assets/composer/allow-chevron.svg" alt="" aria-hidden="true" />
                       </button>
                     </div>
                     <div class="permission-secondary" id="permissionSecondary" role="menu" hidden>
-                      <button class="allow-option" id="allowOnceOptionBtn" type="button" role="menuitem"><strong>允许单次访问</strong><span>仅允许这一次访问 Linear 官网</span></button>
-                      <button class="allow-option" id="allowTypeAccessBtn" type="button" role="menuitem"><strong>允许此类访问</strong><span>以后访问公开产品官网时不再询问</span></button>
+                      <button class="allow-option" id="allowOnceOptionBtn" type="button" role="menuitem"><strong>允许一次</strong><span>仅允许访问 Linear 官网</span></button>
+                      <button class="allow-option" id="allowTypeAccessBtn" type="button" role="menuitem"><strong>允许类似命令</strong><span>以后访问公开产品官网时不再询问</span></button>
                     </div>
                   </div>
                 </div>
@@ -745,7 +782,20 @@
             </div>
             <textarea id="messageInput" aria-label="发送消息" placeholder="补充或调整本次任务的目标、范围或交付要求…"></textarea>
             <div class="composer-footer">
-              <button class="send editing" id="sendBtn" type="submit" aria-label="修改任务规划">修改</button>
+              <div class="composer-tools">
+                <button class="composer-icon-button" type="button" aria-label="添加附件"><img src="./assets/composer/attach.svg" alt="" /></button>
+                <img class="composer-divider" src="./assets/composer/divider.svg" alt="" aria-hidden="true" />
+                <button class="model-picker" type="button" aria-label="选择模型和推理强度">
+                  <img src="./assets/composer/agent.svg" alt="" aria-hidden="true" />
+                  <span class="model-name" id="modelName">DeepSeek · V4 Flash</span>
+                  <span class="model-effort" id="modelStatus">本地</span>
+                  <img class="model-chevron" src="./assets/composer/model-chevron.svg" alt="" aria-hidden="true" />
+                </button>
+              </div>
+              <div class="composer-actions">
+                <button class="composer-icon-button" type="button" aria-label="语音输入"><img id="voiceIcon" src="./assets/composer/stop.svg" alt="" /></button>
+                <button class="send editing" id="sendBtn" type="submit" aria-label="修改任务规划"><img class="send-edit-icon" src="./assets/composer/edit.svg" alt="" /><span>修改</span></button>
+              </div>
             </div>
           </form>
         </div>
@@ -796,6 +846,7 @@
     const sidebarToggle = document.getElementById('sidebarToggle');
     const askBtn = document.getElementById('askBtn');
     const aside = document.getElementById('asideConversation');
+    const conversationItems = Array.from(aside.querySelectorAll('.aside-stream-item'));
     const applyBtn = document.getElementById('applyBtn');
     const discussBtn = document.getElementById('discussBtn');
     const intentCard = document.getElementById('intentCard');
@@ -816,6 +867,7 @@
     const workCardToggle = document.getElementById('workCardToggle');
     const elapsedTime = document.getElementById('elapsedTime');
     const composer = document.getElementById('composer');
+    const composerWrap = document.querySelector('.composer-wrap');
     const messageInput = document.getElementById('messageInput');
     const toast = document.getElementById('toast');
     const briefReview = document.getElementById('briefReview');
@@ -823,10 +875,15 @@
     const confirmBriefBtn = document.getElementById('confirmBriefBtn');
     const executionStage = document.getElementById('executionStage');
     const presenceText = document.querySelector('.agent-presence span:last-child');
-    const briefAdjustment = document.getElementById('briefAdjustment');
+    const briefRevisionStream = document.getElementById('briefRevisionStream');
     const launchConfirm = document.getElementById('launchConfirm');
     const sendBtn = document.getElementById('sendBtn');
+    const voiceIcon = document.getElementById('voiceIcon');
+    const modelStatus = document.getElementById('modelStatus');
     const permissionEvent = document.getElementById('permissionEvent');
+    const permissionTitle = document.getElementById('permissionTitle');
+    const permissionCommand = document.getElementById('permissionCommand');
+    const permissionTags = document.getElementById('permissionTags');
     const allowAccessBtn = document.getElementById('allowAccessBtn');
     const allowOnceOptionBtn = document.getElementById('allowOnceOptionBtn');
     const denyAccessBtn = document.getElementById('denyAccessBtn');
@@ -877,6 +934,7 @@
     let progress = 3;
     let total = 4;
     let progressTimers = [];
+    let conversationTimers = [];
     let isPositioningWorkCard = false;
     let preserveExpandedAfterLaunch = false;
     let taskStarted = false;
@@ -885,8 +943,100 @@
     let completionTimer;
     let elapsedSeconds = 202;
     let elapsedTimer;
+    let currentDecision = { subject: 'Linear 官网' };
+    let currentPlanText = briefReview.innerText.trim();
+
+    const LOCAL_AGENT_URL = 'http://127.0.0.1:8787/agent';
+    const LOCAL_AGENT_HEALTH_URL = 'http://127.0.0.1:8787/health';
 
     presenceText.textContent = 'ALEX 等待确认';
+
+    function localFallback(mode, message, context = {}) {
+      const asksForDecision = /访问|联网|官网|发送|上传|授权|权限/.test(message);
+      const changesTask = /增加|改成|调整|修改|删除|不要|改为|交付|范围|目标|优先/.test(message);
+      if (mode === 'plan_revision') {
+        return {
+          kind: 'plan_revision',
+          message: `本次将任务要求调整为：${message}`,
+          planSummary: `${context.currentPlan || '按当前规划继续执行。'}\n\n本次补充：${message}`,
+          changeSummary: '',
+          decision: { required: false, title: '', detail: '', command: '', subject: '', tags: [] }
+        };
+      }
+      if (asksForDecision) {
+        return {
+          kind: 'decision_request',
+          message: '这个动作需要你确认后才能继续。',
+          planSummary: '',
+          changeSummary: '',
+          decision: {
+            required: true,
+            title: `允许执行“${message}”吗？`,
+            detail: '确认后 Alex 才会执行这个外部动作',
+            command: message,
+            subject: '本次操作',
+            tags: ['需要确认', '外部操作']
+          }
+        };
+      }
+      return {
+        kind: changesTask ? 'task_change' : 'discussion',
+        message: changesTask ? '我识别到这会改变当前任务，先请你确认是否正式应用。' : '收到，这条信息会保留为即时交流，不改变当前任务。',
+        planSummary: '',
+        changeSummary: changesTask ? message : '',
+        decision: { required: false, title: '', detail: '', command: '', subject: '', tags: [] }
+      };
+    }
+
+    async function callLocalAgent(mode, message, extraContext = {}) {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 17000);
+      composer.classList.add('is-agent-busy');
+      sendBtn.disabled = true;
+      modelStatus.textContent = '思考中…';
+      try {
+        const response = await fetch(LOCAL_AGENT_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            mode,
+            message,
+            context: {
+              taskStarted,
+              progress: `${progress}/${total}`,
+              currentStep: currentStep.textContent,
+              ...extraContext
+            }
+          }),
+          signal: controller.signal
+        });
+        if (!response.ok) throw new Error('Agent unavailable');
+        const payload = await response.json();
+        modelStatus.textContent = '本地';
+        return payload.result;
+      } catch {
+        modelStatus.textContent = '规则回退';
+        notify('Alex 暂时无法连接，已使用本地规则继续');
+        return localFallback(mode, message, extraContext);
+      } finally {
+        window.clearTimeout(timeout);
+        composer.classList.remove('is-agent-busy');
+        sendBtn.disabled = false;
+      }
+    }
+
+    async function checkLocalAgent() {
+      try {
+        const response = await fetch(LOCAL_AGENT_HEALTH_URL);
+        if (!response.ok) throw new Error('Agent unavailable');
+        const health = await response.json();
+        modelStatus.textContent = health.configured ? 'API' : '未配置';
+      } catch {
+        modelStatus.textContent = '未连接';
+      }
+    }
+
+    checkLocalAgent();
 
     sidebarToggle.addEventListener('click', () => {
       const collapsed = appShell.classList.toggle('sidebar-collapsed');
@@ -899,6 +1049,54 @@
       toast.classList.add('show');
       window.clearTimeout(notify.timer);
       notify.timer = window.setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+
+    function appendPlanningUserMessage(text) {
+      const row = document.createElement('div');
+      row.className = 'brief-revision-user is-revealing';
+      const bubble = document.createElement('div');
+      bubble.className = 'user-bubble';
+      bubble.textContent = text;
+      row.appendChild(bubble);
+      briefRevisionStream.appendChild(row);
+      scrollToLatest();
+    }
+
+    function appendThinkingStatus(container) {
+      const status = document.createElement('div');
+      status.className = 'aside-heading agent-thinking-status is-revealing';
+      status.textContent = 'Alex 正在思考';
+      container.appendChild(status);
+      scrollToLatest();
+      return status;
+    }
+
+    function appendPlanningAnswer() {
+      const status = appendThinkingStatus(briefRevisionStream);
+      const answer = document.createElement('div');
+      answer.className = 'brief-revision-answer';
+      briefRevisionStream.appendChild(answer);
+      scrollToLatest();
+      return { status, answer };
+    }
+
+    function streamPlanningAnswer(entry, text) {
+      entry.status.remove();
+      const element = entry.answer;
+      element.textContent = '';
+      element.classList.add('is-streaming');
+      let cursor = 0;
+      const chunkSize = Math.max(1, Math.ceil(text.length / 120));
+      const timer = window.setInterval(() => {
+        cursor = Math.min(text.length, cursor + chunkSize);
+        element.textContent = text.slice(0, cursor);
+        if (cursor % (chunkSize * 8) === 0) scrollToLatest();
+        if (cursor >= text.length) {
+          window.clearInterval(timer);
+          element.classList.remove('is-streaming');
+          scrollToLatest();
+        }
+      }, 18);
     }
 
     function showProjectModal() {
@@ -1157,8 +1355,30 @@
     });
 
     function scrollToLatest() {
-      requestAnimationFrame(() => timelineScroll.scrollTo({ top: timelineScroll.scrollHeight, behavior: 'smooth' }));
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          timelineScroll.scrollTo({ top: timelineScroll.scrollHeight, behavior: 'smooth' });
+        });
+      });
     }
+
+    let previousComposerHeight = 0;
+
+    function syncComposerSafeSpace() {
+      const composerHeight = Math.ceil(composerWrap.getBoundingClientRect().height);
+      if (!composerHeight || composerHeight === previousComposerHeight) return;
+      const previousHeight = previousComposerHeight;
+      const wasNearBottom = timelineScroll.scrollHeight - timelineScroll.clientHeight - timelineScroll.scrollTop < 80;
+      previousComposerHeight = composerHeight;
+      timelineScroll.style.setProperty('--composer-safe-space', `${composerHeight + 12}px`);
+      if (previousHeight) timelineScroll.scrollTop += composerHeight - previousHeight;
+      if (wasNearBottom) scrollToLatest();
+    }
+
+    const composerResizeObserver = new ResizeObserver(syncComposerSafeSpace);
+    composerResizeObserver.observe(composerWrap);
+    window.addEventListener('resize', syncComposerSafeSpace);
+    requestAnimationFrame(syncComposerSafeSpace);
 
     function setWorkCardCollapsed(collapsed) {
       workCard.classList.toggle('is-stuck', collapsed);
@@ -1172,9 +1392,94 @@
       elapsedTime.textContent = `已处理 ${minutes}分钟 ${seconds}秒`;
     }
 
+    function appendAgentMessage(text, meta = '即时交流 · 未改变当前任务') {
+      const message = document.createElement('p');
+      message.className = 'aside-copy agent is-revealing';
+      message.textContent = text;
+      const messageMeta = document.createElement('span');
+      messageMeta.className = 'aside-meta';
+      messageMeta.textContent = meta;
+      message.appendChild(messageMeta);
+      aside.appendChild(message);
+      scrollToLatest();
+      return message;
+    }
+
+    function collectRecentConversation(limit = 16) {
+      return Array.from(aside.querySelectorAll('.aside-copy'))
+        .filter(node => !node.hidden)
+        .slice(-limit)
+        .map(node => {
+          const copy = node.cloneNode(true);
+          copy.querySelectorAll('.aside-meta, .proactive-label').forEach(meta => meta.remove());
+          return {
+            role: node.classList.contains('user') ? 'user' : 'assistant',
+            content: copy.textContent.trim()
+          };
+        })
+        .filter(item => item.content);
+    }
+
+    function getCurrentTaskState() {
+      return {
+        status: taskCompleted ? 'completed' : taskStarted ? 'running' : 'planning',
+        progress: `${progress}/${total}`,
+        currentStep: currentStep.textContent.trim(),
+        deliverableReady: taskCompleted
+      };
+    }
+
+    function appendChangeProposal(result) {
+      const card = document.createElement('div');
+      card.className = 'intent-card is-revealing';
+      const title = document.createElement('strong');
+      title.textContent = '这句话可能会改变当前任务';
+      const copy = document.createElement('p');
+      copy.textContent = result.changeSummary || '将这条要求加入当前任务。';
+      const actions = document.createElement('div');
+      actions.className = 'intent-actions';
+      const apply = document.createElement('button');
+      apply.className = 'btn primary';
+      apply.type = 'button';
+      apply.textContent = '应用到主任务';
+      const discuss = document.createElement('button');
+      discuss.className = 'btn';
+      discuss.type = 'button';
+      discuss.textContent = '只是讨论';
+      actions.append(apply, discuss);
+      card.append(title, copy, actions);
+      aside.appendChild(card);
+      apply.addEventListener('click', () => {
+        currentStep.textContent = `已接入即时修改：${result.changeSummary || '更新当前任务要求'}`;
+        card.innerHTML = '<strong>已应用到主任务</strong><p>Alex 将在不中断当前流程的前提下吸收这次修改。</p>';
+        notify('即时修改已接入当前任务');
+      });
+      discuss.addEventListener('click', () => {
+        card.innerHTML = '<strong>保留为即时交流</strong><p>当前任务范围保持不变。</p>';
+        notify('未改变当前任务');
+      });
+      scrollToLatest();
+    }
+
+    function showAgentDecision(decision) {
+      currentDecision = { subject: decision.subject || '本次操作' };
+      permissionTitle.textContent = decision.title || '这个操作需要你的确认';
+      permissionCommand.textContent = decision.command || decision.detail || '等待用户确认';
+      permissionTags.replaceChildren();
+      (decision.tags?.length ? decision.tags : ['需要确认']).forEach(tag => {
+        const badge = document.createElement('span');
+        badge.className = 'permission-tag';
+        badge.textContent = tag;
+        permissionTags.appendChild(badge);
+      });
+      revealAccessRequest();
+      scrollToLatest();
+    }
+
     function revealAccessRequest() {
       if (taskCompleted) return;
       permissionEvent.hidden = false;
+      voiceIcon.src = './assets/composer/stop.svg';
       permissionSecondary.hidden = true;
       allowMoreBtn.setAttribute('aria-expanded', 'false');
       presenceText.textContent = 'ALEX 等待你的授权';
@@ -1184,15 +1489,17 @@
     function resolveAccessRequest(scope) {
       const allowed = scope !== 'deny';
       const allowsType = scope === 'type';
+      const decisionSubject = currentDecision.subject;
       window.clearTimeout(accessRequestTimer);
       permissionEvent.hidden = true;
+      voiceIcon.src = './assets/composer/voice.svg';
       decisionRecord.hidden = false;
       decisionRecord.classList.toggle('denied', !allowed);
       decisionRecord.textContent = allowsType
-        ? '已允许此类访问：公开产品官网'
+        ? `已允许类似操作：${decisionSubject}`
         : allowed
-          ? '已允许访问 Linear 官网'
-          : '已拒绝访问 Linear 官网，Alex 将使用现有资料继续';
+          ? `已允许：${decisionSubject}`
+          : `已拒绝：${decisionSubject}，Alex 将寻找替代办法`;
       presenceText.textContent = 'ALEX 正在工作';
       currentStep.textContent = allowed
         ? '正在读取 Linear 官网信息，并继续分析任务状态、协作沟通与商业模式。'
@@ -1200,7 +1507,6 @@
       notify(allowsType ? '已允许此类访问' : allowed ? '已允许访问，主任务继续运行' : '已拒绝访问，主任务继续运行');
       scrollToLatest();
       window.clearTimeout(completionTimer);
-      completionTimer = window.setTimeout(completeTask, 1800);
     }
 
     function completeTask() {
@@ -1231,6 +1537,7 @@
       document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = '任务已完成 · 4/4');
       presenceText.textContent = 'ALEX 已完成';
       conversationStatus.classList.add('complete');
+      aside.appendChild(completionCard);
       completionCard.hidden = false;
       completionCard.classList.add('show');
       messageInput.placeholder = '继续追问，或基于这份文档发起新的修改…';
@@ -1302,9 +1609,41 @@
     function startProgressDemo() {
       progressTimers.forEach(timer => window.clearTimeout(timer));
       progressTimers = [];
-      renderProgress(1);
-      progressTimers.push(window.setTimeout(() => renderProgress(2), 2000));
-      progressTimers.push(window.setTimeout(() => renderProgress(3), 4000));
+      renderProgress(3);
+    }
+
+    function applyExplicitProgressCommand(value) {
+      const startsNextProduct = /((开始|开启|继续|进入|推进).{0,10}(下一个|下个|Miro|米罗|第四个|4\s*\/\s*4)|(下一个|下个|Miro|米罗|第四个).{0,10}(开始|开启|调研|研究|分析|继续|推进))/iu.test(value);
+      const completesResearch = /((完成|结束).{0,8}(调研|研究|分析|任务)|(生成|整理|输出).{0,8}(文档|报告|交付物))/iu.test(value);
+
+      if (!taskCompleted && progress === 3 && startsNextProduct) {
+        renderProgress(4);
+        notify('已确认，开始第 4 个产品的调研');
+        return 'started_next_product';
+      }
+      if (!taskCompleted && progress === 4 && completesResearch) {
+        return 'completed_task';
+      }
+      return '';
+    }
+
+    function startConversationDemo() {
+      conversationTimers.forEach(timer => window.clearTimeout(timer));
+      conversationTimers = [];
+      conversationItems.forEach(item => {
+        item.hidden = true;
+        item.classList.remove('is-revealing');
+      });
+      aside.hidden = false;
+      askBtn.textContent = '收起交流';
+      conversationItems.forEach((item, index) => {
+        const timer = window.setTimeout(() => {
+          item.hidden = false;
+          item.classList.add('is-revealing');
+          if (!aside.hidden) scrollToLatest();
+        }, 625 + index * 813);
+        conversationTimers.push(timer);
+      });
     }
 
     function syncStickyCardFromSentinel() {
@@ -1346,12 +1685,14 @@
       }, 1000);
       executionStage.setAttribute('aria-hidden', 'false');
       launchConfirm.hidden = true;
+      voiceIcon.src = './assets/composer/voice.svg';
       presenceText.textContent = 'ALEX 正在工作';
       messageInput.placeholder = '告诉 Alex 你想推进什么，或直接问问当前进展…';
-      sendBtn.textContent = '↑';
+      sendBtn.innerHTML = '<img class="send-icon" src="./assets/composer/send.svg" alt="" />';
       sendBtn.classList.remove('editing');
       sendBtn.setAttribute('aria-label', '发送');
       startProgressDemo();
+      startConversationDemo();
       executionStage.classList.add('active');
       requestAnimationFrame(() => {
         requestAnimationFrame(scrollWorkCardToTop);
@@ -1397,45 +1738,84 @@
     });
 
     advanceBtn.addEventListener('click', () => {
-      progressTimers.forEach(timer => window.clearTimeout(timer));
-      progressTimers = [];
-      if (progress < total && progress + 1 === total) completeTask();
-      else if (progress < total) renderProgress(progress + 1);
-      notify(progress === total ? '竞品材料整理完成' : `主进程已推进到 ${progress}/${total}`);
+      messageInput.value = progress < total ? '开启下个产品的调研' : '完成调研并生成文档';
+      messageInput.dispatchEvent(new Event('input', { bubbles: true }));
+      messageInput.focus();
+      notify('发送确认后，Alex 才会推进当前进度');
     });
 
-    composer.addEventListener('submit', (event) => {
+    composer.addEventListener('submit', async (event) => {
       event.preventDefault();
+      if (sendBtn.disabled) return;
       const value = messageInput.value.trim();
       if (!value) return;
       if (!taskStarted) {
-        briefAdjustment.textContent = `收到，我会把“${value}”补充进任务规划，其余范围和交付方式保持不变。确认后我再开始执行。`;
-        briefAdjustment.hidden = false;
+        appendPlanningUserMessage(value);
+        const answer = appendPlanningAnswer();
         messageInput.value = '';
         messageInput.placeholder = '继续补充或调整本次任务规划…';
-        notify('补充内容已加入任务 brief');
-        // 复述 brief 阶段的修改只更新当前内容，不改变用户正在阅读的位置。
-        // 下滑动画仅由“确认并开始执行”触发，避免修改规划时页面突然跳到底部。
+        const result = await callLocalAgent('plan_revision', value, {
+          currentPlan: currentPlanText,
+          outputRequirement: '输出两个简洁自然段，不加标题或列表。message 作为第一段，只讲本次修改及新的侧重点；planSummary 作为第二段，只浓缩未变化的任务对象、使用场景、推进方式和交付物，不要再次描述被修改的重点，也不要重复第一段的关键词或同义表达。'
+        });
+        const revisedPlan = result.planSummary || `${currentPlanText}\n\n本次补充：${value}`;
+        const changeSummary = (result.message || `本次将任务要求调整为：${value}`)
+          .replace(/^(收到|好的|明白了|明白)[，,。\s]*/u, '')
+          .replace(/^我会把/u, '')
+          .trim();
+        currentPlanText = [changeSummary, revisedPlan].filter(Boolean).join(' ');
+        streamPlanningAnswer(answer, [changeSummary, revisedPlan].filter(Boolean).join('\n\n'));
+        notify('Alex 已更新任务 brief');
         return;
       }
       aside.hidden = false;
       askBtn.textContent = '收起交流';
+      const recentConversation = collectRecentConversation();
+      const progressAction = applyExplicitProgressCommand(value);
       const message = document.createElement('p');
-      message.className = 'aside-copy user';
+      message.className = 'aside-copy user is-revealing';
       message.textContent = value;
       aside.appendChild(message);
       messageInput.value = '';
-      notify('已作为即时交流发送，不会中断主任务');
       scrollToLatest();
+      const thinking = appendThinkingStatus(aside);
+      const result = await callLocalAgent('task_message', value, {
+        currentTaskBrief: currentPlanText,
+        currentTaskState: getCurrentTaskState(),
+        progressAction,
+        recentConversation,
+        responseRequirement: '只回应用户这一次新增的问题或意图。结合近期对话，已经说过的背景和进度不要再次完整复述；用户没有明确询问进度、且答案不依赖进度时，完全不要提任务状态。任务状态必须以 currentTaskState 为准，不得沿用旧进度，也不要声称知道本地网络是否正常。progressAction 非空表示前端已执行用户明确要求的进度操作，简洁确认即可，不要把它识别成范围修改。意图分类仅用于 kind 字段。'
+      });
+      thinking.remove();
+      appendAgentMessage(result.message, result.kind === 'discussion' ? '即时交流 · 未改变当前任务' : '本地 Agent · 已识别意图');
+      if (progressAction === 'completed_task') completeTask();
+      if (result.kind === 'task_change') appendChangeProposal(result);
+      if (result.kind === 'decision_request' && result.decision.required) showAgentDecision(result.decision);
+      notify(result.kind === 'discussion' ? '已作为即时交流处理' : result.kind === 'task_change' ? '已识别任务修改' : '需要你的决定');
     });
 
     messageInput.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' || event.shiftKey || event.isComposing || event.keyCode === 229) return;
       event.preventDefault();
+      if (!permissionEvent.hidden) {
+        event.stopPropagation();
+        resolveAccessRequest('once');
+        return;
+      }
       composer.requestSubmit();
     });
 
     window.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && !permissionEvent.hidden) {
+        event.preventDefault();
+        resolveAccessRequest('deny');
+        return;
+      }
+      if (event.key === 'Enter' && !permissionEvent.hidden && (document.activeElement === document.body || document.activeElement === messageInput)) {
+        event.preventDefault();
+        resolveAccessRequest('once');
+        return;
+      }
       if (event.key !== 'F5') return;
       event.preventDefault();
       window.location.reload();
