@@ -43,8 +43,8 @@ function registerWindowControls() {
 function createWindow() {
   const workArea = screen.getPrimaryDisplay().workAreaSize;
   mainWindow = new BrowserWindow({
-    width: Math.min(1440, workArea.width),
-    height: Math.min(900, workArea.height),
+    width: Math.min(1200, workArea.width),
+    height: Math.min(800, workArea.height),
     minWidth: 960,
     minHeight: 680,
     show: false,
