@@ -7,12 +7,17 @@ const PORT = Number(process.env.COLLEAGUE_AGENT_PORT || 8787);
 const MODEL = process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash';
 const API_BASE = (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '');
 let apiKey = process.env.DEEPSEEK_API_KEY || '';
-const ALLOWED_MODES = new Set(['plan_revision', 'task_message', 'decision_request']);
+const ALLOWED_MODES = new Set(['initial_plan', 'plan_revision', 'task_message', 'decision_request']);
 const ALLOWED_KINDS = new Set(['plan_revision', 'discussion', 'task_change', 'decision_request']);
 const PLANNING_GUIDE_PATH = path.join(__dirname, 'prompts', 'alex-planning.md');
+const LOCAL_ENV_PATH = path.join(__dirname, '.env.local');
+
+function isTrustedOrigin(origin) {
+  return /^http:\/\/127\.0\.0\.1:\d+$/.test(origin || '') || origin === 'null' || origin === 'file://';
+}
 
 function setCors(response, origin) {
-  if (/^http:\/\/127\.0\.0\.1:\d+$/.test(origin || '')) {
+  if (isTrustedOrigin(origin)) {
     response.setHeader('Access-Control-Allow-Origin', origin);
     response.setHeader('Vary', 'Origin');
   }
@@ -27,7 +32,17 @@ function sendJson(response, status, payload) {
 
 function sendSetupPage(response, saved = false) {
   response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
-  response.end(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DeepSeek 设置</title><style>body{margin:0;background:#f5f6fa;font:14px Inter,"Microsoft YaHei",sans-serif;color:#171717}.card{width:min(440px,calc(100% - 40px));margin:12vh auto;padding:28px;border:1px solid #ddd;border-radius:16px;background:#fff;box-shadow:0 16px 50px #00000012}h1{margin:0 0 8px;font-size:20px}p{color:#666;line-height:1.6}input{box-sizing:border-box;width:100%;margin:16px 0 12px;padding:12px;border:1px solid #bbb;border-radius:9px;font:inherit}button{width:100%;padding:11px;border:0;border-radius:9px;background:#4457de;color:#fff;font:inherit;font-weight:650;cursor:pointer}.ok{padding:10px;border-radius:8px;background:#eef8e8;color:#32730d}</style><main class="card"><h1>连接 DeepSeek API</h1>${saved ? '<p class="ok">已保存到当前本地进程，可以关闭此页面。</p>' : '<p>密钥只保存在当前 Agent 进程的内存中，不会写入项目文件。</p><form method="post" action="/configure"><input name="key" type="password" autocomplete="off" placeholder="粘贴 DeepSeek API Key" required><button type="submit">保存并连接</button></form>'}</main></html>`);
+  response.end(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DeepSeek 设置</title><style>body{margin:0;background:#f5f6fa;font:14px Inter,"Microsoft YaHei",sans-serif;color:#171717}.card{width:min(440px,calc(100% - 40px));margin:12vh auto;padding:28px;border:1px solid #ddd;border-radius:16px;background:#fff;box-shadow:0 16px 50px #00000012}h1{margin:0 0 8px;font-size:20px}p{color:#666;line-height:1.6}input{box-sizing:border-box;width:100%;margin:16px 0 12px;padding:12px;border:1px solid #bbb;border-radius:9px;font:inherit}button{width:100%;padding:11px;border:0;border-radius:9px;background:#4457de;color:#fff;font:inherit;font-weight:650;cursor:pointer}.ok{padding:10px;border-radius:8px;background:#eef8e8;color:#32730d}</style><main class="card"><h1>连接 DeepSeek API</h1>${saved ? '<p class="ok">已保存到本机配置，重启后仍可使用，可以关闭此页面。</p>' : '<p>密钥保存在本机的 .env.local 中，并由 Git 忽略，不会进入代码提交。</p><form method="post" action="/configure"><input name="key" type="password" autocomplete="off" placeholder="粘贴 DeepSeek API Key" required><button type="submit">保存并连接</button></form>'}</main></html>`);
+}
+
+function persistApiKey(nextKey) {
+  if (/\r|\n/.test(nextKey)) throw new Error('密钥格式无效');
+  const current = fs.existsSync(LOCAL_ENV_PATH) ? fs.readFileSync(LOCAL_ENV_PATH, 'utf8') : '';
+  const line = `DEEPSEEK_API_KEY=${nextKey}`;
+  const updated = /^DEEPSEEK_API_KEY=.*$/m.test(current)
+    ? current.replace(/^DEEPSEEK_API_KEY=.*$/m, line)
+    : `${current.trimEnd()}${current.trim() ? '\n' : ''}${line}\n`;
+  fs.writeFileSync(LOCAL_ENV_PATH, updated, 'utf8');
 }
 
 function readForm(request) {
@@ -79,15 +94,18 @@ function buildPrompt({ mode, message, context }) {
 当前上下文：${JSON.stringify(context || {})}
 
 判断规则：
-- plan_revision：规划确认前的补充或修改，kind 必须为 plan_revision。message 作为第一段，只写本次修改及新的侧重点；planSummary 作为第二段，只浓缩未变化的任务对象、使用场景、推进方式和交付物，不得再次描述被修改的重点，也不得重复第一段的关键词或同义表达。两段不添加标题或列表。
-- task_message：优先结合 context.recentConversation 直接回答用户的问题，并以 context.currentTaskState 为唯一的当前进度依据；不要重复近期回答，不要用历史消息里的旧进度覆盖当前状态。context.progressAction 非空时表示用户明确要求的执行推进已由前端完成，kind 使用 discussion，不要识别成范围修改。意图分类不能取代回答。普通问答或讨论的 kind 为 discussion；明确改变目标、范围、交付物或优先级时为 task_change；需要授权、外部访问、发送信息或其他用户决定时为 decision_request。
+- initial_plan：这是新对话的第一条任务请求，不存在旧任务。kind 必须为 plan_revision；直接从零生成完整任务 brief，planSummary 依次明确写出“任务目标：”“调研对象：”“分析重点：”“推进方式：”“最终交付：”五项并以独立确认句收尾。不得称为修改、调整或补充，不得引用任何旧任务。message 简洁说明已形成初步任务理解。taskCard 必须填写可直接执行的新任务卡片。
+- plan_revision：先判断用户是在提问，还是明确要求修改规划。若用户主要是在询问原因、含义、可行性、区别或寻求解释，且没有明确要求改变目标、范围、交付物或步骤，kind 必须为 discussion：message 先直接回答疑问，可在结尾简短说明有哪些可修改方向，但不得擅自生成修改方案、不得改写任务 brief，planSummary 与 changeSummary 留空，taskCard 返回空内容。只有用户明确提出增加、删除、替换或调整任务要求时，kind 才为 plan_revision：message 只简洁说明这次改了什么；planSummary 必须重新生成一份已经吸收本次修改的完整任务 brief，并依次明确写出“任务目标：”“调研对象：”“分析重点：”“推进方式：”“最终交付：”五项，将变化直接写入对应项中，最后用独立确认句收尾。不得沿用包含旧要求的描述，不得在末尾追加“本次补充”，也不得把 message 原句再单独重复一次。
+- task_message：优先结合 context.recentConversation 直接回答用户的问题，并以 context.currentTaskState 为唯一的当前进度依据；不要重复近期回答，不要用历史消息里的旧进度覆盖当前状态。context.inputIntent=planning_question 表示用户仍处于规划确认阶段且当前输入已被前端识别为疑问或非修改意见：kind 必须为 discussion，像正常对话一样完整回应。此时不限制回答长度、不要求固定段落或格式；根据问题需要充分解释判断依据、差异、例子与取舍，不要为了简短而省略关键内容，也不要只说有哪些可调整方向。唯一边界是绝不更新任务 brief 或 taskCard。context.progressAction 非空时表示用户明确要求的执行推进已由前端完成，kind 使用 discussion，不要识别成范围修改。意图分类不能取代回答。普通问答或讨论的 kind 为 discussion；明确改变目标、范围、交付物或优先级时为 task_change；需要授权、外部访问、发送信息或其他用户决定时为 decision_request。
 - decision_request：kind 必须为 decision_request。
-- message 应像 Alex 的自然回复，简洁自然，控制在 80 字以内。
-- changeSummary 仅在 task_change 时填写；planSummary 仅在 plan_revision 时填写，其余填空字符串。
-- decision_request 时 decision.required=true，并填写标题、说明、操作对象、可选命令和最多 3 个风险标签；其他情况 decision.required=false，其余字段填空字符串或空数组。
+- message 应像 Alex 的自然回复。除 context.inputIntent=planning_question 外保持简洁自然，控制在 80 字以内；planning_question 按问题本身所需篇幅完整回答，不设字数或固定格式要求。
+- changeSummary 仅在 task_change 时填写；planSummary 仅在真正修改规划的 plan_revision 时填写，其余填空字符串。
+- plan_revision 和 task_change 必须填写 taskCard，内容是吸收本次修改后的完整主进程卡片：title 是不超过 8 个字的任务类型，statusText 是当前执行说明，steps 是 2 到 8 条按执行顺序排列的简洁步骤。优先参考 context.currentTaskCard，在原卡片上准确增删或改写，不要只返回本次增量。
+- discussion 和 decision_request 不得改变主进程卡片，taskCard 返回空 title、空 statusText 和空数组。
+- decision_request 时 decision.required=true，并填写标题、说明、操作对象和可选命令。decision.tags 必须恰好按“类型 → 细分类型 → 风险程度”返回 3 项：第 1 项类型只能是“访问外部信息、访问本地资源、修改本地内容、连接第三方服务、向外部传输数据、执行高影响操作”之一；第 2 项填写最关键的细分类型（多个细分风险可用“、”合并）；第 3 项只能是“低风险、中风险、高风险”之一。细分类型优先使用“公开信息读取、敏感信息访问、大范围读取、文件创建、文件修改、文件覆盖、文件删除、批量操作、移动 / 重命名、执行代码 / 命令、安装 / 修改依赖、修改系统配置、账户授权、权限提升、凭证使用、数据上传、敏感数据外传、第三方共享、消息发送、公开发布、外部数据修改、外部数据删除、部署 / 上线、财务 / 交易操作”。其他情况 decision.required=false，其余字段填空字符串或空数组。
 
 JSON 必须完整包含以下字段：
-{"kind":"discussion","message":"","planSummary":"","changeSummary":"","decision":{"required":false,"title":"","detail":"","command":"","subject":"","tags":[]}}`;
+{"kind":"discussion","message":"","planSummary":"","changeSummary":"","taskCard":{"title":"","statusText":"","steps":[]},"decision":{"required":false,"title":"","detail":"","command":"","subject":"","tags":[]}}`;
 }
 
 function normalizeResult(value) {
@@ -95,11 +113,17 @@ function normalizeResult(value) {
     throw new Error('DeepSeek 返回了无效的意图类型');
   }
   const decision = value.decision && typeof value.decision === 'object' ? value.decision : {};
+  const taskCard = value.taskCard && typeof value.taskCard === 'object' ? value.taskCard : {};
   return {
     kind: value.kind,
-    message: String(value.message || '').slice(0, 400),
+    message: String(value.message || '').slice(0, 4000),
     planSummary: String(value.planSummary || '').slice(0, 1000),
     changeSummary: String(value.changeSummary || '').slice(0, 1000),
+    taskCard: {
+      title: String(taskCard.title || '').slice(0, 80),
+      statusText: String(taskCard.statusText || '').slice(0, 240),
+      steps: Array.isArray(taskCard.steps) ? taskCard.steps.slice(0, 8).map(step => String(step).slice(0, 160)).filter(Boolean) : []
+    },
     decision: {
       required: Boolean(decision.required),
       title: String(decision.title || '').slice(0, 300),
@@ -134,7 +158,7 @@ async function runDeepSeek(payload) {
         response_format: { type: 'json_object' },
         thinking: { type: 'disabled' },
         temperature: 0.1,
-        max_tokens: 800,
+        max_tokens: 2400,
         stream: false
       }),
       signal: controller.signal
@@ -177,6 +201,7 @@ const server = http.createServer(async (request, response) => {
       const form = await readForm(request);
       const nextKey = String(form.get('key') || '').trim();
       if (!nextKey) throw new Error('密钥不能为空');
+      persistApiKey(nextKey);
       apiKey = nextKey;
       sendSetupPage(response, true);
     } catch (error) {
@@ -198,7 +223,7 @@ const server = http.createServer(async (request, response) => {
     sendJson(response, 404, { ok: false, error: 'Not found' });
     return;
   }
-  if (!/^http:\/\/127\.0\.0\.1:\d+$/.test(origin)) {
+  if (!isTrustedOrigin(origin)) {
     sendJson(response, 403, { ok: false, error: '不受信任的来源' });
     return;
   }

@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>新对话 · Alex Colleague Agent</title>
+  <style>
+    :root { --ink:#2b2b2b; --muted:rgba(17,17,17,.58); --line:rgba(17,17,17,.12); --blue:#4457de; --shell:rgba(246,250,255,.80); }
+    * { box-sizing:border-box; }
+    html,body { width:100%; min-height:100%; margin:0; }
+    body { overflow:hidden; background:#315b86 url('../desktop-background.png') center/cover fixed no-repeat; color:var(--ink); font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif; font-size:14px; }
+    button,textarea { font:inherit; color:inherit; }
+    button { cursor:pointer; }
+    .app-shell { width:min(94vw,1512px); height:min(92vh,912px); min-height:680px; margin:4vh auto; display:grid; grid-template-columns:254px minmax(0,1fr); grid-template-rows:40px minmax(0,1fr); overflow:hidden; position:relative; border:.5px solid rgba(17,17,17,.16); border-radius:9px; background:var(--shell); box-shadow:0 4px 100px 4px rgba(0,0,0,.25); }
+    body:not(.electron-window) .app-shell { -webkit-backdrop-filter:blur(26px) saturate(132%); backdrop-filter:blur(26px) saturate(132%); }
+    body.electron-window { background:transparent; }
+    body.electron-window .app-shell { width:100%; height:100vh; min-height:0; margin:0; border:.5px solid rgba(17,17,17,.16); border-radius:0; box-shadow:inset 0 1px 0 rgba(255,255,255,.055); }
+    .window-bar { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; user-select:none; }
+    body.electron-window .window-bar { -webkit-app-region:drag; }
+    .brand-mark { width:28px; height:28px; margin-left:14px; padding:4px; border:0; border-radius:5px; background:transparent; -webkit-app-region:no-drag; }
+    .brand-mark img { width:20px; height:20px; display:block; }
+    .window-controls { height:40px; display:flex; }
+    .window-control { width:46px; display:grid; place-items:center; padding:0; border:0; background:transparent; -webkit-app-region:no-drag; }
+    .window-control:hover { background:rgba(17,17,17,.07); }
+    .window-control.close:hover { background:#d84141; }
+    .window-control-icon { width:20px; height:20px; display:block; background:url('../figma-window-controls.svg') no-repeat; background-size:106.667px 20px; }
+    .window-control-icon.minimize { background-position:0 0; }.window-control-icon.maximize{background-position:-43.333px 0}.window-control-icon.close{background-position:-86.667px 0}
+    .sidebar { grid-column:1; grid-row:2; width:254px; min-width:0; padding:4px 12px 18px; background:transparent; overflow-y:auto; overflow-x:hidden; }
+    .product-name { margin:6px 8px 15px; font-size:18px; font-weight:500; letter-spacing:-.2px; }
+    .nav-action,.project-row,.conversation-row { width:100%; display:flex; align-items:center; gap:12px; border:0; border-radius:10px; background:transparent; text-align:left; font-size:14px; font-weight:400; }
+    .nav-action { padding:10px 12px; }
+    .project-row { padding:8px 12px; }
+    .nav-action:hover,.project-row:hover,.conversation-row:hover { background:rgba(0,0,0,.045); }
+    .nav-action img,.project-row img { width:18px; height:18px; flex:0 0 auto; }
+    .sidebar-heading { display:flex; align-items:center; justify-content:space-between; min-height:27px; margin:17px 0 7px; padding:0 10px; color:var(--muted); font-size:16px; font-weight:400; }
+    .project-row span,.conversation-row span { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .conversation-row span { flex:1 1 auto; }
+    #projectConversationList,#recentConversationList { display:grid; min-width:0; gap:2px; margin:2px 0 8px; }
+    .conversation-row { padding:8px 12px 8px 34px; }
+    .conversation-row.current { background:rgba(0,0,0,.08); }
+    .workspace { grid-column:2; grid-row:2; min-width:0; margin:0 7px 7px 0; position:relative; overflow:hidden; border:1px solid rgba(17,17,17,.16); border-radius:8px; background:#fff; }
+    .welcome { position:absolute; top:var(--welcome-center-y, calc((100% - 206px) / 2)); left:50%; transform:translate(-50%,-50%); width:max-content; max-width:calc(100% - 64px); }
+    .welcome p { height:36px; margin:0; color:#484848; font-size:36px; font-weight:400; line-height:36px; letter-spacing:-.35px; white-space:nowrap; }
+    .welcome p strong { color:var(--blue); font-weight:400; }
+    .welcome h1 { height:36px; margin:20px 0 0; font-size:36px; line-height:36px; font-weight:400; letter-spacing:-.55px; white-space:nowrap; }
+    .new-composer { position:absolute; left:50%; bottom:22px; transform:translateX(-50%); width:min(760px,calc(100% - 64px)); border:1px solid var(--line); border-radius:16px; background:#fff; box-shadow:0 10px 32px rgba(0,0,0,.07); }
+    .selectors { min-height:47px; display:flex; align-items:center; gap:4px; padding:8px 12px; border-bottom:1px solid rgba(17,17,17,.12); border-radius:15px 15px 0 0; background:#fafafa; }
+    .select-wrap { position:relative; }
+    .selector { min-height:31px; display:flex; align-items:center; gap:8px; padding:6px 12px; border:0; border-radius:999px; background:transparent; font-size:14px; }
+    .selector.project { background:rgba(17,17,17,.08); color:rgba(17,17,17,.58); }
+    .selector.has-selection { background:rgba(17,17,17,.08); color:rgba(17,17,17,.8); }
+    .selector img { width:16px; height:16px; }
+    .menu { position:absolute; z-index:10; bottom:calc(100% + 10px); left:0; width:240px; display:grid; gap:4px; padding:8px; border:1px solid var(--line); border-radius:10px; background:#fff; box-shadow:0 10px 20px rgba(0,0,0,.1); }
+    .menu[hidden] { display:none; }
+    .menu button { display:flex; align-items:center; gap:8px; width:100%; padding:8px 10px; border:0; border-radius:8px; background:transparent; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .menu button:hover,.menu button.selected { background:rgba(17,17,17,.08); }
+    .menu-separator { height:1px; margin:3px 0; background:rgba(17,17,17,.1); }
+    .prompt { width:100%; min-height:72px; max-height:180px; resize:none; padding:16px; border:0; outline:0; color:#111; font-size:14px; line-height:1.55; }
+    .prompt::placeholder { color:rgba(17,17,17,.38); }
+    .actions { min-height:52px; display:flex; align-items:center; justify-content:space-between; padding:8px 12px 12px; }
+    .left-actions { display:flex; align-items:center; gap:8px; }
+    .icon-button { width:28px; height:28px; display:grid; place-items:center; border:0; border-radius:7px; background:transparent; }
+    .icon-button:hover { background:rgba(17,17,17,.06); }.icon-button img{width:20px;height:20px}
+    .model-label { display:flex; align-items:center; gap:4px; color:rgba(17,17,17,.78); font-size:14px; }.model-label img{width:20px;height:20px}.model-label small{color:rgba(17,17,17,.5);font-size:14px}
+    .send { min-height:34px; display:flex; align-items:center; gap:8px; padding:8px 16px; border:0; border-radius:10px; background:var(--blue); color:#fff; font-size:14px; font-weight:500; }.send:disabled{opacity:.4;cursor:default}.send img{width:14px;height:14px;filter:brightness(0) invert(1)}
+    .toast { position:absolute; z-index:30; left:50%; bottom:16px; transform:translate(-50%,10px); padding:9px 13px; border-radius:9px; background:#202020;color:#fff;font-size:13px;opacity:0;pointer-events:none;transition:.18s}.toast.show{opacity:1;transform:translate(-50%,0)}
+    body.embedded { overflow:hidden; background:#fff; }
+    body.embedded .app-shell { display:block; width:100%; height:100vh; min-height:0; margin:0; border:0; border-radius:0; background:#fff; box-shadow:none; backdrop-filter:none; -webkit-backdrop-filter:none; }
+    body.embedded .window-bar, body.embedded .sidebar { display:none; }
+    body.embedded .workspace { width:100%; height:100%; margin:0; border:0; border-radius:0; }
+    @media(max-width:950px){.app-shell{width:100%;height:100vh;min-height:680px;margin:0;border-radius:0;grid-template-columns:210px 1fr}.new-composer{width:calc(100% - 40px)}.welcome{width:max-content;max-width:calc(100% - 48px);transform:translate(-50%,-50%) scale(.86)} }
+  </style>
+</head>
+<body>
+  <script>(()=>{const params=new URLSearchParams(location.search);if(params.has('electron'))document.body.classList.add('electron-window');if(params.has('embedded'))document.body.classList.add('embedded');else{const suffix=params.has('electron')?'&electron=1':'';location.replace(`/?view=new${suffix}`)}})();</script>
+  <main class="app-shell">
+    <header class="window-bar">
+      <button class="brand-mark" id="sidebarToggle" type="button" aria-label="项目导航"><img src="../figma-sidebar-toggle.svg" alt="" /></button>
+      <div class="window-controls">
+        <button class="window-control" id="windowMinimize" type="button"><span class="window-control-icon minimize"></span></button>
+        <button class="window-control" id="windowMaximize" type="button"><span class="window-control-icon maximize"></span></button>
+        <button class="window-control close" id="windowClose" type="button"><span class="window-control-icon close"></span></button>
+      </div>
+    </header>
+    <aside class="sidebar">
+      <div class="product-name">Alex Colleague agent</div>
+      <button class="nav-action" type="button"><img src="../new-conversation.svg" alt="" />新对话</button>
+      <button class="nav-action" id="toolsBtn" type="button"><img src="../assets/tools.svg" alt="" />工具</button>
+      <div class="sidebar-heading">项目 <span>＋</span></div>
+      <button class="project-row" data-project="basketball-comparison" type="button"><img src="../project-collapsed.svg" alt="" /><span>科比和詹姆斯对比</span></button>
+      <button class="project-row" data-project="product-innovation" type="button"><img src="../project-expanded.svg" alt="" /><span>体验与智能产品创新</span></button>
+      <div id="projectConversationList"></div>
+      <div class="sidebar-heading">最近</div>
+      <div id="recentConversationList"></div>
+    </aside>
+    <section class="workspace">
+      <div class="welcome"><p id="bannerEyebrow">I am <strong>Alex.</strong></p><h1 id="bannerTitle">这次我们做点什么呢？</h1></div>
+      <form class="new-composer" id="newConversationForm">
+        <div class="selectors">
+          <div class="select-wrap">
+            <button class="selector project" id="projectSelector" type="button"><img src="../project-collapsed.svg" alt="" /><span id="projectSelectorLabel">选择项目</span></button>
+            <div class="menu" id="projectMenu" hidden>
+              <button type="button" data-value="product-innovation">体验与智能产品创新</button>
+              <button type="button" data-value="basketball-comparison">科比和詹姆斯对比</button>
+              <div class="menu-separator"></div>
+              <button type="button" data-value="new-project">＋ 新建项目</button>
+            </div>
+          </div>
+          <div class="select-wrap">
+            <button class="selector has-selection" id="agentSelector" type="button"><img src="../assets/composer/agent.svg" alt="" /><span id="agentSelectorLabel">Codex</span></button>
+            <div class="menu" id="agentMenu" hidden>
+              <button class="selected" type="button" data-value="Codex">Codex</button>
+              <button type="button" data-value="Kimi Code">Kimi Code</button>
+              <button type="button" data-value="DeepSeek Harness">DeepSeek Harness</button>
+              <button type="button" data-value="Claude Code">Claude Code</button>
+            </div>
+          </div>
+        </div>
+        <textarea class="prompt" id="prompt" placeholder="描述你想完成的任务、目标、范围或交付要求…"></textarea>
+        <div class="actions">
+          <div class="left-actions"><button class="icon-button" id="attachBtn" type="button" aria-label="添加文件"><img src="../assets/composer/attach.svg" alt="" /></button><input id="fileInput" type="file" multiple hidden /><span class="model-label"><img src="../assets/composer/agent.svg" alt="" /><span id="modelLabel">Codex · GPT-6 Astra</span><small>中</small></span></div>
+          <button class="send" id="sendBtn" type="submit" disabled><img src="../assets/composer/edit.svg" alt="" /><span>开始</span></button>
+        </div>
+      </form>
+    </section>
+    <div class="toast" id="toast"></div>
+  </main>
+  <script>
+    (() => {
+      const storageKey='alex-colleague-agent-conversations-v1';
+      const isElectron=document.body.classList.contains('electron-window');
+      const projects={
+        'product-innovation':{name:'体验与智能产品创新',banner:'今天想在这个项目里推进什么？'},
+        'basketball-comparison':{name:'科比和詹姆斯对比',banner:'今天想继续比较什么？'}
+      };
+      let selectedProject=''; let selectedAgent='Codex';
+      const prompt=document.getElementById('prompt'); const sendBtn=document.getElementById('sendBtn');
+      const projectMenu=document.getElementById('projectMenu'); const agentMenu=document.getElementById('agentMenu');
+      const workspace=document.querySelector('.workspace'); const welcome=document.querySelector('.welcome'); const newComposer=document.querySelector('.new-composer');
+      const readConversations=()=>{try{return JSON.parse(localStorage.getItem(storageKey))||[]}catch{return[]}};
+      const writeConversations=value=>localStorage.setItem(storageKey,JSON.stringify(value));
+      function destination(path){if(!isElectron)return path;return `${path}${path.includes('?')?'&':'?'}electron=1`}
+      function titleFromPrompt(value){const text=value.replace(/\s+/gu,' ').trim();return text.length>24?`${text.slice(0,24)}…`:text}
+      function syncWelcomePosition(){const workspaceTop=workspace.getBoundingClientRect().top;const composerTop=newComposer.getBoundingClientRect().top;const bannerHeight=welcome.getBoundingClientRect().height;const openHeight=Math.max(0,composerTop-workspaceTop);const freeHeight=Math.max(0,openHeight-bannerHeight);const centerY=freeHeight*.6+bannerHeight/2;welcome.style.setProperty('--welcome-center-y',`${Math.max(bannerHeight/2,centerY)}px`)}
+      function renderLists(){
+        const list=readConversations(); const projectList=document.getElementById('projectConversationList'); const recent=document.getElementById('recentConversationList'); projectList.replaceChildren();recent.replaceChildren();
+        list.filter(item=>item.projectId==='product-innovation').slice(-4).forEach(item=>projectList.append(makeConversationRow(item)));
+        list.slice(-5).reverse().forEach(item=>recent.append(makeConversationRow(item)));
+      }
+      function makeConversationRow(item){const button=document.createElement('button');button.type='button';button.className='conversation-row';button.innerHTML=`<span>${escapeHtml(item.title)}</span>`;button.addEventListener('click',()=>location.assign(destination(`/?conversation=${encodeURIComponent(item.id)}`)));return button}
+      function escapeHtml(value){const node=document.createElement('div');node.textContent=value;return node.innerHTML}
+      function renderProjectSelection(){const project=projects[selectedProject];document.getElementById('projectSelectorLabel').textContent=project.name;document.getElementById('projectSelector').classList.add('has-selection');document.getElementById('bannerEyebrow').innerHTML='I am <strong>Alex.</strong>';const title=document.getElementById('bannerTitle');title.replaceChildren(document.createTextNode('这次在 '));const name=document.createElement('span');name.textContent=project.name;name.style.color='var(--blue)';title.append(name,document.createTextNode(' 做点什么呢？'))}
+      function toggleMenu(menu){const opening=menu.hidden;projectMenu.hidden=true;agentMenu.hidden=true;menu.hidden=!opening}
+      document.getElementById('projectSelector').addEventListener('click',()=>toggleMenu(projectMenu));
+      document.getElementById('agentSelector').addEventListener('click',()=>toggleMenu(agentMenu));
+      projectMenu.addEventListener('click',event=>{const button=event.target.closest('button[data-value]');if(!button)return;const value=button.dataset.value;if(value==='new-project'){projectMenu.hidden=true;document.getElementById('projectSelectorLabel').textContent='新项目（待创建）';return}selectedProject=value;renderProjectSelection();projectMenu.querySelectorAll('button').forEach(item=>item.classList.toggle('selected',item===button));projectMenu.hidden=true});
+      agentMenu.addEventListener('click',event=>{const button=event.target.closest('button[data-value]');if(!button)return;selectedAgent=button.dataset.value;document.getElementById('agentSelectorLabel').textContent=selectedAgent;document.getElementById('agentSelector').classList.add('has-selection');document.getElementById('modelLabel').textContent=selectedAgent==='Codex'?'Codex · GPT-6 Astra':selectedAgent;agentMenu.querySelectorAll('button').forEach(item=>item.classList.toggle('selected',item===button));agentMenu.hidden=true});
+      document.querySelectorAll('.project-row').forEach(row=>row.addEventListener('click',()=>{selectedProject=row.dataset.project;renderProjectSelection()}));
+      prompt.addEventListener('input',()=>{sendBtn.disabled=!prompt.value.trim();prompt.style.height='72px';prompt.style.height=`${Math.min(180,prompt.scrollHeight)}px`;syncWelcomePosition()});
+      prompt.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();if(!sendBtn.disabled)document.getElementById('newConversationForm').requestSubmit()}});
+      document.getElementById('attachBtn').addEventListener('click',()=>document.getElementById('fileInput').click());
+      document.getElementById('fileInput').addEventListener('change',event=>{const count=event.target.files.length;if(count){const toast=document.getElementById('toast');toast.textContent=`已添加 ${count} 个文件`;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1500)}});
+      document.getElementById('newConversationForm').addEventListener('submit',event=>{event.preventDefault();const value=prompt.value.trim();if(!value)return;const id=`conversation-${Date.now()}`;const record={id,title:titleFromPrompt(value),prompt:value,projectId:selectedProject,agent:selectedAgent,createdAt:new Date().toISOString()};const items=readConversations();items.push(record);writeConversations(items.slice(-50));localStorage.setItem('alex-colleague-agent-pending-conversation',id);const target=destination(`/?conversation=${encodeURIComponent(id)}`);if(window.parent!==window)window.parent.location.assign(target);else location.assign(target)});
+      document.getElementById('toolsBtn').addEventListener('click',()=>location.assign(destination('/tools/')));
+      const desktop=window.desktopWindow;if(desktop){document.getElementById('windowMinimize').onclick=()=>desktop.minimize();document.getElementById('windowMaximize').onclick=()=>desktop.toggleMaximize();document.getElementById('windowClose').onclick=()=>desktop.close()}
+      new ResizeObserver(syncWelcomePosition).observe(newComposer);window.addEventListener('resize',syncWelcomePosition);renderLists();syncWelcomePosition();prompt.focus();
+    })();
+  </script>
+</body>
+</html>

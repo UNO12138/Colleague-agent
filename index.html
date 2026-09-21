@@ -51,9 +51,11 @@
       border-radius: 9px;
       background: rgba(246, 250, 255, .80);
       box-shadow: var(--shadow);
-      -webkit-backdrop-filter: blur(100px);
-      backdrop-filter: blur(100px);
       transition: grid-template-columns .18s cubic-bezier(.2, .72, .2, 1);
+    }
+    body:not(.electron-window) .app-shell {
+      -webkit-backdrop-filter: blur(26px) saturate(132%);
+      backdrop-filter: blur(26px) saturate(132%);
     }
     .app-shell.sidebar-collapsed { grid-template-columns: 0 minmax(0, 1fr); }
 
@@ -142,6 +144,8 @@
       font-weight: 400;
     }
     .side-action:hover, .project-row:hover, .conversation-row:hover { background: rgba(0, 0, 0, .045); }
+    .side-action.active { background: rgba(0, 0, 0, .08); }
+    #newConversationAction .figma-icon { opacity: .8; }
     .with-icon { display: flex; align-items: center; gap: 12px; min-width: 0; }
     .figma-icon { width: 18px; height: 18px; object-fit: contain; flex: 0 0 auto; }
     .sidebar-section-heading { position: relative; display: flex; align-items: center; min-height: 27px; margin: 17px 0 7px; padding: 0 10px; }
@@ -196,7 +200,7 @@
     .conversation-item:hover .conversation-title { padding-right: 20px; }
     .conversation-item .sidebar-icon-action { top: 50%; right: 12px; transform: translate(4px, -50%); }
     .conversation-item:hover .sidebar-icon-action { transform: translate(0, -50%); }
-    .conversation-item.active:hover .conversation-status { opacity: 0; transform: scale(.76); }
+    .conversation-item:hover .conversation-status { opacity: 0; transform: scale(.76); }
     .conversation-status {
       width: 14px;
       height: 14px;
@@ -319,6 +323,17 @@
       transition: margin-left .18s cubic-bezier(.2, .72, .2, 1);
     }
     .app-shell.sidebar-collapsed .workspace { margin-left: 8px; }
+    .workspace-view-frame {
+      position: absolute;
+      inset: 0;
+      z-index: 30;
+      display: none;
+      width: 100%;
+      height: 100%;
+      border: 0;
+      background: #fff;
+    }
+    body.new-conversation-view .workspace-view-frame { display: block; }
     .workspace-header {
       display: flex;
       align-items: center;
@@ -332,7 +347,7 @@
     .presence-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ca95a; box-shadow: 0 0 0 4px rgba(76, 169, 90, .12); }
 
     .chat-view { min-height: 0; position: relative; overflow: hidden; }
-    .timeline-scroll { height: 100%; overflow-y: auto; overflow-anchor: none; padding: 0 32px var(--composer-safe-space, 150px); scroll-behavior: auto; scrollbar-width: thin; scrollbar-color: rgba(43,43,43,.16) transparent; }
+    .timeline-scroll { height: 100%; overflow-y: auto; overflow-anchor: none; padding: 0 32px calc(var(--composer-safe-space, 150px) + var(--work-card-collapse-buffer, 0px)); scroll-behavior: auto; scrollbar-width: thin; scrollbar-color: rgba(43,43,43,.16) transparent; }
     .timeline-scroll::-webkit-scrollbar { width: 7px; }
     .timeline-scroll::-webkit-scrollbar-track { background: transparent; }
     .timeline-scroll::-webkit-scrollbar-thumb { min-height: 48px; border-radius: 999px; background: rgba(43,43,43,.14); }
@@ -377,7 +392,13 @@
     .brief-revision-user .user-bubble { font-size: 14px; }
     .agent-thinking-status { margin: 0 4px 12px; }
     .brief-revision-answer { margin: 0 4px 20px; color: #292929; font-size: 15px; line-height: 1.72; }
-    .brief-revision-answer.is-streaming .brief-answer-points li:last-child::after { content: ""; display: inline-block; width: 2px; height: 1em; margin-left: 3px; background: #4457de; vertical-align: -2px; animation: caret-blink .8s steps(1) infinite; }
+    .brief-change-summary { margin: 0 0 10px; color: #292929; line-height: 1.68; }
+    .brief-change-summary strong { color: #202020; }
+    .brief-revision-answer .brief-closing { margin-top: 9px; }
+    .brief-answer-copy { margin: 0 0 8px; }
+    .brief-answer-copy:last-child { margin-bottom: 0; }
+    .brief-revision-answer.is-streaming .brief-answer-points li:last-child::after,
+    .brief-revision-answer.is-streaming .brief-answer-copy:last-child::after { content: ""; display: inline-block; width: 2px; height: 1em; margin-left: 3px; background: #4457de; vertical-align: -2px; animation: caret-blink .8s steps(1) infinite; }
     @keyframes caret-blink { 50% { opacity: 0; } }
     .execution-stage {
       display: none;
@@ -477,11 +498,14 @@
     .aside-heading::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--blue); }
     .aside-copy { width: fit-content; max-width: 92%; margin: 0 0 9px; padding: 10px 13px; border-radius: 12px; background: #f5f7fd; color: #27314c; line-height: 1.55; }
     .aside-copy.user { max-width: 82%; margin-top: 9px; margin-left: auto; margin-right: 0; background: #eef4ff; color: #27314c; }
-    .aside-copy.agent { margin-right: auto; border: 1px solid rgba(49, 94, 232, .18); background: #fff; }
+    .aside-copy.agent { margin-right: auto; border: 1px solid rgba(49, 94, 232, .18); background: #fff; line-height: 1.72; }
+    .aside-copy.agent strong, .aside-copy.proactive strong { color: #202020; font-weight: 620; }
+    .aside-copy.agent code, .aside-copy.proactive code { display: inline; padding: 2px 6px; border-radius: 6px; background: rgba(17, 17, 17, .075); color: #292929; font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; font-size: .91em; line-height: inherit; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
     .aside-copy.proactive {
       margin-right: 3%;
       border: 1px solid rgba(49, 94, 232, .14);
       background: #fff;
+      line-height: 1.72;
     }
     .proactive-label { display: block; margin-bottom: 5px; color: var(--blue); font-size: 10px; font-weight: 700; letter-spacing: .05em; }
     .aside-meta { display: block; margin-top: 5px; color: rgba(39, 49, 76, .5); font-size: 10px; }
@@ -529,8 +553,8 @@
     .launch-confirm[hidden] { display: none; }
     .launch-confirm-copy { min-width: 0; }
     .launch-confirm strong { display: block; margin-bottom: 8px; font-size: 16px; font-weight: 650; line-height: 18px; }
-    .launch-confirm span { display: block; color: rgba(17,17,17,.58); font-size: 14px; line-height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .launch-confirm .btn { min-height: 36px; flex: 0 0 auto; padding: 8px 16px; border-color: rgba(68,87,222,.6); border-radius: 10px; background: rgba(68,87,222,.16); color: #4457de; font-size: 14px; font-weight: 650; line-height: 18px; }
+    .launch-confirm-copy > span { display: block; color: rgba(17,17,17,.58); font-size: 14px; line-height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .launch-confirm .btn { min-height: 36px; flex: 0 0 auto; gap: 10px; padding: 8px 16px; border-color: rgba(68,87,222,.6); border-radius: 10px; background: rgba(68,87,222,.16); color: #4457de; font-size: 14px; font-weight: 560; line-height: 18px; }
     .launch-confirm .btn:hover { border-color: #4457de; background: rgba(68,87,222,.22); }
     .permission-prompt { min-height: 102px; padding: 20px 12px 20px 16px; border-bottom: 1px solid var(--line); border-radius: 15px 15px 0 0; background: #fafafa; animation: rise .3s ease both; }
     .permission-prompt[hidden] { display: none; }
@@ -541,15 +565,16 @@
     .permission-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 8px; }
     .permission-tag { display: inline-flex; align-items: center; justify-content: center; padding: 4px 8px; border-radius: 9px; background: rgba(68,87,222,.12); color: rgba(68,87,222,.8); font-size: 13px; font-weight: 650; line-height: 18px; white-space: nowrap; }
     .permission-buttons { display: flex; flex: 0 0 auto; gap: 8px; }
-    .permission-buttons .btn { min-height: 36px; padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 650; line-height: 18px; }
-    .permission-buttons .decision-deny { gap: 4px; }
-    .permission-buttons .allow-primary-action { min-height: 36px; display: flex; align-items: center; gap: 4px; padding: 7px 8px 7px 16px; border: 1px solid rgba(68,87,222,.6); border-radius: 10px; background: rgba(68,87,222,.16); color: #4457de; transition: .18s ease; }
+    .permission-buttons .btn { min-height: 36px; padding: 8px 16px; border-radius: 10px; font-size: 14px; font-weight: 560; line-height: 18px; }
+    .permission-buttons .decision-deny { gap: 4px; border-color: rgba(17,17,17,.12); background: #fff; color: #2b2b2b; }
+    .permission-buttons .allow-primary-action { min-height: 36px; display: flex; align-items: center; gap: 8px; padding: 7px 8px 7px 16px; border: 1px solid rgba(68,87,222,.6); border-radius: 10px; background: rgba(68,87,222,.16); color: #4457de; transition: .18s ease; }
     .permission-buttons .allow-primary-action:hover { border-color: #4457de; background: rgba(68,87,222,.22); transform: translateY(-1px); }
-    .allow-main { display: flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: inherit; font-size: 13px; font-weight: 650; cursor: pointer; }
+    .allow-main { display: flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: inherit; font-size: 14px; font-weight: 560; line-height: 18px; cursor: pointer; }
     .key-hint { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; height: 18px; padding: 0 8px; border-radius: 4px; background: rgba(17,17,17,.08); color: rgba(17,17,17,.4); font-size: 12px; font-weight: 400; line-height: 18px; }
     .allow-primary-action .key-hint { min-width: 48px; background: rgba(68,87,222,.16); color: rgba(68,87,222,.8); }
+    .launch-confirm .key-hint { min-width: 48px; background: rgba(68,87,222,.16); color: rgba(68,87,222,.8); }
     .allow-menu { position: relative; }
-    .allow-menu-trigger { width: 16px; height: 16px; margin-left: 4px; padding: 0; border: 0; background: transparent; }
+    .allow-menu-trigger { width: 16px; height: 16px; margin: 0; padding: 0; border: 0; background: transparent; }
     .allow-menu-icon { width: 16px; height: 16px; display: block; object-fit: contain; }
     .permission-secondary { position: absolute; right: 0; bottom: calc(100% + 10px); z-index: 12; width: 240px; padding: 16px; border: 1px solid rgba(17,17,17,.16); border-radius: 10px; background: #fff; box-shadow: 0 10px 16px rgba(0,0,0,.07); }
     .permission-secondary[hidden] { display: none; }
@@ -622,8 +647,11 @@
 
     <aside class="sidebar" aria-label="项目导航">
       <div class="product-name">Alex Colleague agent</div>
-      <button class="side-action" type="button">
-        <span class="with-icon"><img class="figma-icon" src="https://www.figma.com/api/mcp/asset/7e617dee-0eba-4824-ab79-7ae11deb9f48.svg" alt="" />新对话</span>
+      <button class="side-action" id="newConversationAction" type="button">
+        <span class="with-icon"><img class="figma-icon" src="./new-conversation.svg" alt="" />新对话</span>
+      </button>
+      <button class="side-action" id="toolsAction" type="button">
+        <span class="with-icon"><img class="figma-icon" src="./assets/tools.svg" alt="" />工具</span>
       </button>
 
       <div class="sidebar-section-heading">
@@ -634,6 +662,9 @@
         <button class="project-row" type="button"><span class="with-icon"><img class="figma-icon project-state-icon" src="./project-collapsed.svg" data-collapsed-src="./project-collapsed.svg" data-expanded-src="./project-expanded.svg" alt="" /><span class="row-title">科比和詹姆斯对比</span></span></button>
         <button class="sidebar-icon-action pin-project-action" type="button" aria-label="置顶项目：科比和詹姆斯对比"><img src="./pin-project.svg" data-active-src="./pin-project-active.svg" alt="" /></button>
         <button class="sidebar-icon-action delete-project-action" type="button" aria-label="删除项目：科比和詹姆斯对比"><img src="./delete-project.svg" data-active-src="./delete-active.svg" alt="" /></button>
+      </div>
+      <div class="conversation-list project-conversations is-collapsed" id="basketballComparisonConversations" data-project-id="basketball-comparison">
+        <div class="project-conversation-content"></div>
       </div>
       <div class="project-item is-expanded" data-project-id="product-innovation">
         <button class="project-row" type="button" aria-expanded="true" aria-controls="productInnovationConversations">
@@ -652,12 +683,13 @@
         <div class="section-label">最近</div>
         <button class="sidebar-icon-action" id="newConversationBtn" type="button" aria-label="新建对话"><img src="./new-conversation.svg" data-active-src="./new-conversation-active.svg" alt="" /></button>
       </div>
-      <div class="conversation-list">
+      <div class="conversation-list" id="recentConversationList">
         <div class="conversation-item active" data-conversation-id="weekly-report"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span><span class="conversation-status" title="Agent 正在工作" aria-label="Agent 正在工作"></span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
       </div>
     </aside>
 
     <section class="workspace">
+      <iframe class="workspace-view-frame" id="workspaceViewFrame" title="新对话" aria-hidden="true"></iframe>
       <header class="workspace-header">
         <div class="header-title">
           <strong>这个对话我们来解决周二的汇报问题</strong>
@@ -696,14 +728,14 @@
                   <section class="work-card" id="workCard" aria-label="正在进行的工作">
                     <div class="work-card-head">
                       <div>
-                        <div class="eyebrow">竞品研究</div>
+                        <div class="eyebrow" id="workCardTitle">竞品研究</div>
                         <p id="currentStep">正在分析 Linear 的任务状态与协作沟通模式。</p>
                       </div>
                       <div class="progress-number"><span id="progressCurrent">3</span><small> / <span id="progressTotal">4</span></small></div>
                     </div>
                     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
                     <div class="work-card-meta"><span class="elapsed-time" id="elapsedTime">已处理 3分钟 22秒</span></div>
-                    <div class="step-list">
+                    <div class="step-list" id="stepList">
                       <div class="step done" id="notionStep"><span class="step-mark">✓</span><span>Notion · 异步信息如何进入团队协作</span><time>14:31</time></div>
                       <div class="step done" id="figmaStep"><span class="step-mark">✓</span><span>Figma · 多人编辑如何形成实时同步</span><time>14:36</time></div>
                       <div class="step active" id="linearStep"><span class="step-mark"></span><span id="activeStepLabel">Linear · 任务状态如何成为团队沟通</span><time>进行中</time></div>
@@ -722,13 +754,10 @@
 
                   <section class="aside-conversation" id="asideConversation">
                     <div class="aside-heading">即时交流 · 不改变当前任务</div>
-                    <p class="aside-copy proactive aside-stream-item" hidden><span class="proactive-label">ALEX 主动同步</span>我刚发现 Linear 把“状态变化”直接变成了团队沟通的一部分，而不是额外写一份进度报告。这个点可能会成为汇报中很有价值的一条工作结论。<span class="aside-meta">来自当前分析 · 主任务持续运行</span></p>
+                    <p class="aside-copy proactive aside-stream-item" hidden><span class="proactive-label">ALEX 主动同步</span>我刚发现 Linear 把“状态变化”直接变成了团队沟通的一部分，而不是额外写一份进度报告。这个点可能会成为汇报中很有价值的一条工作结论。<span class="aside-meta">过程结果 · 当前 3/4</span></p>
                     <p class="aside-copy user aside-stream-item" hidden>为什么先分析 Linear？</p>
                     <p class="aside-copy agent aside-stream-item" hidden>它的任务状态与协作沟通结合得最紧，适合用来对照我们的“对话如何进入工作流”。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
-                    <p class="aside-copy user aside-stream-item" hidden>Linear 的状态变化为什么能代替进度汇报？</p>
-                    <p class="aside-copy agent aside-stream-item" hidden>因为负责人、状态和项目周期都直接绑定在任务上。成员完成一次真实操作，团队看到的进度也会同步更新，不需要再把工作重新整理成一份汇报。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
-                    <p class="aside-copy user aside-stream-item" hidden>这个机制对我们最直接的启发是什么？</p>
-                    <p class="aside-copy agent aside-stream-item" hidden>让执行行为本身生成可读的进度，并只在出现偏差、风险或需要决策时主动打断用户。这样既保持团队感知，也不会增加额外汇报负担。<span class="aside-meta">主任务仍在继续 · 当前 3/4</span></p>
+                    <p class="aside-copy proactive aside-stream-item" hidden><span class="proactive-label">ALEX 主动同步</span>进一步看，Linear 会把负责人、状态和项目周期直接绑定在任务上。成员完成一次真实操作，进度就同步变成团队可见的信息；只有出现偏差、风险或需要决策时才主动打断协作者。<span class="aside-meta">过程结果 · 当前 3/4</span></p>
                     <p class="aside-copy user aside-stream-item" hidden>那把它再增加一个“商业模式”的分析维度。</p>
                     <div class="intent-card aside-stream-item" id="intentCard" hidden>
                       <strong>这句话可能会改变当前任务</strong>
@@ -764,7 +793,7 @@
           <form class="composer" id="composer">
             <div class="launch-confirm" id="launchConfirm">
               <div class="launch-confirm-copy"><strong>任务规划待确认</strong><span>确认后 Alex 将按上述规划开始执行</span></div>
-              <button class="btn primary" id="confirmBriefBtn" type="button">确认并开始执行</button>
+              <button class="btn confirm-launch-btn" id="confirmBriefBtn" type="button"><span>确认并开始执行</span><span class="key-hint" aria-hidden="true">Ctrl + Enter</span></button>
             </div>
             <div class="permission-prompt" id="permissionEvent" hidden>
               <div class="permission-prompt-row">
@@ -773,8 +802,8 @@
                   <code class="permission-command" id="permissionCommand">curl.exe -I --max-time 10 https://example.com</code>
                   <div class="permission-tags" id="permissionTags" aria-label="权限说明">
                     <span class="permission-tag">访问外部信息</span>
+                    <span class="permission-tag">公开信息读取</span>
                     <span class="permission-tag">低风险</span>
-                    <span class="permission-tag">不涉及外部发送</span>
                   </div>
                 </div>
                 <div class="permission-buttons">
@@ -873,11 +902,8 @@
     const progressTotal = document.getElementById('progressTotal');
     const progressFill = document.getElementById('progressFill');
     const currentStep = document.getElementById('currentStep');
-    const activeStepLabel = document.getElementById('activeStepLabel');
-    const linearStep = document.getElementById('linearStep');
-    const miroStep = document.getElementById('miroStep');
-    const notionStep = document.getElementById('notionStep');
-    const figmaStep = document.getElementById('figmaStep');
+    const workCardTitle = document.getElementById('workCardTitle');
+    const stepList = document.getElementById('stepList');
     const workCard = document.getElementById('workCard');
     const workCardSentinel = document.getElementById('workCardSentinel');
     const workCardToggle = document.getElementById('workCardToggle');
@@ -916,6 +942,9 @@
     const windowMaximize = document.getElementById('windowMaximize');
     const windowClose = document.getElementById('windowClose');
     const newProjectBtn = document.getElementById('newProjectBtn');
+    const newConversationAction = document.getElementById('newConversationAction');
+    const toolsAction = document.getElementById('toolsAction');
+    const workspaceViewFrame = document.getElementById('workspaceViewFrame');
     const newConversationBtn = document.getElementById('newConversationBtn');
     const projectModalLayer = document.getElementById('projectModalLayer');
     const projectModalClose = document.getElementById('projectModalClose');
@@ -955,6 +984,8 @@
     let conversationTimers = [];
     let isPositioningWorkCard = false;
     let preserveExpandedAfterLaunch = false;
+    let preserveManualExpansion = false;
+    let autoCollapseLatched = false;
     let taskStarted = false;
     let taskCompleted = false;
     let accessRequestTimer;
@@ -963,36 +994,114 @@
     let elapsedTimer;
     let currentDecision = { subject: 'Linear 官网' };
     let currentPlanText = briefReview.innerText.trim();
+    let taskCardState = {
+      title: workCardTitle.textContent.trim(),
+      statusText: currentStep.textContent.trim(),
+      steps: Array.from(stepList.querySelectorAll('.step > span:nth-child(2)')).map(step => step.textContent.trim())
+    };
 
     const LOCAL_AGENT_URL = 'http://127.0.0.1:8787/agent';
 
     presenceText.textContent = 'ALEX 等待确认';
 
+    function isQuestionOnly(message) {
+      const source = String(message || '').trim();
+      const hasQuestion = /[?？]|(吗|呢|么|嘛)[。！!…]*$|^(什么|为什么|为何|怎么|如何|是否|能否|可否|哪|谁|几|多少)|有什么|有何|什么是|区别在哪|不同在哪|有何不同|有什么不同|够不够|是不是|能不能|有没有|值不值得|合不合理|是否足够|是否合适/u.test(source);
+      const hasExplicitChange = /(?:请|帮我|麻烦|我希望|我要|需要你).{0,20}(增加|加入|添加|改成|调整|修改|删除|移除|不要|改为|替换|保留|输出|交付)|(?:把|将).{0,20}(增加|加入|添加|改成|调整|修改|删除|移除|改为|替换)|(?:^|[，,；;。]\s*)(增加|加入|添加|改成|调整|修改|删除|移除|改为|替换)/u.test(source);
+      return hasQuestion && !hasExplicitChange;
+    }
+
+    function isStartConfirmation(message) {
+      const source = String(message || '').trim().replace(/[，,。！!~～]+$/u, '');
+      return /^(?:(?:好|好的|可以|没问题|那|那就)[，,\s]*)?(开始|开始吧|可以开始|可以开始了|按这个开始|按这个执行|就这样开始|就按这个来|确认开始|确认并开始|开始执行|执行吧|可以执行|可以执行了|没问题开始|没问题可以开始)$/u.test(source);
+    }
+
+    function localPlanningQuestionAnswer(message) {
+      return 'Alex 当前没有连接到本地 Agent，暂时无法可靠回答这个问题；当前任务 brief 没有发生变化。请确认本地 Agent 已启动后重试。';
+    }
+
+    function replacePlanningTerm(text, source, target) {
+      const escapedSource = source.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      return String(text || '').replace(new RegExp(escapedSource, 'giu'), target);
+    }
+
+    function integrateLocalPlanRevision(message, context = {}) {
+      const currentPlan = String(context.currentPlan || '按当前规划继续执行。').trim();
+      const currentCard = context.currentTaskCard || { title: '', statusText: '', steps: [] };
+      const replacement = String(message).match(/(?:把|将)\s*(.+?)\s*(?:换成|替换成|替换为|改成|改为)\s*(.+?)(?:[。！？!?]|$)/u);
+      if (replacement) {
+        const source = replacement[1].replace(/[`“”"']/gu, '').trim();
+        const target = replacement[2].replace(/[`“”"']/gu, '').trim();
+        const updateCardText = text => replacePlanningTerm(text, source, target);
+        return {
+          message: `已将 ${source} 替换为 ${target}，其余任务要求保持不变。`,
+          planSummary: replacePlanningTerm(currentPlan, source, target),
+          taskCard: {
+            title: updateCardText(currentCard.title),
+            statusText: updateCardText(currentCard.statusText),
+            steps: Array.isArray(currentCard.steps) ? currentCard.steps.map(updateCardText) : []
+          }
+        };
+      }
+      const planWithoutClosing = currentPlan.replace(/如果这个理解没有偏差[\s\S]*$/u, '').trim();
+      return {
+        message: `已按你的要求更新任务：${message}`,
+        planSummary: `${planWithoutClosing}\n\n调整后的任务还需满足：${message}`,
+        taskCard: currentCard
+      };
+    }
+
+    function sanitizeRevisedPlan(plan) {
+      return String(plan || '')
+        .replace(/\n*\s*本次补充[：:][\s\S]*$/u, '')
+        .trim();
+    }
+
     function localFallback(mode, message, context = {}) {
       const asksForDecision = /访问|联网|官网|发送|上传|授权|权限/.test(message);
       const changesTask = /增加|改成|调整|修改|删除|不要|改为|交付|范围|目标|优先/.test(message);
+      if (isQuestionOnly(message)) {
+        return {
+          kind: 'discussion',
+          message: localPlanningQuestionAnswer(message),
+          planSummary: '',
+          changeSummary: '',
+          taskCard: { title: '', statusText: '', steps: [] },
+          decision: { required: false, title: '', detail: '', command: '', subject: '', tags: [] }
+        };
+      }
       if (mode === 'plan_revision') {
+        const revision = integrateLocalPlanRevision(message, context);
         return {
           kind: 'plan_revision',
-          message: `本次将任务要求调整为：${message}`,
-          planSummary: `${context.currentPlan || '按当前规划继续执行。'}\n\n本次补充：${message}`,
+          message: revision.message,
+          planSummary: revision.planSummary,
           changeSummary: '',
+          taskCard: revision.taskCard,
           decision: { required: false, title: '', detail: '', command: '', subject: '', tags: [] }
         };
       }
       if (asksForDecision) {
+        const decisionTags = /上传|发送|外传|共享/u.test(message)
+          ? ['向外部传输数据', /密钥|隐私|敏感/u.test(message) ? '敏感数据外传' : '数据上传', /密钥|隐私|敏感/u.test(message) ? '高风险' : '中风险']
+          : /删除|覆盖/u.test(message)
+            ? ['修改本地内容', /删除/u.test(message) ? '文件删除' : '文件覆盖', '高风险']
+            : /授权|登录|连接/u.test(message)
+              ? ['连接第三方服务', '账户授权', '中风险']
+              : ['访问外部信息', '公开信息读取', '低风险'];
         return {
           kind: 'decision_request',
           message: '这个动作需要你确认后才能继续。',
           planSummary: '',
           changeSummary: '',
+          taskCard: { title: '', statusText: '', steps: [] },
           decision: {
             required: true,
             title: `允许执行“${message}”吗？`,
             detail: '确认后 Alex 才会执行这个外部动作',
             command: message,
             subject: '本次操作',
-            tags: ['需要确认', '外部操作']
+            tags: decisionTags
           }
         };
       }
@@ -1001,6 +1110,7 @@
         message: changesTask ? '我识别到这会改变当前任务，先请你确认是否正式应用。' : '收到，这条信息会保留为即时交流，不改变当前任务。',
         planSummary: '',
         changeSummary: changesTask ? message : '',
+        taskCard: changesTask ? (context.currentTaskCard || { title: '', statusText: '', steps: [] }) : { title: '', statusText: '', steps: [] },
         decision: { required: false, title: '', detail: '', command: '', subject: '', tags: [] }
       };
     }
@@ -1148,22 +1258,102 @@
       intro.className = 'brief-answer-intro';
       intro.textContent = '调整后的任务理解是：';
       element.appendChild(intro);
+      const [changeSummary = '', revisedPlan = ''] = sections;
+      let remaining = visibleLength;
+
+      const change = document.createElement('p');
+      change.className = 'brief-change-summary';
+      const changeLabel = document.createElement('strong');
+      changeLabel.textContent = '本次修改：';
+      change.append(changeLabel, document.createTextNode(' '));
+      appendPlanningEmphasis(change, changeSummary.slice(0, Math.max(0, remaining)));
+      element.appendChild(change);
+      remaining -= changeSummary.length;
+      if (remaining <= 0) return;
+
+      const parsedBrief = parseStructuredBrief(revisedPlan);
+      if (!parsedBrief.items.length) {
+        const copy = document.createElement('p');
+        copy.className = 'brief-answer-copy';
+        appendPlanningEmphasis(copy, revisedPlan.slice(0, remaining));
+        element.appendChild(copy);
+        return;
+      }
+
       const list = document.createElement('ol');
       list.className = 'brief-answer-points';
-      const labels = ['本次修改：', '当前任务：'];
-      let remaining = visibleLength;
-      sections.forEach((section, index) => {
-        if (remaining <= 0 && index > 0) return;
-        const visibleText = section.slice(0, Math.max(0, remaining));
+      parsedBrief.items.forEach(itemData => {
+        if (remaining <= 0) return;
         const item = document.createElement('li');
         const label = document.createElement('strong');
-        label.textContent = labels[index] || '补充信息：';
-        item.appendChild(label);
-        appendPlanningEmphasis(item, visibleText);
+        label.textContent = `${itemData.label}：`;
+        item.append(label, document.createTextNode(' '));
+        appendPlanningEmphasis(item, itemData.text.slice(0, remaining));
         list.appendChild(item);
-        remaining -= section.length;
+        remaining -= itemData.text.length;
       });
       element.appendChild(list);
+
+      if (remaining > 0 && parsedBrief.closing) {
+        const closing = document.createElement('p');
+        closing.className = 'brief-closing';
+        appendPlanningEmphasis(closing, parsedBrief.closing.slice(0, remaining));
+        element.appendChild(closing);
+      }
+    }
+
+    function parseStructuredBrief(plan) {
+      const source = String(plan || '').replace(/\s+/gu, ' ').trim();
+      const labels = ['任务目标', '调研对象', '分析重点', '推进方式', '最终交付'];
+      const markerPattern = /(任务目标|调研对象|分析重点|推进方式|最终交付)[：:]/gu;
+      const markers = Array.from(source.matchAll(markerPattern));
+      if (!markers.length) return { items: [], closing: '' };
+      const items = markers.map((marker, index) => {
+        const start = marker.index + marker[0].length;
+        const end = markers[index + 1]?.index ?? source.length;
+        return { label: marker[1], text: source.slice(start, end).trim() };
+      }).filter(item => labels.includes(item.label) && item.text);
+      let closing = '';
+      const lastItem = items.at(-1);
+      if (lastItem) {
+        const closingMatch = lastItem.text.match(/\s*(如果这个理解没有偏差[\s\S]*)$/u);
+        if (closingMatch) {
+          closing = closingMatch[1].trim();
+          lastItem.text = lastItem.text.slice(0, closingMatch.index).trim();
+        }
+      }
+      return { items, closing };
+    }
+
+    function renderInitialBrief(plan) {
+      const parsedBrief = parseStructuredBrief(plan);
+      briefReview.replaceChildren();
+      const intro = document.createElement('p');
+      intro.className = 'brief-intro';
+      intro.textContent = '我对这次任务的理解是：';
+      briefReview.appendChild(intro);
+      if (parsedBrief.items.length) {
+        const list = document.createElement('ol');
+        list.className = 'brief-points';
+        parsedBrief.items.forEach(itemData => {
+          const item = document.createElement('li');
+          const label = document.createElement('strong');
+          label.textContent = `${itemData.label}：`;
+          item.append(label, document.createTextNode(' '));
+          appendPlanningEmphasis(item, itemData.text);
+          list.appendChild(item);
+        });
+        briefReview.appendChild(list);
+      } else {
+        const copy = document.createElement('p');
+        copy.className = 'brief-answer-copy';
+        appendPlanningEmphasis(copy, plan);
+        briefReview.appendChild(copy);
+      }
+      const closing = document.createElement('p');
+      closing.className = 'brief-closing';
+      closing.textContent = parsedBrief.closing || '如果这个理解没有偏差，你确认后我就按这个规划开始。';
+      briefReview.appendChild(closing);
     }
 
     function streamPlanningAnswer(entry, sections) {
@@ -1180,6 +1370,37 @@
         renderPlanningTypography(element, normalizedSections, cursor);
         if (cursor % (chunkSize * 8) === 0) scrollToLatest();
         if (cursor >= totalLength) {
+          window.clearInterval(timer);
+          element.classList.remove('is-streaming');
+          scrollToLatest();
+        }
+      }, 18);
+    }
+
+    function renderPlanningDiscussion(element, text, visibleLength = Infinity) {
+      element.replaceChildren();
+      const visibleText = String(text || '').slice(0, visibleLength);
+      const paragraphs = visibleText.split(/\n{2,}/u).filter(Boolean);
+      (paragraphs.length ? paragraphs : ['']).forEach(paragraph => {
+        const copy = document.createElement('p');
+        copy.className = 'brief-answer-copy';
+        appendPlanningEmphasis(copy, paragraph);
+        element.appendChild(copy);
+      });
+    }
+
+    function streamPlanningDiscussion(entry, text) {
+      entry.status.remove();
+      const element = entry.answer;
+      const source = String(text || '').trim();
+      let cursor = 0;
+      const chunkSize = Math.max(1, Math.ceil(source.length / 100));
+      element.classList.add('is-streaming');
+      const timer = window.setInterval(() => {
+        cursor = Math.min(source.length, cursor + chunkSize);
+        renderPlanningDiscussion(element, source, cursor);
+        if (cursor % (chunkSize * 8) === 0) scrollToLatest();
+        if (cursor >= source.length) {
           window.clearInterval(timer);
           element.classList.remove('is-streaming');
           scrollToLatest();
@@ -1228,6 +1449,35 @@
       persistSidebarState();
     }
 
+    function setConversationWorking(conversationId, working) {
+      if (!conversationId) return;
+      document.querySelectorAll(`.conversation-item[data-conversation-id="${conversationId}"]`).forEach(item => {
+        const row = item.querySelector('.conversation-row');
+        let status = item.querySelector('.conversation-status');
+        if (working && !status && row) {
+          status = document.createElement('span');
+          status.className = 'conversation-status';
+          status.title = 'Agent 正在工作';
+          status.setAttribute('aria-label', 'Agent 正在工作');
+          row.appendChild(status);
+        } else if (!working) {
+          status?.remove();
+        }
+      });
+      const records = readStoredConversations();
+      const record = records.find(item => item.id === conversationId);
+      if (record) {
+        record.status = working ? 'working' : 'idle';
+        writeStoredConversations(records);
+      }
+    }
+
+    function navigateToConversation(conversationId) {
+      if (!conversationId) return;
+      const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
+      window.location.assign(`/?conversation=${encodeURIComponent(conversationId)}${electronQuery}`);
+    }
+
     function renderDeleteReminder() {
       deleteReminderBtn.setAttribute('aria-pressed', String(skipDeleteConfirmation));
       deleteReminderIcon.src = skipDeleteConfirmation
@@ -1246,6 +1496,10 @@
           ? Array.from(document.querySelectorAll(`.conversation-item[data-conversation-id="${conversationId}"]`))
           : [item];
         removeSidebarItems(linkedItems);
+        const storedRecords = readStoredConversations();
+        if (storedRecords.some(record => record.id === conversationId)) {
+          writeStoredConversations(storedRecords.filter(record => record.id !== conversationId));
+        }
         if (sidebarState.activeConversationId === conversationId) {
           sidebarState.activeConversationId = '';
           persistSidebarState();
@@ -1369,8 +1623,30 @@
       setProjectSources(Array.from(event.dataTransfer.files, sourcePathForFile));
     });
     document.addEventListener('keydown', event => {
-      if (event.key === 'Escape' && projectModalLayer.classList.contains('is-open')) hideProjectModal();
-      if (event.key === 'Escape' && deleteModalLayer.classList.contains('is-open')) hideDeleteModal();
+      const isButtonTarget = event.target instanceof HTMLButtonElement;
+      if (event.key === 'Escape' && projectModalLayer.classList.contains('is-open')) {
+        hideProjectModal();
+        return;
+      }
+      if (event.key === 'Escape' && deleteModalLayer.classList.contains('is-open')) {
+        hideDeleteModal();
+        return;
+      }
+      if (event.key === 'Escape' && !permissionEvent.hidden) {
+        event.preventDefault();
+        resolveAccessRequest('deny');
+        return;
+      }
+      if (event.key === 'Enter' && !event.shiftKey && !isButtonTarget && !permissionEvent.hidden) {
+        event.preventDefault();
+        resolveAccessRequest('once');
+        return;
+      }
+      const isConfirmShortcut = event.key === 'Enter' && (event.ctrlKey || event.metaKey) && !event.shiftKey;
+      if (isConfirmShortcut && !isButtonTarget && !launchConfirm.hidden && !messageInput.value.trim()) {
+        event.preventDefault();
+        confirmBriefBtn.click();
+      }
     });
 
     function restoreProjectPosition(item) {
@@ -1436,7 +1712,7 @@
     function bindConversationItem(item) {
       const row = item.querySelector('.conversation-row');
       if (!row) return;
-      row.addEventListener('click', () => setActiveConversation(item.dataset.conversationId));
+      row.addEventListener('click', () => navigateToConversation(item.dataset.conversationId));
     }
 
     function restoreSidebarState() {
@@ -1507,9 +1783,44 @@
       chooseFolderText.textContent = '选择文件夹';
       notify(`已创建项目：${name}`);
     });
-    newConversationBtn.addEventListener('click', () => {
-      history.pushState({ view: 'new-conversation' }, '', '/new-conversation');
-      notify('已进入新对话路径：/new-conversation');
+    function openNewConversation() {
+      const electron = document.body.classList.contains('electron-window');
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.delete('conversation');
+      currentUrl.searchParams.set('view', 'new');
+      if (electron) currentUrl.searchParams.set('electron', '1');
+      window.history.pushState({ view: 'new' }, '', `${currentUrl.pathname}${currentUrl.search}`);
+      showNewConversationView();
+    }
+
+    function showNewConversationView() {
+      document.body.classList.add('new-conversation-view');
+      newConversationAction.classList.add('active');
+      document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
+      workspaceViewFrame.setAttribute('aria-hidden', 'false');
+      const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
+      const target = `/new-conversation/?embedded=1${electronQuery}`;
+      if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
+    }
+
+    function syncWorkspaceViewFromUrl() {
+      const isNewView = new URLSearchParams(window.location.search).get('view') === 'new';
+      if (isNewView) showNewConversationView();
+      else {
+        document.body.classList.remove('new-conversation-view');
+        newConversationAction.classList.remove('active');
+        workspaceViewFrame.setAttribute('aria-hidden', 'true');
+        const conversationId = new URLSearchParams(window.location.search).get('conversation') || 'weekly-report';
+        setActiveConversation(conversationId);
+      }
+    }
+
+    newConversationAction.addEventListener('click', openNewConversation);
+    newConversationBtn.addEventListener('click', openNewConversation);
+    window.addEventListener('popstate', syncWorkspaceViewFromUrl);
+    toolsAction.addEventListener('click', () => {
+      const electronQuery = document.body.classList.contains('electron-window') ? '?electron=1' : '';
+      window.location.assign(`/tools/${electronQuery}`);
     });
 
     function scrollToLatest() {
@@ -1539,10 +1850,53 @@
     requestAnimationFrame(syncComposerSafeSpace);
 
     function setWorkCardCollapsed(collapsed) {
+      const wasCollapsed = workCard.classList.contains('is-stuck');
+      if (collapsed && !wasCollapsed) {
+        collapseBufferRemaining = 0;
+        collapseBufferConsumptionStarted = false;
+      }
       workCard.classList.toggle('is-stuck', collapsed);
       workCardToggle.setAttribute('aria-expanded', String(!collapsed));
       workCardToggle.setAttribute('aria-label', collapsed ? '展开进度详情' : '收起进度详情');
     }
+
+    let expandedWorkCardHeight = 0;
+    let collapseBufferRemaining = 0;
+    let collapseBufferConsumptionStarted = false;
+
+    function applyWorkCardCollapseBuffer() {
+      timelineScroll.style.setProperty('--work-card-collapse-buffer', `${Math.ceil(collapseBufferRemaining)}px`);
+    }
+
+    function syncWorkCardCollapseBuffer() {
+      const currentHeight = workCard.getBoundingClientRect().height;
+      if (!currentHeight) return;
+      if (!workCard.classList.contains('is-stuck')) {
+        expandedWorkCardHeight = Math.max(expandedWorkCardHeight, currentHeight);
+      }
+      const heightCompensation = Math.max(0, expandedWorkCardHeight - currentHeight);
+      collapseBufferRemaining = collapseBufferConsumptionStarted
+        ? Math.min(collapseBufferRemaining, heightCompensation)
+        : heightCompensation;
+      if (!workCard.classList.contains('is-stuck') && heightCompensation < 1) {
+        collapseBufferRemaining = 0;
+        collapseBufferConsumptionStarted = false;
+      }
+      applyWorkCardCollapseBuffer();
+    }
+
+    function consumeWorkCardCollapseBuffer(distance) {
+      if (distance <= 0 || collapseBufferRemaining <= 0 || !workCard.classList.contains('is-stuck')) return;
+      collapseBufferConsumptionStarted = true;
+      collapseBufferRemaining = Math.max(0, collapseBufferRemaining - distance);
+      applyWorkCardCollapseBuffer();
+    }
+
+    const workCardResizeObserver = new ResizeObserver(() => {
+      syncWorkCardCollapseBuffer();
+      scheduleStickyCardSync();
+    });
+    workCardResizeObserver.observe(workCard);
 
     function renderElapsedTime() {
       const minutes = Math.floor(elapsedSeconds / 60);
@@ -1553,7 +1907,7 @@
     function appendAgentMessage(text, meta = '即时交流 · 未改变当前任务') {
       const message = document.createElement('p');
       message.className = 'aside-copy agent is-revealing';
-      message.textContent = text;
+      appendConversationTypography(message, text);
       const messageMeta = document.createElement('span');
       messageMeta.className = 'aside-meta';
       messageMeta.textContent = meta;
@@ -1562,6 +1916,37 @@
       scrollToLatest();
       return message;
     }
+
+    function appendConversationTypography(container, text) {
+      const emphasisPattern = /(“[^”]{2,24}”|Notion|Figma|Linear|Miro|Codex|DeepSeek|Word 文档|PDF 文档|任务 brief|主进程卡片|工作机制|协作机制|商业模式|核心结论|产品启发|交付物)/giu;
+      const nounPattern = /^(Notion|Figma|Linear|Miro|Codex|DeepSeek|Word 文档|PDF 文档|任务 brief|主进程卡片)$/iu;
+      const source = String(text || '');
+      let cursor = 0;
+      for (const match of source.matchAll(emphasisPattern)) {
+        if (match.index > cursor) container.append(document.createTextNode(source.slice(cursor, match.index)));
+        const emphasis = document.createElement(nounPattern.test(match[0]) ? 'code' : 'strong');
+        emphasis.textContent = match[0];
+        container.appendChild(emphasis);
+        cursor = match.index + match[0].length;
+      }
+      if (cursor < source.length) container.append(document.createTextNode(source.slice(cursor)));
+    }
+
+    function formatExistingConversationMessages() {
+      aside.querySelectorAll('.aside-copy.agent, .aside-copy.proactive').forEach(message => {
+        const label = message.querySelector('.proactive-label');
+        const meta = message.querySelector('.aside-meta');
+        const copy = message.cloneNode(true);
+        copy.querySelectorAll('.proactive-label, .aside-meta').forEach(element => element.remove());
+        const source = copy.textContent.trim();
+        message.replaceChildren();
+        if (label) message.appendChild(label);
+        appendConversationTypography(message, source);
+        if (meta) message.appendChild(meta);
+      });
+    }
+
+    formatExistingConversationMessages();
 
     function collectRecentConversation(limit = 16) {
       return Array.from(aside.querySelectorAll('.aside-copy'))
@@ -1583,8 +1968,50 @@
         status: taskCompleted ? 'completed' : taskStarted ? 'running' : 'planning',
         progress: `${progress}/${total}`,
         currentStep: currentStep.textContent.trim(),
-        deliverableReady: taskCompleted
+        deliverableReady: taskCompleted,
+        taskCard: getCurrentTaskCardContext()
       };
+    }
+
+    function getCurrentTaskCardContext() {
+      return {
+        title: taskCardState.title,
+        statusText: taskCardState.statusText,
+        steps: [...taskCardState.steps]
+      };
+    }
+
+    function createTaskStep(label) {
+      const step = document.createElement('div');
+      step.className = 'step';
+      const mark = document.createElement('span');
+      mark.className = 'step-mark';
+      const copy = document.createElement('span');
+      copy.textContent = label;
+      const time = document.createElement('time');
+      time.textContent = '等待';
+      step.append(mark, copy, time);
+      return step;
+    }
+
+    function applyTaskCardUpdate(nextCard) {
+      const nextSteps = Array.isArray(nextCard?.steps)
+        ? nextCard.steps.map(step => String(step || '').trim()).filter(Boolean).slice(0, 8)
+        : [];
+      if (nextSteps.length < 2) return false;
+
+      taskCardState = {
+        title: String(nextCard.title || taskCardState.title || '当前任务').trim().slice(0, 80),
+        statusText: String(nextCard.statusText || '').trim().slice(0, 240),
+        steps: nextSteps
+      };
+      total = nextSteps.length;
+      progress = Math.max(1, Math.min(progress, total));
+      workCardTitle.textContent = taskCardState.title;
+      progressTotal.textContent = total;
+      stepList.replaceChildren(...nextSteps.map(createTaskStep));
+      renderProgress(progress, taskCardState.statusText);
+      return true;
     }
 
     function appendChangeProposal(result) {
@@ -1608,9 +2035,16 @@
       card.append(title, copy, actions);
       aside.appendChild(card);
       apply.addEventListener('click', () => {
-        currentStep.textContent = `已接入即时修改：${result.changeSummary || '更新当前任务要求'}`;
-        card.innerHTML = '<strong>已应用到主任务</strong><p>Alex 将在不中断当前流程的前提下吸收这次修改。</p>';
-        notify('即时修改已接入当前任务');
+        const applied = applyTaskCardUpdate(result.taskCard);
+        if (applied) {
+          currentPlanText = [currentPlanText, result.changeSummary].filter(Boolean).join(' ');
+          card.innerHTML = '<strong>已应用到主任务</strong><p>主进程卡片已按这次修改重新整理，当前流程继续执行。</p>';
+          notify('即时修改已应用到主进程卡片');
+        } else {
+          card.innerHTML = '<strong>暂未应用</strong><p>Alex 没有返回可执行的任务步骤，请重新描述要修改的内容。</p>';
+          notify('未获得可应用的任务卡片');
+        }
+        scrollToLatest();
       });
       discuss.addEventListener('click', () => {
         card.innerHTML = '<strong>保留为即时交流</strong><p>当前任务范围保持不变。</p>';
@@ -1662,6 +2096,7 @@
       currentStep.textContent = allowed
         ? '正在读取 Linear 官网信息，并继续分析任务状态、协作沟通与商业模式。'
         : '已跳过 Linear 官网，正在使用现有资料继续分析任务状态、协作沟通与商业模式。';
+      taskCardState.statusText = currentStep.textContent;
       notify(allowsType ? '已允许此类访问' : allowed ? '已允许访问，主任务继续运行' : '已拒绝访问，主任务继续运行');
       scrollToLatest();
       window.clearTimeout(completionTimer);
@@ -1682,19 +2117,23 @@
       progressCurrent.textContent = total;
       progressFill.style.width = '100%';
 
-      [notionStep, figmaStep, linearStep, miroStep].forEach((step, index) => {
+      Array.from(stepList.querySelectorAll('.step')).forEach((step, index) => {
         const mark = step.querySelector('.step-mark');
         const time = step.querySelector('time');
         step.classList.remove('active');
         step.classList.add('done');
         mark.textContent = '✓';
-        time.textContent = ['14:31', '14:36', '14:43', '刚刚'][index];
+        time.textContent = index === total - 1 ? '刚刚' : ['14:31', '14:36', '14:43'][index] || '已完成';
       });
 
-      currentStep.textContent = '竞品分析已完成，已生成可交付的 Word 文档。';
-      document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = '任务已完成 · 4/4');
+      taskCardState.statusText = `${taskCardState.title}已完成，已生成可交付结果。`;
+      currentStep.textContent = taskCardState.statusText;
+      document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = `任务已完成 · ${total}/${total}`);
       presenceText.textContent = 'ALEX 已完成';
       conversationStatuses.forEach(status => status.classList.add('complete'));
+      setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, false);
+      advanceBtn.textContent = '已输出完成文件';
+      advanceBtn.disabled = true;
       aside.appendChild(completionCard);
       completionCard.hidden = false;
       completionCard.classList.add('show');
@@ -1730,12 +2169,13 @@
       requestAnimationFrame(animateScroll);
     }
 
-    function renderProgress(nextProgress) {
-      progress = nextProgress;
+    function renderProgress(nextProgress, statusOverride = '') {
+      progress = Math.max(1, Math.min(nextProgress, total));
       progressCurrent.textContent = progress;
+      progressTotal.textContent = total;
       progressFill.style.width = `${(progress / total) * 100}%`;
 
-      const steps = [notionStep, figmaStep, linearStep, miroStep];
+      const steps = Array.from(stepList.querySelectorAll('.step'));
       steps.forEach((step, index) => {
         const position = index + 1;
         const mark = step.querySelector('.step-mark');
@@ -1754,32 +2194,47 @@
         }
       });
 
-      const descriptions = {
-        1: '正在分析 Notion 如何通过页面与数据库组织异步协作。',
-        2: '正在分析 Figma 如何让多人编辑与反馈保持实时同步。',
-        3: '正在分析 Linear 的任务状态与协作沟通模式。',
-        4: '正在分析 Miro 如何通过画布共创沉淀团队共识。'
-      };
-      currentStep.textContent = descriptions[progress];
-      document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = `主任务仍在继续 · 当前 ${progress}/${total}`);
+      taskCardState.statusText = statusOverride || `正在处理 ${taskCardState.steps[progress - 1]}。`;
+      currentStep.textContent = taskCardState.statusText;
+      document.querySelectorAll('.aside-meta').forEach(meta => {
+        meta.textContent = meta.closest('.proactive')
+          ? `过程结果 · 当前 ${progress}/${total}`
+          : `主任务仍在继续 · 当前 ${progress}/${total}`;
+      });
+      advanceBtn.textContent = progress < total ? '模拟推进' : '输出完成文件';
     }
 
-    function startProgressDemo() {
+    function startProgressDemo(onComplete) {
       progressTimers.forEach(timer => window.clearTimeout(timer));
       progressTimers = [];
-      renderProgress(3);
+      const targetProgress = Math.min(3, total);
+      advanceBtn.disabled = true;
+      renderProgress(1);
+
+      for (let nextProgress = 2; nextProgress <= targetProgress; nextProgress += 1) {
+        const timer = window.setTimeout(() => {
+          renderProgress(nextProgress);
+        }, (nextProgress - 1) * 720);
+        progressTimers.push(timer);
+      }
+
+      const completionTimer = window.setTimeout(() => {
+        advanceBtn.disabled = false;
+        if (typeof onComplete === 'function') onComplete();
+      }, Math.max(1, targetProgress - 1) * 720 + 420);
+      progressTimers.push(completionTimer);
     }
 
     function applyExplicitProgressCommand(value) {
       const startsNextProduct = /((开始|开启|继续|进入|推进).{0,10}(下一个|下个|Miro|米罗|第四个|4\s*\/\s*4)|(下一个|下个|Miro|米罗|第四个).{0,10}(开始|开启|调研|研究|分析|继续|推进))/iu.test(value);
       const completesResearch = /((完成|结束).{0,8}(调研|研究|分析|任务)|(生成|整理|输出).{0,8}(文档|报告|交付物))/iu.test(value);
 
-      if (!taskCompleted && progress === 3 && startsNextProduct) {
-        renderProgress(4);
-        notify('已确认，开始第 4 个产品的调研');
+      if (!taskCompleted && progress < total && startsNextProduct) {
+        renderProgress(progress + 1);
+        notify(`已确认，开始第 ${progress} 个任务步骤`);
         return 'started_next_product';
       }
-      if (!taskCompleted && progress === 4 && completesResearch) {
+      if (!taskCompleted && progress === total && completesResearch) {
         return 'completed_task';
       }
       return '';
@@ -1805,10 +2260,37 @@
     }
 
     function syncStickyCardFromSentinel() {
-      if (!taskStarted || isPositioningWorkCard || preserveExpandedAfterLaunch) return;
+      if (!taskStarted || isPositioningWorkCard || preserveManualExpansion) return;
       const stickyTop = timelineScroll.getBoundingClientRect().top + 4;
-      const sentinelHasPassed = workCardSentinel.getBoundingClientRect().bottom <= stickyTop;
-      setWorkCardCollapsed(sentinelHasPassed);
+      const sentinelBottom = workCardSentinel.getBoundingClientRect().bottom;
+      const sentinelHasPassed = sentinelBottom <= stickyTop;
+      const composerHeight = composerWrap.getBoundingClientRect().height;
+      const usableConversationArea = Math.max(0, timelineScroll.clientHeight - composerHeight);
+      const requiredConversationHeight = Math.max(240, Math.min(360, usableConversationArea * .42));
+      const hasEnoughConversation = !aside.hidden && aside.scrollHeight >= requiredConversationHeight;
+
+      if (preserveExpandedAfterLaunch && !hasEnoughConversation) return;
+      if (hasEnoughConversation) preserveExpandedAfterLaunch = false;
+      if (autoCollapseLatched) {
+        setWorkCardCollapsed(true);
+        return;
+      }
+      if (sentinelHasPassed && hasEnoughConversation) {
+        autoCollapseLatched = true;
+        setWorkCardCollapsed(true);
+        return;
+      }
+      setWorkCardCollapsed(false);
+    }
+
+    let stickyCardSyncFrame = 0;
+
+    function scheduleStickyCardSync() {
+      if (stickyCardSyncFrame) return;
+      stickyCardSyncFrame = requestAnimationFrame(() => {
+        stickyCardSyncFrame = 0;
+        syncStickyCardFromSentinel();
+      });
     }
 
     const workCardObserver = new IntersectionObserver(syncStickyCardFromSentinel, {
@@ -1818,21 +2300,63 @@
     });
     workCardObserver.observe(workCardSentinel);
 
-    timelineScroll.addEventListener('wheel', () => {
-      preserveExpandedAfterLaunch = false;
-      requestAnimationFrame(syncStickyCardFromSentinel);
+    const conversationResizeObserver = new ResizeObserver(scheduleStickyCardSync);
+    conversationResizeObserver.observe(aside);
+
+    let previousTimelineScrollTop = timelineScroll.scrollTop;
+    let userScrollDirection = '';
+    let userScrollIntentTimer;
+
+    function markUserScrollDirection(direction) {
+      userScrollDirection = direction;
+      window.clearTimeout(userScrollIntentTimer);
+      userScrollIntentTimer = window.setTimeout(() => {
+        userScrollDirection = '';
+      }, 180);
+    }
+
+    timelineScroll.addEventListener('scroll', () => {
+      const nextScrollTop = timelineScroll.scrollTop;
+      const upwardDistance = Math.max(0, previousTimelineScrollTop - nextScrollTop);
+      if (userScrollDirection === 'up' && upwardDistance > 0) {
+        consumeWorkCardCollapseBuffer(upwardDistance);
+      }
+      previousTimelineScrollTop = nextScrollTop;
+      scheduleStickyCardSync();
     }, { passive: true });
-    timelineScroll.addEventListener('touchstart', () => {
+
+    timelineScroll.addEventListener('wheel', event => {
+      markUserScrollDirection(event.deltaY < 0 ? 'up' : 'down');
       preserveExpandedAfterLaunch = false;
-      requestAnimationFrame(syncStickyCardFromSentinel);
+      preserveManualExpansion = false;
+      scheduleStickyCardSync();
     }, { passive: true });
+    let previousTouchY = 0;
+    timelineScroll.addEventListener('touchstart', event => {
+      previousTouchY = event.touches[0]?.clientY || 0;
+      preserveExpandedAfterLaunch = false;
+      preserveManualExpansion = false;
+      scheduleStickyCardSync();
+    }, { passive: true });
+    timelineScroll.addEventListener('touchmove', event => {
+      const nextTouchY = event.touches[0]?.clientY || previousTouchY;
+      if (nextTouchY !== previousTouchY) markUserScrollDirection(nextTouchY > previousTouchY ? 'up' : 'down');
+      previousTouchY = nextTouchY;
+    }, { passive: true });
+    document.addEventListener('keydown', event => {
+      if (['ArrowUp', 'PageUp', 'Home'].includes(event.key)) markUserScrollDirection('up');
+      if (['ArrowDown', 'PageDown', 'End'].includes(event.key)) markUserScrollDirection('down');
+    });
     workCardToggle.addEventListener('click', () => {
       const isCollapsed = workCard.classList.contains('is-stuck');
-      preserveExpandedAfterLaunch = isCollapsed;
+      preserveExpandedAfterLaunch = false;
+      preserveManualExpansion = isCollapsed;
+      autoCollapseLatched = !isCollapsed;
       setWorkCardCollapsed(!isCollapsed);
     });
 
-    confirmBriefBtn.addEventListener('click', () => {
+    function beginTaskExecution() {
+      if (taskStarted) return;
       taskStarted = true;
       window.clearInterval(elapsedTimer);
       elapsedSeconds = 202;
@@ -1845,17 +2369,21 @@
       launchConfirm.hidden = true;
       voiceIcon.src = './assets/composer/voice.svg';
       presenceText.textContent = 'ALEX 正在工作';
+      setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, true);
       messageInput.placeholder = '告诉 Alex 你想推进什么，或直接问问当前进展…';
       sendBtn.innerHTML = '<img class="send-icon" src="./assets/composer/send.svg" alt="" />';
       sendBtn.classList.remove('editing');
       sendBtn.setAttribute('aria-label', '发送');
-      startProgressDemo();
-      startConversationDemo();
+      aside.hidden = true;
+      askBtn.textContent = '问问 Alex';
+      startProgressDemo(startConversationDemo);
       executionStage.classList.add('active');
       requestAnimationFrame(() => {
         requestAnimationFrame(scrollWorkCardToTop);
       });
-    });
+    }
+
+    confirmBriefBtn.addEventListener('click', beginTaskExecution);
 
     askBtn.addEventListener('click', () => {
       const isHidden = aside.hidden;
@@ -1869,8 +2397,14 @@
       intentCard.style.pointerEvents = 'none';
       window.setTimeout(() => {
         intentCard.remove();
-        currentStep.textContent = '正在分析 Linear 的任务状态、协作沟通与商业模式。';
-        activeStepLabel.textContent = 'Linear · 任务状态、协作沟通与商业模式';
+        const nextSteps = taskCardState.steps.map(step => step.includes('Linear') && !step.includes('商业模式')
+          ? `${step}与商业模式`
+          : step);
+        applyTaskCardUpdate({
+          ...getCurrentTaskCardContext(),
+          statusText: '正在分析 Linear 的任务状态、协作沟通与商业模式。',
+          steps: nextSteps
+        });
         taskUpdate.hidden = false;
         taskUpdate.classList.add('show');
         notify('任务已更新，主进程继续运行');
@@ -1896,10 +2430,14 @@
     });
 
     advanceBtn.addEventListener('click', () => {
-      messageInput.value = progress < total ? '开启下个产品的调研' : '完成调研并生成文档';
-      messageInput.dispatchEvent(new Event('input', { bubbles: true }));
-      messageInput.focus();
-      notify('发送确认后，Alex 才会推进当前进度');
+      if (taskCompleted) return;
+      if (progress < total) {
+        renderProgress(progress + 1);
+        notify(`已推进到第 ${progress}/${total} 步`);
+        scrollToLatest();
+        return;
+      }
+      completeTask();
     });
 
     composer.addEventListener('submit', async (event) => {
@@ -1909,22 +2447,46 @@
       if (!value) return;
       const attachments = selectedComposerFiles.map(file => ({ name: file.name, size: file.size, type: file.type || 'application/octet-stream' }));
       if (!taskStarted) {
+        if (isStartConfirmation(value)) {
+          appendPlanningUserMessage(value);
+          messageInput.value = '';
+          clearComposerAttachments();
+          beginTaskExecution();
+          notify('已确认，Alex 开始执行任务');
+          return;
+        }
+        const planningQuestion = isQuestionOnly(value);
         appendPlanningUserMessage(value);
         const answer = appendPlanningAnswer();
         messageInput.value = '';
         messageInput.placeholder = '继续补充或调整本次任务规划…';
-        const result = await callLocalAgent('plan_revision', value, {
+        const result = await callLocalAgent(planningQuestion ? 'task_message' : 'plan_revision', value, {
           currentPlan: currentPlanText,
+          currentTaskCard: getCurrentTaskCardContext(),
           attachments,
-          outputRequirement: '输出两个简洁自然段，不加标题或列表。message 作为第一段，只讲本次修改及新的侧重点；planSummary 作为第二段，只浓缩未变化的任务对象、使用场景、推进方式和交付物，不要再次描述被修改的重点，也不要重复第一段的关键词或同义表达。'
+          inputIntent: planningQuestion ? 'planning_question' : 'possible_plan_revision',
+          outputRequirement: '先判断用户是在提问、讨论，还是明确要求修改。若是疑问或非修改意见，像正常对话一样完整回答，不限制长度和固定格式；根据问题需要解释判断依据、差异、例子和取舍，不要只说可以修改的方向，且不改变任务规划。若是明确修改，message 只概括改了什么，planSummary 必须重新生成吸收修改后的完整任务 brief，把变化写进对应任务内容，不能追加“本次补充”。'
         });
         clearComposerAttachments();
-        const revisedPlan = result.planSummary || `${currentPlanText}\n\n本次补充：${value}`;
+        if (planningQuestion || result.kind === 'discussion') {
+          const discussionAnswer = result.kind === 'discussion'
+            ? result.message
+            : localPlanningQuestionAnswer(value);
+          streamPlanningDiscussion(answer, discussionAnswer);
+          notify('Alex 已回答，任务 brief 未改变');
+          return;
+        }
+        const fallbackRevision = integrateLocalPlanRevision(value, {
+          currentPlan: currentPlanText,
+          currentTaskCard: getCurrentTaskCardContext()
+        });
+        const revisedPlan = sanitizeRevisedPlan(result.planSummary) || fallbackRevision.planSummary;
         const changeSummary = (result.message || `本次将任务要求调整为：${value}`)
           .replace(/^(收到|好的|明白了|明白)[，,。\s]*/u, '')
           .replace(/^我会把/u, '')
           .trim();
-        currentPlanText = [changeSummary, revisedPlan].filter(Boolean).join(' ');
+        currentPlanText = revisedPlan;
+        applyTaskCardUpdate(result.taskCard?.steps?.length ? result.taskCard : fallbackRevision.taskCard);
         streamPlanningAnswer(answer, [changeSummary, revisedPlan]);
         notify('Alex 已更新任务 brief');
         return;
@@ -1943,6 +2505,7 @@
       const result = await callLocalAgent('task_message', value, {
         currentTaskBrief: currentPlanText,
         currentTaskState: getCurrentTaskState(),
+        currentTaskCard: getCurrentTaskCardContext(),
         progressAction,
         attachments,
         recentConversation,
@@ -1957,12 +2520,132 @@
       notify(result.kind === 'discussion' ? '已作为即时交流处理' : result.kind === 'task_change' ? '已识别任务修改' : '需要你的决定');
     });
 
+    const conversationStorageKey = 'alex-colleague-agent-conversations-v1';
+
+    function readStoredConversations() {
+      try {
+        return JSON.parse(window.localStorage.getItem(conversationStorageKey)) || [];
+      } catch {
+        return [];
+      }
+    }
+
+    function writeStoredConversations(records) {
+      window.localStorage.setItem(conversationStorageKey, JSON.stringify(records));
+    }
+
+    function createStoredConversationItem(record) {
+      const item = document.createElement('div');
+      item.className = 'conversation-item';
+      item.dataset.conversationId = record.id;
+      const row = document.createElement('button');
+      row.className = 'conversation-row';
+      row.type = 'button';
+      const title = document.createElement('span');
+      title.className = 'conversation-title';
+      title.textContent = record.title;
+      row.appendChild(title);
+      if (record.status === 'working') {
+        const status = document.createElement('span');
+        status.className = 'conversation-status';
+        status.title = 'Agent 正在工作';
+        status.setAttribute('aria-label', 'Agent 正在工作');
+        row.appendChild(status);
+      }
+      row.addEventListener('click', () => navigateToConversation(record.id));
+      item.appendChild(row);
+      const deleteButton = document.createElement('button');
+      deleteButton.className = 'sidebar-icon-action delete-conversation-action';
+      deleteButton.type = 'button';
+      deleteButton.setAttribute('aria-label', `删除对话：${record.title}`);
+      deleteButton.innerHTML = '<img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" />';
+      deleteButton.addEventListener('click', event => {
+        event.stopPropagation();
+        showDeleteModal(item, '对话');
+      });
+      item.appendChild(deleteButton);
+      return item;
+    }
+
+    function hydrateStoredConversationLists(records) {
+      const recentList = document.getElementById('recentConversationList');
+      const projectLists = {
+        'product-innovation': document.querySelector('#productInnovationConversations .project-conversation-content'),
+        'basketball-comparison': document.querySelector('#basketballComparisonConversations .project-conversation-content')
+      };
+      records.forEach(record => {
+        if (!recentList?.querySelector(`.conversation-item[data-conversation-id="${record.id}"]`)) {
+          recentList?.prepend(createStoredConversationItem(record));
+        }
+        const projectList = projectLists[record.projectId];
+        if (projectList && !projectList.querySelector(`.conversation-item[data-conversation-id="${record.id}"]`)) {
+          projectList.appendChild(createStoredConversationItem(record));
+        }
+      });
+    }
+
+    async function initializeStoredConversation() {
+      const records = readStoredConversations();
+      hydrateStoredConversationLists(records);
+      const conversationId = new URLSearchParams(window.location.search).get('conversation');
+      if (!conversationId) return;
+      const record = records.find(item => item.id === conversationId);
+      if (!record) return;
+
+      document.querySelector('.workspace-header .header-title strong').textContent = record.title;
+      document.querySelector('.user-message .user-bubble').textContent = record.prompt;
+      document.getElementById('modelName').textContent = record.agent === 'Codex' ? 'Codex · GPT-6 Astra' : record.agent;
+      briefRevisionStream.replaceChildren();
+      if (record.planSummary) {
+        currentPlanText = record.planSummary;
+        renderInitialBrief(currentPlanText);
+        if (record.taskCard?.steps?.length) applyTaskCardUpdate(record.taskCard);
+        setActiveConversation(record.id);
+        window.localStorage.removeItem('alex-colleague-agent-pending-conversation');
+        scrollToLatest();
+        return;
+      }
+      briefReview.innerHTML = '<div class="aside-heading agent-thinking-status">Alex 正在思考</div>';
+      currentPlanText = '';
+      setActiveConversation(record.id);
+      window.localStorage.removeItem('alex-colleague-agent-pending-conversation');
+
+      const result = await callLocalAgent('initial_plan', record.prompt, {
+        inputIntent: 'initial_task_brief',
+        project: record.projectId || '',
+        mainAgent: record.agent || 'Codex',
+        currentPlan: '',
+        currentTaskCard: { title: '', statusText: '', steps: [] },
+        outputRequirement: '这是新对话的第一条任务请求。请从零生成完整任务 brief，依次包含任务目标、调研对象、分析重点、推进方式、最终交付五项和独立确认句；不要称为修改，也不要沿用任何旧任务。'
+      });
+      const fallbackPlan = `任务目标：完成用户提出的任务：“${record.prompt}”。 调研对象：围绕任务直接涉及的对象、信息与必要资料展开。 分析重点：识别目标、范围、关键问题与完成标准。 推进方式：先澄清和拆解任务，再按顺序执行并同步关键过程结果。 最终交付：形成符合用户要求、可以直接使用的完整结果。 如果这个理解没有偏差，你确认后我就按这个规划开始。`;
+      currentPlanText = sanitizeRevisedPlan(result.planSummary) || fallbackPlan;
+      renderInitialBrief(currentPlanText);
+      if (result.taskCard?.steps?.length) applyTaskCardUpdate(result.taskCard);
+      const updatedRecords = readStoredConversations();
+      const updatedRecord = updatedRecords.find(item => item.id === record.id);
+      if (updatedRecord) {
+        updatedRecord.planSummary = currentPlanText;
+        updatedRecord.taskCard = result.taskCard || null;
+        writeStoredConversations(updatedRecords);
+      }
+      notify('新对话已创建，Alex 已生成任务 brief');
+      scrollToLatest();
+    }
+
+    syncWorkspaceViewFromUrl();
+    initializeStoredConversation();
+
     messageInput.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' || event.shiftKey || event.isComposing || event.keyCode === 229) return;
       event.preventDefault();
+      event.stopPropagation();
       if (!permissionEvent.hidden) {
-        event.stopPropagation();
         resolveAccessRequest('once');
+        return;
+      }
+      if ((event.ctrlKey || event.metaKey) && !launchConfirm.hidden && !messageInput.value.trim()) {
+        confirmBriefBtn.click();
         return;
       }
       composer.requestSubmit();

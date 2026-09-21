@@ -9,6 +9,21 @@
     "message": { "type": "string" },
     "planSummary": { "type": "string" },
     "changeSummary": { "type": "string" },
+    "taskCard": {
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "statusText": { "type": "string" },
+        "steps": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 0,
+          "maxItems": 8
+        }
+      },
+      "required": ["title", "statusText", "steps"],
+      "additionalProperties": false
+    },
     "decision": {
       "type": "object",
       "properties": {
@@ -19,7 +34,9 @@
         "subject": { "type": "string" },
         "tags": {
           "type": "array",
+          "description": "决策标签固定顺序：类型、细分类型、风险程度。",
           "items": { "type": "string" },
+          "minItems": 3,
           "maxItems": 3
         }
       },
@@ -27,6 +44,6 @@
       "additionalProperties": false
     }
   },
-  "required": ["kind", "message", "planSummary", "changeSummary", "decision"],
+  "required": ["kind", "message", "planSummary", "changeSummary", "taskCard", "decision"],
   "additionalProperties": false
 }
