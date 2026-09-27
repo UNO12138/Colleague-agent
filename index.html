@@ -101,10 +101,14 @@
       height: 100vh;
       min-height: 0;
       margin: 0;
-      border: 0;
-      border-radius: 0;
       border: .5px solid rgba(17, 17, 17, .16);
-      box-shadow: inset 0 1px 0 rgba(255, 255, 255, .055);
+      border-radius: 8px;
+      isolation: isolate;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, .055),
+        0 4px 100px 4px rgba(0, 0, 0, .25);
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
     }
 
     .sidebar {
@@ -145,9 +149,9 @@
     }
     .side-action:hover, .project-row:hover, .conversation-row:hover { background: rgba(0, 0, 0, .045); }
     .side-action.active { background: rgba(0, 0, 0, .08); }
-    #newConversationAction .figma-icon { opacity: .8; }
     .with-icon { display: flex; align-items: center; gap: 12px; min-width: 0; }
     .figma-icon { width: 18px; height: 18px; object-fit: contain; flex: 0 0 auto; }
+    #newConversationAction .figma-icon { width: 20px; height: 20px; }
     .sidebar-section-heading { position: relative; display: flex; align-items: center; min-height: 27px; margin: 17px 0 7px; padding: 0 10px; }
     .section-label { color: var(--muted); font-size: 16px; font-weight: 400; }
     .sidebar-icon-action {
@@ -648,7 +652,7 @@
     <aside class="sidebar" aria-label="项目导航">
       <div class="product-name">Alex Colleague agent</div>
       <button class="side-action" id="newConversationAction" type="button">
-        <span class="with-icon"><img class="figma-icon" src="./new-conversation.svg" alt="" />新对话</span>
+        <span class="with-icon"><img class="figma-icon" src="./new-conversation-figma.svg" alt="" />新对话</span>
       </button>
       <button class="side-action" id="toolsAction" type="button">
         <span class="with-icon"><img class="figma-icon" src="./assets/tools.svg" alt="" />工具</span>
@@ -774,10 +778,10 @@
                     </section>
                     <div class="decision-record" id="decisionRecord" hidden></div>
                     <section class="completion-card" id="completionCard" hidden>
-                      <p class="aside-copy agent completion-message"><span class="proactive-label">ALEX 已完成任务</span>我把四个产品的协作机制、核心差异和产品启发整理进了这份 Word 文档。</p>
+                      <p class="aside-copy agent completion-message"><span class="proactive-label">ALEX 已完成任务</span><span id="completionSummary">正在整理本次任务的交付结果。</span></p>
                       <button class="file-card" id="fileCard" type="button" aria-label="协作产品竞品分析 Word 文档，项目文件，周二汇报，协作产品竞品分析点 docx">
-                        <span class="word-file-icon" aria-hidden="true">W</span>
-                        <span class="file-card-copy"><strong>协作产品竞品分析.docx</strong><span>Word 文档</span></span>
+                        <span class="word-file-icon" id="deliverableIcon" aria-hidden="true">W</span>
+                        <span class="file-card-copy"><strong id="deliverableName">协作产品竞品分析.docx</strong><span id="deliverableType">Word 文档</span></span>
                         <span class="file-card-arrow" aria-hidden="true">↗</span>
                         <code class="file-path" id="filePath">项目文件\周二汇报\协作产品竞品分析.docx</code>
                       </button>
@@ -936,6 +940,12 @@
     const allowTypeAccessBtn = document.getElementById('allowTypeAccessBtn');
     const decisionRecord = document.getElementById('decisionRecord');
     const completionCard = document.getElementById('completionCard');
+    const completionSummary = document.getElementById('completionSummary');
+    const deliverableIcon = document.getElementById('deliverableIcon');
+    const deliverableName = document.getElementById('deliverableName');
+    const deliverableType = document.getElementById('deliverableType');
+    const filePath = document.getElementById('filePath');
+    const fileCard = document.getElementById('fileCard');
     const conversationStatuses = Array.from(document.querySelectorAll('.conversation-status'));
     const desktopWindow = window.desktopWindow;
     const windowMinimize = document.getElementById('windowMinimize');
@@ -1058,6 +1068,28 @@
     }
 
     function localFallback(mode, message, context = {}) {
+      if (mode === 'completion') {
+        const brief = String(context.currentPlan || currentPlanText || '');
+        const format = /PDF/iu.test(brief) ? ['pdf', 'PDF 文档']
+          : /PPT|演示文稿|幻灯片/iu.test(brief) ? ['pptx', 'PowerPoint 演示文稿']
+            : /表格|Excel|数据表/iu.test(brief) ? ['xlsx', 'Excel 工作簿']
+              : /Markdown|\.md\b/iu.test(brief) ? ['md', 'Markdown 文档']
+                : ['docx', 'Word 文档'];
+        const baseName = String(context.currentTaskCard?.title || '任务结果').replace(/[\\/:*?"<>|]/gu, '').trim() || '任务结果';
+        const fileName = `${baseName}.${format[0]}`;
+        return {
+          kind: 'discussion', message: '', planSummary: '', changeSummary: '',
+          taskCard: { title: '', statusText: '', steps: [] },
+          deliverable: {
+            summary: `已按当前任务要求完成“${baseName}”，并整理为可直接使用的${format[1]}。`,
+            fileName,
+            fileType: format[1],
+            extension: format[0],
+            path: `项目文件\\${fileName}`
+          },
+          decision: { required: false, title: '', detail: '', command: '', subject: '', tags: [] }
+        };
+      }
       const asksForDecision = /访问|联网|官网|发送|上传|授权|权限/.test(message);
       const changesTask = /增加|改成|调整|修改|删除|不要|改为|交付|范围|目标|优先/.test(message);
       if (isQuestionOnly(message)) {
@@ -2015,6 +2047,7 @@
     }
 
     function appendChangeProposal(result) {
+      setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, false);
       const card = document.createElement('div');
       card.className = 'intent-card is-revealing';
       const title = document.createElement('strong');
@@ -2044,10 +2077,12 @@
           card.innerHTML = '<strong>暂未应用</strong><p>Alex 没有返回可执行的任务步骤，请重新描述要修改的内容。</p>';
           notify('未获得可应用的任务卡片');
         }
+        if (taskStarted && !taskCompleted) setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, true);
         scrollToLatest();
       });
       discuss.addEventListener('click', () => {
         card.innerHTML = '<strong>保留为即时交流</strong><p>当前任务范围保持不变。</p>';
+        if (taskStarted && !taskCompleted) setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, true);
         notify('未改变当前任务');
       });
       scrollToLatest();
@@ -2075,6 +2110,7 @@
       permissionSecondary.hidden = true;
       allowMoreBtn.setAttribute('aria-expanded', 'false');
       presenceText.textContent = 'ALEX 等待你的授权';
+      setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, false);
       notify('Alex 需要确认一个外部访问');
     }
 
@@ -2102,8 +2138,35 @@
       window.clearTimeout(completionTimer);
     }
 
-    function completeTask() {
+    function renderDeliverable(deliverable) {
+      const extension = String(deliverable?.extension || 'docx').replace(/^\./u, '').toLowerCase();
+      const fileName = String(deliverable?.fileName || `任务结果.${extension}`);
+      const fileType = String(deliverable?.fileType || '文档');
+      const summary = String(deliverable?.summary || `已完成当前任务，并生成${fileType}。`);
+      const path = String(deliverable?.path || `项目文件\\${fileName}`);
+      completionSummary.textContent = summary;
+      deliverableName.textContent = fileName;
+      deliverableType.textContent = fileType;
+      deliverableIcon.textContent = extension.slice(0, 1).toUpperCase() || 'F';
+      filePath.textContent = path;
+      fileCard.setAttribute('aria-label', `${fileName}，${fileType}，${path}`);
+    }
+
+    async function completeTask() {
       if (taskCompleted) return;
+      const activeConversationId = new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId;
+      advanceBtn.disabled = true;
+      advanceBtn.textContent = '正在生成交付结果…';
+      const result = await callLocalAgent('completion', '根据当前任务生成最终交付结果的名称、格式和说明。', {
+        inputIntent: 'generate_deliverable',
+        currentPlan: currentPlanText,
+        currentTaskCard: getCurrentTaskCardContext(),
+        originalRequest: document.querySelector('.user-message .user-bubble')?.textContent?.trim() || '',
+        conversationId: activeConversationId
+      });
+      const deliverable = result.deliverable?.fileName
+        ? result.deliverable
+        : localFallback('completion', '', { currentPlan: currentPlanText, currentTaskCard: getCurrentTaskCardContext() }).deliverable;
       taskCompleted = true;
       progressTimers.forEach(timer => window.clearTimeout(timer));
       progressTimers = [];
@@ -2134,11 +2197,12 @@
       setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, false);
       advanceBtn.textContent = '已输出完成文件';
       advanceBtn.disabled = true;
+      renderDeliverable(deliverable);
       aside.appendChild(completionCard);
       completionCard.hidden = false;
       completionCard.classList.add('show');
       messageInput.placeholder = '继续追问，或基于这份文档发起新的修改…';
-      notify('任务已完成，Word 文档已生成');
+      notify(`任务已完成，${deliverable.fileName} 已生成`);
       scrollToLatest();
     }
 
@@ -2376,7 +2440,15 @@
       sendBtn.setAttribute('aria-label', '发送');
       aside.hidden = true;
       askBtn.textContent = '问问 Alex';
-      startProgressDemo(startConversationDemo);
+      const activeConversationId = new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId;
+      if (activeConversationId === 'weekly-report') {
+        startProgressDemo(startConversationDemo);
+      } else {
+        progressTimers.forEach(timer => window.clearTimeout(timer));
+        progressTimers = [];
+        renderProgress(progress);
+        advanceBtn.disabled = false;
+      }
       executionStage.classList.add('active');
       requestAnimationFrame(() => {
         requestAnimationFrame(scrollWorkCardToTop);
@@ -2599,6 +2671,7 @@
       if (record.planSummary) {
         currentPlanText = record.planSummary;
         renderInitialBrief(currentPlanText);
+        progress = 1;
         if (record.taskCard?.steps?.length) applyTaskCardUpdate(record.taskCard);
         setActiveConversation(record.id);
         window.localStorage.removeItem('alex-colleague-agent-pending-conversation');
@@ -2621,6 +2694,7 @@
       const fallbackPlan = `任务目标：完成用户提出的任务：“${record.prompt}”。 调研对象：围绕任务直接涉及的对象、信息与必要资料展开。 分析重点：识别目标、范围、关键问题与完成标准。 推进方式：先澄清和拆解任务，再按顺序执行并同步关键过程结果。 最终交付：形成符合用户要求、可以直接使用的完整结果。 如果这个理解没有偏差，你确认后我就按这个规划开始。`;
       currentPlanText = sanitizeRevisedPlan(result.planSummary) || fallbackPlan;
       renderInitialBrief(currentPlanText);
+      progress = 1;
       if (result.taskCard?.steps?.length) applyTaskCardUpdate(result.taskCard);
       const updatedRecords = readStoredConversations();
       const updatedRecord = updatedRecords.find(item => item.id === record.id);
@@ -2635,6 +2709,9 @@
 
     syncWorkspaceViewFromUrl();
     initializeStoredConversation();
+    if (!taskStarted || !permissionEvent.hidden) {
+      setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, false);
+    }
 
     messageInput.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' || event.shiftKey || event.isComposing || event.keyCode === 229) return;

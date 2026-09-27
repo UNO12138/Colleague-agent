@@ -76,6 +76,34 @@ function stopLocalAgent() {
   agentProcess = null;
 }
 
+function removeWindowsFrameBorder(window) {
+  if (process.platform !== 'win32') return Promise.resolve(true);
+
+  const nativeHandle = window.getNativeWindowHandle();
+  const handleValue = nativeHandle.length >= 8
+    ? nativeHandle.readBigUInt64LE(0).toString(10)
+    : String(nativeHandle.readUInt32LE(0));
+  const borderHelperPath = path.join(__dirname, 'set-dwm-border.ps1');
+  const helperProcess = spawn(
+    'powershell.exe',
+    ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', borderHelperPath, handleValue],
+    { windowsHide: true, stdio: 'ignore' },
+  );
+
+  return new Promise((resolve) => {
+    helperProcess.once('error', (error) => {
+      console.warn(`Could not suppress the DWM window border: ${error.message}`);
+      resolve(false);
+    });
+    helperProcess.once('exit', (exitCode) => {
+      if (exitCode !== 0) {
+        console.warn(`Could not suppress the DWM window border (exit code ${exitCode}).`);
+      }
+      resolve(exitCode === 0);
+    });
+  });
+}
+
 function createWindow() {
   const workArea = screen.getPrimaryDisplay().workAreaSize;
   const designWidth = 1512;
@@ -90,6 +118,7 @@ function createWindow() {
     show: false,
     title: 'Colleague Agent',
     frame: false,
+    roundedCorners: true,
     transparent: false,
     autoHideMenuBar: true,
     ...(process.platform === 'win32' ? { backgroundMaterial: 'acrylic' } : {}),
@@ -101,6 +130,8 @@ function createWindow() {
     },
   });
 
+  mainWindow.on('focus', () => void removeWindowsFrameBorder(mainWindow));
+  mainWindow.on('blur', () => void removeWindowsFrameBorder(mainWindow));
   mainWindow.setMenuBarVisibility(false);
   mainWindow.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   mainWindow.webContents.on('before-input-event', (event, input) => {
@@ -112,7 +143,10 @@ function createWindow() {
     const isLocalDevelopmentUrl = url.startsWith('http://127.0.0.1:5173/');
     if (!isLocalDevelopmentUrl) event.preventDefault();
   });
-  mainWindow.once('ready-to-show', () => mainWindow.show());
+  mainWindow.once('ready-to-show', async () => {
+    await removeWindowsFrameBorder(mainWindow);
+    if (!mainWindow.isDestroyed()) mainWindow.show();
+  });
   mainWindow.on('closed', () => {
     mainWindow = null;
   });

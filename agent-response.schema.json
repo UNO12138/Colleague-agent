@@ -24,6 +24,18 @@
       "required": ["title", "statusText", "steps"],
       "additionalProperties": false
     },
+    "deliverable": {
+      "type": "object",
+      "properties": {
+        "summary": { "type": "string" },
+        "fileName": { "type": "string" },
+        "fileType": { "type": "string" },
+        "extension": { "type": "string" },
+        "path": { "type": "string" }
+      },
+      "required": ["summary", "fileName", "fileType", "extension", "path"],
+      "additionalProperties": false
+    },
     "decision": {
       "type": "object",
       "properties": {

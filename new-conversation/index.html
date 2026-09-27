@@ -14,7 +14,7 @@
     .app-shell { width:min(94vw,1512px); height:min(92vh,912px); min-height:680px; margin:4vh auto; display:grid; grid-template-columns:254px minmax(0,1fr); grid-template-rows:40px minmax(0,1fr); overflow:hidden; position:relative; border:.5px solid rgba(17,17,17,.16); border-radius:9px; background:var(--shell); box-shadow:0 4px 100px 4px rgba(0,0,0,.25); }
     body:not(.electron-window) .app-shell { -webkit-backdrop-filter:blur(26px) saturate(132%); backdrop-filter:blur(26px) saturate(132%); }
     body.electron-window { background:transparent; }
-    body.electron-window .app-shell { width:100%; height:100vh; min-height:0; margin:0; border:.5px solid rgba(17,17,17,.16); border-radius:0; box-shadow:inset 0 1px 0 rgba(255,255,255,.055); }
+    body.electron-window .app-shell { width:100%; height:100vh; min-height:0; margin:0; border:.5px solid rgba(17,17,17,.16); border-radius:8px; isolation:isolate; box-shadow:inset 0 1px 0 rgba(255,255,255,.055),0 4px 100px 4px rgba(0,0,0,.25); -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); }
     .window-bar { grid-column:1/-1; display:flex; align-items:center; justify-content:space-between; user-select:none; }
     body.electron-window .window-bar { -webkit-app-region:drag; }
     .brand-mark { width:28px; height:28px; margin-left:14px; padding:4px; border:0; border-radius:5px; background:transparent; -webkit-app-region:no-drag; }
