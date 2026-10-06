@@ -337,7 +337,11 @@
       border: 0;
       background: #fff;
     }
-    body.new-conversation-view .workspace-view-frame { display: block; }
+    body.workspace-subview .workspace-view-frame { display: block; }
+    body.embedded-conversation { background: #fff; }
+    body.embedded-conversation .app-shell { display: block; width: 100%; height: 100vh; min-height: 0; margin: 0; border: 0; border-radius: 0; background: #fff; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; }
+    body.embedded-conversation .window-bar, body.embedded-conversation .sidebar { display: none; }
+    body.embedded-conversation .workspace { width: 100%; height: 100%; margin: 0; border: 0; border-radius: 0; }
     .workspace-header {
       display: flex;
       align-items: center;
@@ -433,13 +437,115 @@
     .progress-track { height: 5px; margin: 0 20px; overflow: hidden; border-radius: 10px; background: var(--soft); }
     .progress-fill { width: 75%; height: 100%; border-radius: inherit; background: var(--deep); transition: width .45s ease; }
     .work-card-meta { min-height: 28px; display: flex; align-items: center; padding: 7px 20px 0; }
-    .step-list { max-height: 180px; padding: 14px 20px 10px; display: grid; gap: 10px; overflow: hidden; opacity: 1; transition: max-height .34s cubic-bezier(.2, .72, .2, 1), padding .34s cubic-bezier(.2, .72, .2, 1), opacity .22s ease; }
-    .step { display: grid; grid-template-columns: 17px minmax(0, 1fr) auto; gap: 10px; align-items: center; }
+    .step-list { max-height: min(440px, 55vh); padding: 14px 20px 10px; display: grid; align-content: start; gap: 10px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; opacity: 1; transition: max-height .34s cubic-bezier(.2, .72, .2, 1), padding .34s cubic-bezier(.2, .72, .2, 1), opacity .22s ease; }
+    .step { width: 100%; display: grid; grid-template-columns: 17px minmax(0, 1fr) auto 12px; gap: 10px; align-items: center; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
+    .step:focus-visible { outline: 2px solid #4457de; outline-offset: 3px; border-radius: 4px; }
     .step-mark { width: 16px; height: 16px; display: grid; place-items: center; border: 1px solid rgba(17, 17, 17, .1); border-radius: 50%; background: #fff; font-size: 9px; }
     .step.done .step-mark { background: var(--deep); color: #fff; border-color: var(--deep); }
     .step.active .step-mark { border: 4px solid var(--deep); }
-    .step span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .step .step-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .step time { color: var(--muted); font-size: 11px; }
+    .step-list { scrollbar-gutter: stable; }
+    .step-chevron { display: block; width: 12px; height: 12px; filter: invert(1); opacity: .56; transform: scaleY(-1); transform-origin: center; transition: transform .18s ease; }
+    .step[aria-expanded="true"] .step-chevron { transform: scaleY(1); }
+    .step-preview { margin: 9px 0 2px 27px; padding: 12px 14px; border: 1px solid rgba(17,17,17,.11); border-radius: 10px; background: #fff; color: #393939; font-size: 12px; line-height: 1.5; }
+    .step-preview[hidden] { display: none; }
+    .step-preview-summary { margin: 0 0 9px; color: #393939; font-size: 12px; font-weight: 550; }
+    .step-preview-note { margin-top: 8px; color: var(--muted); font-size: 11px; }
+    .step-preview-list { margin: 0; padding-left: 18px; }
+    .step-preview-list li + li { margin-top: 4px; }
+    .step-preview-visual { display: block; width: 100%; max-height: 132px; object-fit: cover; border: 1px solid var(--line); border-radius: 7px; }
+    .step-preview-bars { display: grid; gap: 6px; }
+    .step-preview-bar { display: grid; grid-template-columns: 66px minmax(0,1fr) 28px; gap: 8px; align-items: center; }
+    .step-preview-bar-track { height: 7px; overflow: hidden; border-radius: 4px; background: #f0f0f0; }
+    .step-preview-bar-fill { display: block; height: 100%; border-radius: inherit; background: #777; }
+    .step-preview-file { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px; }
+    .step-preview-file strong { display: block; color: #393939; }
+    .step-preview-file small { color: var(--muted); }
+    .step-preview-code { max-height: 100px; overflow: auto; margin: 0; padding: 8px; border-radius: 6px; background: #f6f6f6; font-size: 11px; }
+    .step-document-page { position: relative; width: min(100%, 440px); max-height: 255px; overflow: hidden; margin: 3px auto 2px; padding: 18px 23px 22px; border: 1px solid rgba(17,17,17,.17); border-radius: 5px; background: #fff; box-shadow: 0 6px 18px rgba(17,17,17,.07); }
+    .step-document-page::after { position: absolute; right: 0; bottom: 0; left: 0; height: 26px; background: linear-gradient(transparent,#fff); content: ''; pointer-events: none; }
+    .step-document-header { padding-bottom: 7px; border-bottom: 1px solid rgba(17,17,17,.12); color: #888; font-size: 9px; letter-spacing: .1em; }
+    .step-document-page h3 { margin: 14px 0 9px; color: #222; font-size: 16px; line-height: 1.35; }
+    .step-document-page h4 { margin: 12px 0 5px; color: #303030; font-size: 11px; line-height: 1.4; }
+    .step-document-page p { margin: 0 0 7px; color: #555; font-size: 10px; line-height: 1.65; }
+    .step-document-page .step-document-bullet { margin-left: 11px; padding-left: 7px; border-left: 2px solid #d9d9d9; }
+    .step-document-page[data-template="brief"] h3 { padding-left: 10px; border-left: 3px solid #777; }
+    .step-document-page[data-template="notes"] h4 { padding-bottom: 4px; border-bottom: 1px solid rgba(17,17,17,.09); }
+    .step-preview:has(.step-visual-board,.step-comparison-visual) .step-preview-summary, .step-preview:has(.step-visual-board,.step-comparison-visual) .step-preview-note { font-size: 14px; line-height: 1.6; }
+    .step-visual-board { margin: 3px auto 2px; padding: 14px; border: 1px solid #dce2f3; border-radius: 12px; background: linear-gradient(145deg,#f9faff,#fff 65%); font-size: 14px; }
+    .step-visual-kicker { color: #5966a4; font-size: 14px; font-weight: 650; letter-spacing: .04em; }
+    .step-visual-title { margin: 9px 0 16px; color: #263050; font-size: 17px; line-height: 1.4; }
+    .step-visual-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(190px,1fr)); gap: 10px; }
+    .step-visual-card { min-width: 0; min-height: 178px; padding: 13px; border: 1px solid #e3e7f0; border-radius: 9px; background: #fff; box-shadow: 0 3px 9px #2733580a; }
+    .step-visual-index { display: inline-grid; place-items: center; width: 27px; height: 27px; border-radius: 7px; background: #e9edff; color: #4557ba; font-size: 14px; font-weight: 700; }
+    .step-visual-card h4 { margin: 10px 0 7px; color: #273050; font-size: 15px; line-height: 1.4; }
+    .step-visual-card p { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 6; margin: 0; color: #61677c; font-size: 14px; line-height: 1.55; }
+    .step-visual-fallback { margin: 10px 0 0; color: #61677c; font-size: 14px; line-height: 1.55; }
+    .step-summary-paragraph { margin: 10px 0 0; color: #4f566e; font-size: 14px; line-height: 1.72; }
+    .step-summary-bullet { margin: 8px 0 0 18px; color: #4f566e; font-size: 14px; line-height: 1.65; }
+    .step-summary-bullet::before { margin-left: -14px; margin-right: 8px; color: #6c78c8; content: '•'; }
+    .workflow-lead { margin: 12px 0 0; padding: 10px 12px; border-left: 3px solid #7c87cf; background: #f4f5fa; color: #535a71; font-size: 13px; line-height: 1.6; }
+    .step-comparison-visual { margin: 3px auto 2px; padding: 15px; border: 1px solid #dce2f3; border-radius: 12px; background: #fbfcff; font-size: 14px; }
+    .step-comparison-scroll { max-width: 100%; overflow-x: auto; overscroll-behavior-inline: contain; border: 1px solid #dfe4ef; border-radius: 9px; background: #fff; }
+    .step-comparison-table { width: 100%; min-width: 520px; border-collapse: collapse; text-align: left; line-height: 1.5; }
+    .step-comparison-table th, .step-comparison-table td { min-width: 110px; padding: 11px 13px; border-bottom: 1px solid #e9ecf3; font-size: 14px; vertical-align: top; }
+    .step-comparison-table thead th { color: #354270; background: #edf1fc; font-weight: 650; }
+    .step-comparison-table tbody th { color: #273050; font-weight: 650; }
+    .step-comparison-table tbody tr:nth-child(even) { background: #f8faff; }
+    .step-comparison-table tbody tr:last-child th, .step-comparison-table tbody tr:last-child td { border-bottom: 0; }
+    .step-comparison-chart { display: grid; gap: 12px; margin: 0; padding: 13px; border: 1px solid #dfe4ef; border-radius: 9px; background: #fff; }
+    .step-comparison-chart figcaption { color: #354270; font-size: 14px; font-weight: 650; }
+    .step-comparison-bar { display: grid; grid-template-columns: minmax(90px,1fr) minmax(100px,2fr) auto; gap: 12px; align-items: center; font-size: 14px; }
+    .step-comparison-bar-label { overflow-wrap: anywhere; }
+    .step-comparison-bar-track { height: 14px; overflow: hidden; border-radius: 999px; background: #edf1fc; }
+    .step-comparison-bar-fill { display: block; height: 100%; border-radius: inherit; background: #6577de; }
+    .step-comparison-bar-value { min-width: 36px; color: #354270; text-align: right; }
+    .step-donut-chart { margin: 0; padding: 13px; border: 1px solid #dfe4ef; border-radius: 9px; background: #fff; }
+    .step-donut-chart figcaption { color: #354270; font-size: 14px; font-weight: 650; }
+    .step-donut-body { display: grid; grid-template-columns: 132px 1fr; gap: 22px; align-items: center; margin-top: 13px; }
+    .step-donut-ring { display: grid; place-items: center; width: 124px; aspect-ratio: 1; border-radius: 50%; }
+    .step-donut-ring::before { grid-area: 1 / 1; width: 72px; aspect-ratio: 1; border-radius: 50%; background: #fff; content: ''; }
+    .step-donut-ring span { z-index: 1; grid-area: 1 / 1; color: #404967; font-size: 15px; font-weight: 700; }
+    .step-donut-legend { display: grid; gap: 8px; }
+    .step-donut-legend-item { display: grid; grid-template-columns: 9px 1fr auto; gap: 8px; align-items: center; color: #586079; font-size: 13px; }
+    .step-donut-dot { width: 9px; height: 9px; border-radius: 3px; }
+    .step-donut-legend-item strong { color: #303750; }
+    .semantic-visual-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+    .semantic-visual-head h3 { margin: 7px 0 0; color: #23283b; font-size: 17px; line-height: 1.4; }
+    .semantic-product { font-size: 12px; font-weight: 750; letter-spacing: .12em; }
+    .linear-product { color: #5e5ce6; }
+    .miro-product { color: #725719; }
+    .semantic-insight-tag { flex: none; padding: 5px 9px; border-radius: 999px; background: #f0f2f8; color: #677087; font-size: 12px; }
+    .semantic-source-note { margin: 12px 0 0; color: #8a8f9f; font-size: 12px; line-height: 1.5; }
+    .linear-workflow-visual { margin: 3px auto 2px; padding: 16px; border: 1px solid #dfe2ee; border-radius: 12px; background: linear-gradient(145deg,#fbfbff,#fff); font-size: 14px; }
+    .linear-status-flow { display: grid; grid-template-columns: repeat(4,minmax(130px,1fr)); gap: 8px; margin-top: 17px; }
+    .linear-status-column { position: relative; min-width: 0; padding: 11px; border: 1px solid #e2e4eb; border-radius: 9px; background: #fff; }
+    .linear-status-column:not(:last-child)::after { position: absolute; top: 18px; right: -8px; z-index: 1; width: 8px; border-top: 1px solid #afb4c5; content: ''; }
+    .linear-state-line { display: flex; align-items: center; gap: 7px; color: #32364a; font-size: 13px; }
+    .linear-state-dot { width: 8px; height: 8px; border-radius: 50%; background: #aeb4c4; }
+    .state-2 { background: #f0aa3c; } .state-3 { background: #7c6de4; } .state-4 { background: #55a474; }
+    .linear-status-column p { margin: 10px 0 6px; color: #34394c; font-weight: 600; line-height: 1.45; }
+    .linear-status-column small { color: #767c8e; font-size: 12px; line-height: 1.45; }
+    .linear-insight-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 9px; margin-top: 11px; }
+    .linear-insight-item { padding: 10px 11px; border-radius: 8px; background: #f2f3f8; }
+    .linear-insight-item span { color: #676e83; font-size: 12px; font-weight: 650; }
+    .linear-insight-item p { margin: 5px 0 0; color: #34394c; font-size: 13px; line-height: 1.55; }
+    .miro-canvas-visual { margin: 3px auto 2px; padding: 16px; border: 1px solid #dfded8; border-radius: 12px; background: #fbfaf5; font-size: 14px; }
+    .miro-canvas { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; margin-top: 17px; padding: 14px; border: 1px dashed #c8c4b6; border-radius: 9px; background-image: radial-gradient(#d8d4c7 1px,transparent 1px); background-size: 14px 14px; }
+    .miro-cluster { min-width: 0; padding: 9px; border: 1px solid rgba(95,88,68,.14); border-radius: 8px; background: rgba(255,255,255,.72); }
+    .miro-cluster h4 { margin: 0 0 9px; color: #575141; font-size: 13px; }
+    .miro-sticky { min-height: 38px; margin: 6px 0; padding: 9px; color: #494334; font-size: 12px; line-height: 1.4; box-shadow: 0 2px 4px rgba(71,62,36,.09); transform: rotate(-1deg); }
+    .miro-sticky.is-offset { margin-left: 8px; transform: rotate(1.2deg); }
+    .sticky-yellow { background: #fff1a9; } .sticky-blue { background: #cde8ff; } .sticky-pink { background: #ffd6e4; }
+    .miro-synthesis { display: grid; grid-template-columns: auto 1fr; gap: 5px 13px; align-items: baseline; margin-top: 11px; padding: 11px 13px; border-left: 3px solid #e2c454; background: #fffdf5; }
+    .miro-synthesis span { color: #7b704f; font-size: 12px; font-weight: 650; }
+    .miro-synthesis strong { color: #403c31; font-size: 14px; }
+    .miro-synthesis p { grid-column: 1 / -1; margin: 3px 0 0; color: #696351; font-size: 13px; line-height: 1.55; }
+    @media (max-width: 700px) { .step-visual-grid { grid-template-columns: 1fr; } .step-visual-card { min-height: 0; } }
+    @media (max-width: 760px) { .linear-status-flow, .linear-insight-row, .miro-canvas { grid-template-columns: 1fr; } .linear-status-column::after { display: none; } .step-donut-body { grid-template-columns: 1fr; } }
+    .step-preview a { color: #4457de; text-decoration: none; }
+    .step-preview a:hover { text-decoration: underline; }
     .card-actions {
       display: flex;
       align-items: center;
@@ -538,14 +644,23 @@
     .completion-card[hidden] { display: none; }
     .completion-card.show { animation: rise .35s ease both; }
     .completion-message { margin-bottom: 10px; }
-    .file-card { width: min(92%, 520px); display: grid; grid-template-columns: 38px minmax(0, 1fr) 18px; align-items: center; gap: 11px; padding: 11px; border: 1px solid rgba(17,17,17,.14); border-radius: 11px; background: #fff; text-align: left; cursor: pointer; transition: border-color .18s ease, box-shadow .18s ease, transform .12s ease; }
-    .file-card:hover { border-color: rgba(17,17,17,.28); box-shadow: 0 7px 20px rgba(17,17,17,.07); }
-    .file-card:active { transform: scale(.985); box-shadow: 0 3px 10px rgba(17,17,17,.05); }
-    .word-file-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 8px; background: #2b579a; color: #fff; font-size: 17px; font-weight: 700; }
+    .file-card { width: min(100%, 560px); display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 11px; padding: 12px; border: 1px solid rgba(17,17,17,.14); border-radius: 11px; background: #fff; text-align: left; }
+    .file-card[hidden] { display: none; }
+    .artifact-file-icon { --file-color: #687287; position: relative; width: 38px; height: 43px; display: grid; place-items: end center; padding-bottom: 8px; overflow: hidden; border-radius: 5px 9px 5px 5px; background: var(--file-color); color: #fff; box-shadow: inset 0 -2px 0 #00000014; }
+    .artifact-file-icon::before { position: absolute; top: 0; right: 0; width: 12px; height: 12px; border-radius: 0 0 0 3px; background: linear-gradient(225deg, #fff 0 48%, #ffffff66 49% 100%); content: ''; }
+    .artifact-file-icon span { font-size: 11px; font-weight: 750; letter-spacing: -.02em; line-height: 1; }
+    .file-card[data-file-kind="word"] .artifact-file-icon { --file-color: #2b579a; }
+    .file-card[data-file-kind="pdf"] .artifact-file-icon { --file-color: #c94242; }
+    .file-card[data-file-kind="sheet"] .artifact-file-icon { --file-color: #217346; }
+    .file-card[data-file-kind="slides"] .artifact-file-icon { --file-color: #cf6840; }
+    .file-card[data-file-kind="markdown"] .artifact-file-icon, .file-card[data-file-kind="text"] .artifact-file-icon { --file-color: #465a74; }
+    .file-card[data-file-kind="image"] .artifact-file-icon { --file-color: #8160b5; }
+    .file-card[data-file-kind="code"] .artifact-file-icon { --file-color: #367c8a; }
+    .file-card[data-file-kind="archive"] .artifact-file-icon { --file-color: #987342; }
     .file-card-copy { min-width: 0; }
-    .file-card-copy strong { display: block; overflow: hidden; font-size: 13px; font-weight: 620; text-overflow: ellipsis; white-space: nowrap; }
-    .file-card-copy span { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; }
-    .file-card-arrow { color: var(--muted); font-size: 14px; }
+    .file-card-copy strong { display: block; overflow: hidden; font-size: 14px; font-weight: 620; text-overflow: ellipsis; white-space: nowrap; }
+    .file-card-copy span { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; }
+    .step-preview .file-card { margin-top: 11px; }
     .file-path { grid-column: 2 / -1; margin: 1px 0 0; padding-top: 9px; border-top: 1px solid var(--line); color: rgba(17,17,17,.68); font-family: Consolas, "SFMono-Regular", monospace; font-size: 11px; line-height: 1.5; overflow-wrap: anywhere; }
     .file-path[hidden] { display: none; }
 
@@ -629,6 +744,9 @@
 </head>
 <body>
   <script>
+    if (new URLSearchParams(location.search).has('embedded')) {
+      document.body.classList.add('embedded-conversation');
+    }
     if (new URLSearchParams(location.search).has('electron')) {
       document.body.classList.add('electron-window');
     }
@@ -693,7 +811,7 @@
     </aside>
 
     <section class="workspace">
-      <iframe class="workspace-view-frame" id="workspaceViewFrame" title="新对话" aria-hidden="true"></iframe>
+      <iframe class="workspace-view-frame" id="workspaceViewFrame" title="工作区" aria-hidden="true"></iframe>
       <header class="workspace-header">
         <div class="header-title">
           <strong>这个对话我们来解决周二的汇报问题</strong>
@@ -746,6 +864,8 @@
                       <div class="step" id="miroStep"><span class="step-mark"></span><span>Miro · 画布共创如何沉淀团队共识</span><time>等待</time></div>
                     </div>
                     <div class="card-actions">
+                      <button class="btn subtle" id="previewDemoBtn" type="button" aria-pressed="false">预览样例</button>
+                      <button class="btn subtle" id="generateStageBtn" type="button">生成真实草稿</button>
                       <button class="btn subtle" id="advanceBtn" type="button">模拟推进</button>
                       <button class="btn" id="askBtn" type="button">问问 Alex</button>
                     </div>
@@ -779,12 +899,7 @@
                     <div class="decision-record" id="decisionRecord" hidden></div>
                     <section class="completion-card" id="completionCard" hidden>
                       <p class="aside-copy agent completion-message"><span class="proactive-label">ALEX 已完成任务</span><span id="completionSummary">正在整理本次任务的交付结果。</span></p>
-                      <button class="file-card" id="fileCard" type="button" aria-label="协作产品竞品分析 Word 文档，项目文件，周二汇报，协作产品竞品分析点 docx">
-                        <span class="word-file-icon" id="deliverableIcon" aria-hidden="true">W</span>
-                        <span class="file-card-copy"><strong id="deliverableName">协作产品竞品分析.docx</strong><span id="deliverableType">Word 文档</span></span>
-                        <span class="file-card-arrow" aria-hidden="true">↗</span>
-                        <code class="file-path" id="filePath">项目文件\周二汇报\协作产品竞品分析.docx</code>
-                      </button>
+                      <div class="file-card" id="fileCard" hidden></div>
                     </section>
                   </section>
                 </div>
@@ -889,6 +1004,8 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </main>
 
+  <script src="./file-artifact.js"></script>
+  <script src="./step-preview.js"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -901,6 +1018,8 @@
     const intentCard = document.getElementById('intentCard');
     const taskUpdate = document.getElementById('taskUpdate');
     const timelineScroll = document.getElementById('timelineScroll');
+    const previewDemoBtn = document.getElementById('previewDemoBtn');
+    const generateStageBtn = document.getElementById('generateStageBtn');
     const advanceBtn = document.getElementById('advanceBtn');
     const progressCurrent = document.getElementById('progressCurrent');
     const progressTotal = document.getElementById('progressTotal');
@@ -940,11 +1059,7 @@
     const allowTypeAccessBtn = document.getElementById('allowTypeAccessBtn');
     const decisionRecord = document.getElementById('decisionRecord');
     const completionCard = document.getElementById('completionCard');
-    const completionSummary = document.getElementById('completionSummary');
-    const deliverableIcon = document.getElementById('deliverableIcon');
-    const deliverableName = document.getElementById('deliverableName');
-    const deliverableType = document.getElementById('deliverableType');
-    const filePath = document.getElementById('filePath');
+    let completionSummary = document.getElementById('completionSummary');
     const fileCard = document.getElementById('fileCard');
     const conversationStatuses = Array.from(document.querySelectorAll('.conversation-status'));
     const desktopWindow = window.desktopWindow;
@@ -955,6 +1070,7 @@
     const newConversationAction = document.getElementById('newConversationAction');
     const toolsAction = document.getElementById('toolsAction');
     const workspaceViewFrame = document.getElementById('workspaceViewFrame');
+    const loadedConversationId = new URLSearchParams(window.location.search).get('conversation') || 'weekly-report';
     const newConversationBtn = document.getElementById('newConversationBtn');
     const projectModalLayer = document.getElementById('projectModalLayer');
     const projectModalClose = document.getElementById('projectModalClose');
@@ -1009,8 +1125,14 @@
       statusText: currentStep.textContent.trim(),
       steps: Array.from(stepList.querySelectorAll('.step > span:nth-child(2)')).map(step => step.textContent.trim())
     };
+    let expandedStepIndex = 2;
+    let previewDemoActive = false;
+    let liveStepPreviews = taskCardState.steps.map(title => ({ title, previewType: 'process', artifactState: 'pending' }));
+    stepList.replaceChildren(...taskCardState.steps.map((label, index) => createTaskStep(label, index, liveStepPreviews[index])));
+    syncStepExpansion();
 
-    const LOCAL_AGENT_URL = 'http://127.0.0.1:8787/agent';
+    const LOCAL_AGENT_BASE = 'http://127.0.0.1:8787';
+    const LOCAL_AGENT_URL = `${LOCAL_AGENT_BASE}/agent`;
 
     presenceText.textContent = 'ALEX 等待确认';
 
@@ -1069,24 +1191,10 @@
 
     function localFallback(mode, message, context = {}) {
       if (mode === 'completion') {
-        const brief = String(context.currentPlan || currentPlanText || '');
-        const format = /PDF/iu.test(brief) ? ['pdf', 'PDF 文档']
-          : /PPT|演示文稿|幻灯片/iu.test(brief) ? ['pptx', 'PowerPoint 演示文稿']
-            : /表格|Excel|数据表/iu.test(brief) ? ['xlsx', 'Excel 工作簿']
-              : /Markdown|\.md\b/iu.test(brief) ? ['md', 'Markdown 文档']
-                : ['docx', 'Word 文档'];
-        const baseName = String(context.currentTaskCard?.title || '任务结果').replace(/[\\/:*?"<>|]/gu, '').trim() || '任务结果';
-        const fileName = `${baseName}.${format[0]}`;
         return {
-          kind: 'discussion', message: '', planSummary: '', changeSummary: '',
+          kind: 'discussion', message: '当前流程尚未生成最终文件。', planSummary: '', changeSummary: '',
           taskCard: { title: '', statusText: '', steps: [] },
-          deliverable: {
-            summary: `已按当前任务要求完成“${baseName}”，并整理为可直接使用的${format[1]}。`,
-            fileName,
-            fileType: format[1],
-            extension: format[0],
-            path: `项目文件\\${fileName}`
-          },
+          deliverable: { summary: '', fileName: '', fileType: '', extension: '', path: '' },
           decision: { required: false, title: '', detail: '', command: '', subject: '', tags: [] }
         };
       }
@@ -1506,8 +1614,11 @@
 
     function navigateToConversation(conversationId) {
       if (!conversationId) return;
-      const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      window.location.assign(`/?conversation=${encodeURIComponent(conversationId)}${electronQuery}`);
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.delete('view');
+      currentUrl.searchParams.set('conversation', conversationId);
+      window.history.pushState({ conversationId }, '', `${currentUrl.pathname}${currentUrl.search}`);
+      syncWorkspaceViewFromUrl();
     }
 
     function renderDeleteReminder() {
@@ -1826,24 +1937,45 @@
     }
 
     function showNewConversationView() {
-      document.body.classList.add('new-conversation-view');
+      document.body.classList.add('workspace-subview');
       newConversationAction.classList.add('active');
+      toolsAction.classList.remove('active');
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
       const target = `/new-conversation/?embedded=1${electronQuery}`;
+      workspaceViewFrame.title = '新对话';
+      if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
+    }
+
+    function showToolsView() {
+      document.body.classList.add('workspace-subview');
+      newConversationAction.classList.remove('active');
+      toolsAction.classList.add('active');
+      document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
+      workspaceViewFrame.setAttribute('aria-hidden', 'false');
+      workspaceViewFrame.title = '工具';
+      const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
+      const target = `/tools/?embedded=1${electronQuery}`;
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
     function syncWorkspaceViewFromUrl() {
-      const isNewView = new URLSearchParams(window.location.search).get('view') === 'new';
-      if (isNewView) showNewConversationView();
-      else {
-        document.body.classList.remove('new-conversation-view');
-        newConversationAction.classList.remove('active');
-        workspaceViewFrame.setAttribute('aria-hidden', 'true');
-        const conversationId = new URLSearchParams(window.location.search).get('conversation') || 'weekly-report';
-        setActiveConversation(conversationId);
+      const params = new URLSearchParams(window.location.search);
+      const view = params.get('view');
+      if (view === 'new') { showNewConversationView(); return; }
+      if (view === 'tools') { showToolsView(); return; }
+      const conversationId = params.get('conversation') || 'weekly-report';
+      document.body.classList.toggle('workspace-subview', conversationId !== loadedConversationId);
+      newConversationAction.classList.remove('active');
+      toolsAction.classList.remove('active');
+      workspaceViewFrame.setAttribute('aria-hidden', String(conversationId === loadedConversationId));
+      setActiveConversation(conversationId);
+      if (conversationId !== loadedConversationId) {
+        workspaceViewFrame.title = '对话';
+        const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
+        const target = `/?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`;
+        if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
       }
     }
 
@@ -1851,8 +1983,18 @@
     newConversationBtn.addEventListener('click', openNewConversation);
     window.addEventListener('popstate', syncWorkspaceViewFromUrl);
     toolsAction.addEventListener('click', () => {
-      const electronQuery = document.body.classList.contains('electron-window') ? '?electron=1' : '';
-      window.location.assign(`/tools/${electronQuery}`);
+      const currentUrl = new URL(window.location.href);
+      currentUrl.searchParams.delete('conversation');
+      currentUrl.searchParams.set('view', 'tools');
+      window.history.pushState({ view: 'tools' }, '', `${currentUrl.pathname}${currentUrl.search}`);
+      showToolsView();
+    });
+    window.addEventListener('message', event => {
+      if (event.origin !== window.location.origin || event.source !== workspaceViewFrame.contentWindow) return;
+      if (event.data?.type === 'open-conversation' && typeof event.data.conversationId === 'string') {
+        hydrateStoredConversationLists(readStoredConversations());
+        navigateToConversation(event.data.conversationId);
+      }
     });
 
     function scrollToLatest() {
@@ -1931,9 +2073,10 @@
     workCardResizeObserver.observe(workCard);
 
     function renderElapsedTime() {
+      if (previewDemoActive) return;
       const minutes = Math.floor(elapsedSeconds / 60);
       const seconds = elapsedSeconds % 60;
-      elapsedTime.textContent = `已处理 ${minutes}分钟 ${seconds}秒`;
+      elapsedTime.textContent = `已完成 ${taskCompleted ? total : Math.max(0, progress - 1)}/${total} 步 · 已处理 ${minutes}分钟 ${seconds}秒`;
     }
 
     function appendAgentMessage(text, meta = '即时交流 · 未改变当前任务') {
@@ -2000,7 +2143,8 @@
         status: taskCompleted ? 'completed' : taskStarted ? 'running' : 'planning',
         progress: `${progress}/${total}`,
         currentStep: currentStep.textContent.trim(),
-        deliverableReady: taskCompleted,
+        deliverableReady: false,
+        simulationComplete: taskCompleted,
         taskCard: getCurrentTaskCardContext()
       };
     }
@@ -2013,20 +2157,196 @@
       };
     }
 
-    function createTaskStep(label) {
-      const step = document.createElement('div');
+    function createTaskStep(label, index, preview) {
+      const item = document.createElement('div');
+      item.className = 'step-item';
+      const step = document.createElement('button');
       step.className = 'step';
+      step.type = 'button';
+      step.setAttribute('aria-controls', `step-preview-${index}`);
+      step.setAttribute('aria-expanded', 'false');
       const mark = document.createElement('span');
       mark.className = 'step-mark';
       const copy = document.createElement('span');
+      copy.className = 'step-title';
       copy.textContent = label;
       const time = document.createElement('time');
       time.textContent = '等待';
-      step.append(mark, copy, time);
-      return step;
+      const chevron = document.createElement('img');
+      chevron.className = 'step-chevron';
+      chevron.src = './allow-menu-chevron.svg';
+      chevron.alt = '';
+      chevron.setAttribute('aria-hidden', 'true');
+      const content = document.createElement('div');
+      content.className = 'step-preview';
+      content.id = `step-preview-${index}`;
+      content.hidden = true;
+      content.append(GenUIPreview.renderStepPreview(preview || { title: label, previewType: 'process' }));
+      step.append(mark, copy, time, chevron);
+      item.append(step, content);
+      return item;
+    }
+
+    function syncStepExpansion() {
+      Array.from(stepList.querySelectorAll('.step-item')).forEach((item, index) => {
+        const expanded = index === expandedStepIndex;
+        item.querySelector('.step').setAttribute('aria-expanded', String(expanded));
+        const content = item.querySelector('.step-preview');
+        const opening = expanded && content.hidden;
+        if (!expanded) content.getAnimations().forEach(animation => animation.cancel());
+        content.hidden = !expanded;
+        if (opening && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          const style = getComputedStyle(content);
+          content.animate([
+            { height: '0px', paddingTop: '0px', paddingBottom: '0px', marginTop: '0px', marginBottom: '0px', opacity: 0, overflow: 'hidden' },
+            { height: `${content.offsetHeight}px`, paddingTop: style.paddingTop, paddingBottom: style.paddingBottom, marginTop: style.marginTop, marginBottom: style.marginBottom, opacity: 1, overflow: 'hidden' }
+          ], { duration: 240, easing: 'cubic-bezier(.2, .72, .2, 1)' });
+        }
+      });
+    }
+
+    function refreshLiveStepPreview(index, status) {
+      const item = stepList.querySelectorAll('.step-item')[index];
+      if (!item) return;
+      const source = liveStepPreviews[index] || { title: taskCardState.steps[index], previewType: 'process' };
+      const preview = source.previewType === 'process'
+        ? { ...source, status, summary: status === 'done' ? '这一步已结束，目前没有可预览的阶段产物。' : status === 'active' ? '这一步正在执行，目前没有可预览的阶段产物。' : '等待执行。', previewData: { detail: status === 'active' ? '新的真实中间产物出现后，将在这里展示。' : '' } }
+        : { ...source, status };
+      item.querySelector('.step-preview').replaceChildren(GenUIPreview.renderStepPreview(preview));
+    }
+
+    function closePreviewDemo() {
+      if (!previewDemoActive) return;
+      previewDemoActive = false;
+      previewDemoBtn.textContent = '预览样例';
+      previewDemoBtn.setAttribute('aria-pressed', 'false');
+      advanceBtn.disabled = taskCompleted;
+      generateStageBtn.disabled = taskCompleted;
+      workCardTitle.textContent = taskCardState.title;
+      currentStep.textContent = taskCardState.statusText;
+      renderElapsedTime();
+      expandedStepIndex = Math.min(progress - 1, taskCardState.steps.length - 1);
+      stepList.replaceChildren(...taskCardState.steps.map((label, index) => createTaskStep(label, index, liveStepPreviews[index])));
+      syncStepExpansion();
+    }
+
+    function openPreviewDemo() {
+      previewDemoActive = true;
+      previewDemoBtn.textContent = '返回当前任务';
+      previewDemoBtn.setAttribute('aria-pressed', 'true');
+      advanceBtn.disabled = true;
+      generateStageBtn.disabled = true;
+      workCardTitle.textContent = '阶段预览样例';
+      currentStep.textContent = '以下数据仅用于演示预览组件。';
+      const demoTotal = GenUIPreview.demoSteps.length;
+      const demoDone = GenUIPreview.demoSteps.filter(step => step.status === 'done').length;
+      progressCurrent.textContent = String(demoDone + 1);
+      progressTotal.textContent = String(demoTotal);
+      progressFill.style.width = `${(demoDone + 1) / demoTotal * 100}%`;
+      elapsedTime.textContent = `已完成 ${demoDone}/${demoTotal} 步 · 演示数据`;
+      expandedStepIndex = GenUIPreview.demoSteps.findIndex(step => step.title === '查看横向对比');
+      stepList.replaceChildren(...GenUIPreview.demoSteps.map((preview, index) => {
+        const item = createTaskStep(preview.title, index, preview);
+        const step = item.querySelector('.step');
+        step.classList.add(preview.status);
+        step.querySelector('.step-mark').textContent = preview.status === 'done' ? '✓' : '';
+        step.querySelector('time').textContent = preview.timestamp;
+        return item;
+      }));
+      syncStepExpansion();
+    }
+
+    function currentConversationId() {
+      return new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId || 'weekly-report';
+    }
+
+    function captureMainProcessData(stepTitle) {
+      const visibleResults = [...document.querySelectorAll('.user-bubble, .aside-stream-item:not([hidden])')]
+        .map(node => String(node.textContent || '').replace(/\s+/g, ' ').trim())
+        .filter(Boolean)
+        .slice(-12);
+      return {
+        state: 'ready',
+        taskTitle: taskCardState.title,
+        taskStatus: taskCardState.statusText,
+        currentStep: stepTitle,
+        steps: taskCardState.steps,
+        visibleResults
+      };
+    }
+
+    async function restoreStageResults() {
+      const conversationId = currentConversationId();
+      try {
+        const response = await fetch(`${LOCAL_AGENT_BASE}/stage-results?conversationId=${encodeURIComponent(conversationId)}`);
+        if (!response.ok) return;
+        const payload = await response.json();
+        if (currentConversationId() !== conversationId) return;
+        const seen = new Set();
+        for (const result of payload.results || []) {
+          const index = taskCardState.steps.indexOf(result.stepTitle);
+          if (index < 0 || seen.has(index) || !result.preview) continue;
+          seen.add(index);
+          const preview = result.preview;
+          liveStepPreviews[index] = preview;
+          if (!previewDemoActive) {
+            const step = stepList.querySelectorAll('.step')[index];
+            refreshLiveStepPreview(index, step?.classList.contains('done') ? 'done' : step?.classList.contains('active') ? 'active' : 'waiting');
+          }
+        }
+        if (seen.has(progress - 1)) generateStageBtn.textContent = '重新生成草稿';
+      } catch {
+        // The local agent may be unavailable while the browser-only prototype is open.
+      }
+    }
+
+    async function generateRealStageResult() {
+      if (taskCompleted || previewDemoActive || !taskStarted) return;
+      const index = progress - 1;
+      const stepTitle = taskCardState.steps[index];
+      const conversationId = currentConversationId();
+      generateStageBtn.disabled = true;
+      generateStageBtn.textContent = '主 Agent 正在写…';
+      const panel = stepList.querySelectorAll('.step-preview')[index];
+      panel.replaceChildren(GenUIPreview.renderStepPreview({
+        title: stepTitle,
+        status: 'active',
+        summary: '主 Agent 正在生成并保存 Markdown 阶段文件。',
+        previewType: 'process',
+        previewData: { detail: '保存后，协助 Agent 会依据原文选择文档预览布局。' }
+      }));
+      expandedStepIndex = index;
+      syncStepExpansion();
+      try {
+        const response = await fetch(`${LOCAL_AGENT_BASE}/stage-result`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            conversationId,
+            stepTitle,
+            taskBrief: currentPlanText || document.querySelector('.user-message .user-bubble')?.textContent || '',
+            mainProcessData: captureMainProcessData(stepTitle)
+          })
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) throw new Error(payload.error || '生成失败');
+        if (currentConversationId() !== conversationId || taskCardState.steps[index] !== stepTitle) return;
+        liveStepPreviews[index] = payload.result.preview;
+        const step = stepList.querySelectorAll('.step')[index];
+        refreshLiveStepPreview(index, step?.classList.contains('done') ? 'done' : 'active');
+        generateStageBtn.textContent = '重新生成草稿';
+        notify(`阶段文本已保存：${payload.result.markdownPath}`);
+      } catch (error) {
+        refreshLiveStepPreview(index, 'active');
+        generateStageBtn.textContent = '重试生成草稿';
+        notify(`阶段结果未生成：${error.message || '本地 Agent 不可用'}`);
+      } finally {
+        generateStageBtn.disabled = taskCompleted || previewDemoActive;
+      }
     }
 
     function applyTaskCardUpdate(nextCard) {
+      closePreviewDemo();
       const nextSteps = Array.isArray(nextCard?.steps)
         ? nextCard.steps.map(step => String(step || '').trim()).filter(Boolean).slice(0, 8)
         : [];
@@ -2041,8 +2361,11 @@
       progress = Math.max(1, Math.min(progress, total));
       workCardTitle.textContent = taskCardState.title;
       progressTotal.textContent = total;
-      stepList.replaceChildren(...nextSteps.map(createTaskStep));
+      liveStepPreviews = nextSteps.map(title => ({ title, previewType: 'process', artifactState: 'pending' }));
+      expandedStepIndex = progress - 1;
+      stepList.replaceChildren(...nextSteps.map((label, index) => createTaskStep(label, index, liveStepPreviews[index])));
       renderProgress(progress, taskCardState.statusText);
+      restoreStageResults();
       return true;
     }
 
@@ -2139,34 +2462,38 @@
     }
 
     function renderDeliverable(deliverable) {
-      const extension = String(deliverable?.extension || 'docx').replace(/^\./u, '').toLowerCase();
-      const fileName = String(deliverable?.fileName || `任务结果.${extension}`);
-      const fileType = String(deliverable?.fileType || '文档');
-      const summary = String(deliverable?.summary || `已完成当前任务，并生成${fileType}。`);
-      const path = String(deliverable?.path || `项目文件\\${fileName}`);
-      completionSummary.textContent = summary;
-      deliverableName.textContent = fileName;
-      deliverableType.textContent = fileType;
-      deliverableIcon.textContent = extension.slice(0, 1).toUpperCase() || 'F';
-      filePath.textContent = path;
-      fileCard.setAttribute('aria-label', `${fileName}，${fileType}，${path}`);
+      const artifact = FileArtifact.renderFileArtifact(fileCard, deliverable, { label: '最终交付' });
+      completionSummary.textContent = artifact
+        ? String(deliverable.summary || `已生成 ${artifact.fileType}。`)
+        : '文件尚未实际生成，因此暂不显示交付文件卡。';
     }
 
     async function completeTask() {
+      closePreviewDemo();
       if (taskCompleted) return;
       const activeConversationId = new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId;
       advanceBtn.disabled = true;
-      advanceBtn.textContent = '正在生成交付结果…';
-      const result = await callLocalAgent('completion', '根据当前任务生成最终交付结果的名称、格式和说明。', {
-        inputIntent: 'generate_deliverable',
-        currentPlan: currentPlanText,
-        currentTaskCard: getCurrentTaskCardContext(),
-        originalRequest: document.querySelector('.user-message .user-bubble')?.textContent?.trim() || '',
-        conversationId: activeConversationId
-      });
-      const deliverable = result.deliverable?.fileName
-        ? result.deliverable
-        : localFallback('completion', '', { currentPlan: currentPlanText, currentTaskCard: getCurrentTaskCardContext() }).deliverable;
+      advanceBtn.textContent = '正在生成交付文件…';
+      let finalDeliverable;
+      try {
+        const response = await fetch(`${LOCAL_AGENT_BASE}/final-result`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            conversationId: activeConversationId,
+            title: taskCardState.title,
+            taskBrief: currentPlanText || document.querySelector('.user-message .user-bubble')?.textContent || ''
+          })
+        });
+        const payload = await response.json();
+        if (!response.ok || !payload.ok) throw new Error(payload.error || '生成失败');
+        finalDeliverable = payload.result;
+      } catch (error) {
+        advanceBtn.disabled = false;
+        advanceBtn.textContent = '重试生成交付文件';
+        notify(`交付文件未生成：${error.message || '本地 Agent 不可用'}`);
+        return;
+      }
       taskCompleted = true;
       progressTimers.forEach(timer => window.clearTimeout(timer));
       progressTimers = [];
@@ -2179,6 +2506,7 @@
       progress = total;
       progressCurrent.textContent = total;
       progressFill.style.width = '100%';
+      renderElapsedTime();
 
       Array.from(stepList.querySelectorAll('.step')).forEach((step, index) => {
         const mark = step.querySelector('.step-mark');
@@ -2187,22 +2515,33 @@
         step.classList.add('done');
         mark.textContent = '✓';
         time.textContent = index === total - 1 ? '刚刚' : ['14:31', '14:36', '14:43'][index] || '已完成';
+        refreshLiveStepPreview(index, 'done');
       });
+      expandedStepIndex = total - 1;
+      syncStepExpansion();
 
-      taskCardState.statusText = `${taskCardState.title}已完成，已生成可交付结果。`;
+      taskCardState.statusText = `${taskCardState.title}的案例报告已生成。`;
       currentStep.textContent = taskCardState.statusText;
       document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = `任务已完成 · ${total}/${total}`);
       presenceText.textContent = 'ALEX 已完成';
       conversationStatuses.forEach(status => status.classList.add('complete'));
       setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, false);
-      advanceBtn.textContent = '已输出完成文件';
+      advanceBtn.textContent = '任务已完成';
       advanceBtn.disabled = true;
-      renderDeliverable(deliverable);
+      generateStageBtn.disabled = true;
+      const completionLabel = document.createElement('span');
+      completionLabel.className = 'proactive-label';
+      completionLabel.textContent = '案例交付已完成';
+      completionSummary = document.createElement('span');
+      completionSummary.id = 'completionSummary';
+      completionSummary.textContent = '';
+      completionCard.querySelector('.completion-message').replaceChildren(completionLabel, completionSummary);
+      renderDeliverable(finalDeliverable);
       aside.appendChild(completionCard);
       completionCard.hidden = false;
       completionCard.classList.add('show');
-      messageInput.placeholder = '继续追问，或基于这份文档发起新的修改…';
-      notify(`任务已完成，${deliverable.fileName} 已生成`);
+      messageInput.placeholder = '继续追问，或提出下一步要求…';
+      notify('案例报告已生成');
       scrollToLatest();
     }
 
@@ -2234,10 +2573,12 @@
     }
 
     function renderProgress(nextProgress, statusOverride = '') {
+      closePreviewDemo();
       progress = Math.max(1, Math.min(nextProgress, total));
       progressCurrent.textContent = progress;
       progressTotal.textContent = total;
       progressFill.style.width = `${(progress / total) * 100}%`;
+      renderElapsedTime();
 
       const steps = Array.from(stepList.querySelectorAll('.step'));
       steps.forEach((step, index) => {
@@ -2250,13 +2591,18 @@
           step.classList.add('done');
           mark.textContent = '✓';
           time.textContent = position === 1 ? '14:31' : position === 2 ? '14:36' : '14:42';
+          refreshLiveStepPreview(index, 'done');
         } else if (position === progress) {
           step.classList.add('active');
           time.textContent = '进行中';
+          refreshLiveStepPreview(index, 'active');
         } else {
           time.textContent = '等待';
+          refreshLiveStepPreview(index, 'waiting');
         }
       });
+      expandedStepIndex = progress - 1;
+      syncStepExpansion();
 
       taskCardState.statusText = statusOverride || `正在处理 ${taskCardState.steps[progress - 1]}。`;
       currentStep.textContent = taskCardState.statusText;
@@ -2265,7 +2611,7 @@
           ? `过程结果 · 当前 ${progress}/${total}`
           : `主任务仍在继续 · 当前 ${progress}/${total}`;
       });
-      advanceBtn.textContent = progress < total ? '模拟推进' : '输出完成文件';
+      advanceBtn.textContent = progress < total ? '模拟推进' : '结束模拟任务';
     }
 
     function startProgressDemo(onComplete) {
@@ -2273,6 +2619,7 @@
       progressTimers = [];
       const targetProgress = Math.min(3, total);
       advanceBtn.disabled = true;
+      generateStageBtn.disabled = true;
       renderProgress(1);
 
       for (let nextProgress = 2; nextProgress <= targetProgress; nextProgress += 1) {
@@ -2284,6 +2631,7 @@
 
       const completionTimer = window.setTimeout(() => {
         advanceBtn.disabled = false;
+        generateStageBtn.disabled = false;
         if (typeof onComplete === 'function') onComplete();
       }, Math.max(1, targetProgress - 1) * 720 + 420);
       progressTimers.push(completionTimer);
@@ -2388,6 +2736,18 @@
       previousTimelineScrollTop = nextScrollTop;
       scheduleStickyCardSync();
     }, { passive: true });
+
+    workCard.addEventListener('wheel', event => {
+      if (workCard.classList.contains('is-stuck') || event.ctrlKey || Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+      if (stepList.scrollHeight <= stepList.clientHeight + 2) return;
+      event.preventDefault();
+      event.stopPropagation();
+      preserveExpandedAfterLaunch = false;
+      preserveManualExpansion = true;
+      autoCollapseLatched = false;
+      const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? stepList.clientHeight : 1;
+      stepList.scrollTop += event.deltaY * unit;
+    }, { passive: false });
 
     timelineScroll.addEventListener('wheel', event => {
       markUserScrollDirection(event.deltaY < 0 ? 'up' : 'down');
@@ -2500,6 +2860,25 @@
       intentCard.innerHTML = '<strong>保留为即时交流</strong><p>没有修改任务，Alex 仍按原计划继续分析。</p>';
       notify('未改变当前任务');
     });
+
+    stepList.addEventListener('click', event => {
+      const trigger = event.target.closest('.step');
+      if (!trigger || !stepList.contains(trigger)) return;
+      const index = Array.from(stepList.querySelectorAll('.step')).indexOf(trigger);
+      expandedStepIndex = expandedStepIndex === index ? -1 : index;
+      syncStepExpansion();
+    });
+
+    previewDemoBtn.addEventListener('click', () => {
+      if (previewDemoActive) {
+        closePreviewDemo();
+        renderProgress(progress, taskCardState.statusText);
+      } else {
+        openPreviewDemo();
+      }
+    });
+
+    generateStageBtn.addEventListener('click', generateRealStageResult);
 
     advanceBtn.addEventListener('click', () => {
       if (taskCompleted) return;
@@ -2708,7 +3087,7 @@
     }
 
     syncWorkspaceViewFromUrl();
-    initializeStoredConversation();
+    initializeStoredConversation().then(restoreStageResults);
     if (!taskStarted || !permissionEvent.hidden) {
       setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, false);
     }

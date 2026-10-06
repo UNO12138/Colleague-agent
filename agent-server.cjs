@@ -1,6 +1,7 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const { createStageResult, listStageResults, createFinalResult } = require('./stage-pipeline.cjs');
 
 const HOST = '127.0.0.1';
 const PORT = Number(process.env.COLLEAGUE_AGENT_PORT || 8787);
@@ -98,7 +99,7 @@ function buildPrompt({ mode, message, context }) {
 - plan_revision：先判断用户是在提问，还是明确要求修改规划。若用户主要是在询问原因、含义、可行性、区别或寻求解释，且没有明确要求改变目标、范围、交付物或步骤，kind 必须为 discussion：message 先直接回答疑问，可在结尾简短说明有哪些可修改方向，但不得擅自生成修改方案、不得改写任务 brief，planSummary 与 changeSummary 留空，taskCard 返回空内容。只有用户明确提出增加、删除、替换或调整任务要求时，kind 才为 plan_revision：message 只简洁说明这次改了什么；planSummary 必须重新生成一份已经吸收本次修改的完整任务 brief，并依次明确写出“任务目标：”“调研对象：”“分析重点：”“推进方式：”“最终交付：”五项，将变化直接写入对应项中，最后用独立确认句收尾。不得沿用包含旧要求的描述，不得在末尾追加“本次补充”，也不得把 message 原句再单独重复一次。
 - task_message：优先结合 context.recentConversation 直接回答用户的问题，并以 context.currentTaskState 为唯一的当前进度依据；不要重复近期回答，不要用历史消息里的旧进度覆盖当前状态。context.inputIntent=planning_question 表示用户仍处于规划确认阶段且当前输入已被前端识别为疑问或非修改意见：kind 必须为 discussion，像正常对话一样完整回应。此时不限制回答长度、不要求固定段落或格式；根据问题需要充分解释判断依据、差异、例子与取舍，不要为了简短而省略关键内容，也不要只说有哪些可调整方向。唯一边界是绝不更新任务 brief 或 taskCard。context.progressAction 非空时表示用户明确要求的执行推进已由前端完成，kind 使用 discussion，不要识别成范围修改。意图分类不能取代回答。普通问答或讨论的 kind 为 discussion；明确改变目标、范围、交付物或优先级时为 task_change；需要授权、外部访问、发送信息或其他用户决定时为 decision_request。
 - decision_request：kind 必须为 decision_request。
-- completion：kind 使用 discussion。根据当前完整任务 brief、任务卡和原始请求，生成真实匹配本任务的 deliverable：summary 用一句话说明完成了什么；fileName 是包含正确扩展名的具体文件名；fileType 是面向用户的格式名称；extension 是不带点的小写扩展名；path 是以“项目文件\\”开头的合理相对路径。不要沿用示例中的竞品分析文件名，除非当前任务确实是该任务。
+- completion：kind 使用 discussion。只有 context.currentTaskState.deliverableReady 为 true 且提供已经保存的实际文件路径时，才填写 deliverable。否则明确说明目前没有生成最终文件，deliverable 的所有字段留空；不得根据任务要求猜测文件名、扩展名或路径。
 - message 应像 Alex 的自然回复。除 context.inputIntent=planning_question 外保持简洁自然，控制在 80 字以内；planning_question 按问题本身所需篇幅完整回答，不设字数或固定格式要求。
 - changeSummary 仅在 task_change 时填写；planSummary 仅在真正修改规划的 plan_revision 时填写，其余填空字符串。
 - plan_revision 和 task_change 必须填写 taskCard，内容是吸收本次修改后的完整主进程卡片：title 是不超过 8 个字的任务类型，statusText 是当前执行说明，steps 是 2 到 8 条按执行顺序排列的简洁步骤。优先参考 context.currentTaskCard，在原卡片上准确增删或改写，不要只返回本次增量。
@@ -193,6 +194,53 @@ async function runDeepSeek(payload) {
   }
 }
 
+async function callStageModel(messages, { json = false, maxTokens = 1800 } = {}) {
+  if (!apiKey || apiKey.includes('粘贴到这里')) throw new Error('尚未配置 DEEPSEEK_API_KEY');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000);
+  try {
+    const response = await fetch(`${API_BASE}/chat/completions`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: MODEL,
+        messages,
+        ...(json ? { response_format: { type: 'json_object' } } : {}),
+        thinking: { type: 'disabled' },
+        temperature: 0.2,
+        max_tokens: maxTokens,
+        stream: false
+      }),
+      signal: controller.signal
+    });
+    const raw = await response.text();
+    if (!response.ok) {
+      let detail = `HTTP ${response.status}`;
+      try { detail = JSON.parse(raw).error?.message || detail; } catch {}
+      throw new Error(`DeepSeek 请求失败：${detail}`);
+    }
+    const content = JSON.parse(raw).choices?.[0]?.message?.content;
+    if (!content) throw new Error('DeepSeek 未返回阶段内容');
+    return content;
+  } catch (error) {
+    if (error.name === 'AbortError') throw new Error('阶段生成超时');
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+const stageAgents = {
+  writer: async ({ taskBrief, stepTitle, mainProcessData }) => callStageModel([
+    { role: 'system', content: '你负责把主进程已经完成的数据整理成阶段 Markdown，约 300–500 个汉字。当前步骤是严格的内容边界：只整理当前步骤点名的对象与议题；总任务中出现的其他产品、其他环节只是背景，不得拉进当前结果做横向比较。单一对象分析禁止使用 Markdown 表格，应根据内容写成连贯摘要、分点洞察、分类小节或过程步骤。只有当前步骤明确要求比较多个对象，且主进程确实提供了相同维度的数据时才可使用表格。当前情景处于“数据已就绪”状态，不输出“待核实”“未知”“暂无数据”等占位词；没有出现在主进程中的字段直接省略。不能自行搜索、补写事实、发明比较维度或虚构数字。只输出 Markdown，不要解释。' },
+    { role: 'user', content: `总任务背景：${taskBrief}\n当前步骤（唯一分析范围）：${stepTitle}\n主进程当前快照：${mainProcessData}\n请只收集和整理与当前步骤直接相关的信息。先判断适合用摘要、分点、分类还是过程表达，不要为了结构完整引入其他产品或无关变量。` }
+  ], { maxTokens: 1300 }),
+  visualizer: async ({ blocks, stepTitle }) => JSON.parse(await callStageModel([
+    { role: 'system', content: '你是视觉协作 Agent。必须逐块阅读主进程保存的 Markdown 数据，再依据数据本身的关系选择画面；步骤标题只用于显示，禁止作为模板判断依据。你只能抽取和编排已有信息，不能搜索、改写事实或补充数据。返回 JSON：{"template":"summary|cards|comparison|chart|donut|workflow|canvas","blockIds":[整数编号]}。选择规则：只有单一连续结论或叙事、确实没有可视化的分类关系时才用 summary；两个以上并列分类小节或要点用 cards，并选入各分类的标题与内容；非数值对照表用 comparison；明确存在先后、状态变化或因果推进才用 workflow；明确存在分组、聚类或空间关系才用 canvas；同单位数字对比用 chart；合计 100% 的构成比例用 donut。选择 workflow 或 canvas 时，所选 blockIds 必须包含支撑各节点或分组的原文块。不要根据产品名称固定模板，不要把分类叙述压成摘要。只选最能表达当前数据关系的一种形式。' },
+    { role: 'user', content: `步骤：${stepTitle}\n原文块：${JSON.stringify(blocks.map(block => block.kind === 'table' ? { id: block.id, kind: block.kind, columns: block.columns, rows: block.rows.slice(0, 5) } : { id: block.id, kind: block.kind, text: block.text.slice(0, 300) }))}\n请只返回 JSON。` }
+  ], { json: true, maxTokens: 350 }))
+};
+
 const server = http.createServer(async (request, response) => {
   const origin = request.headers.origin || '';
   setCors(response, origin);
@@ -224,8 +272,44 @@ const server = http.createServer(async (request, response) => {
       configured: Boolean(apiKey) && !apiKey.includes('粘贴到这里'),
       provider: 'deepseek',
       model: MODEL,
-      mode: 'intent-only'
+      mode: 'intent+stage-artifact'
     });
+    return;
+  }
+  const route = new URL(request.url || '/', `http://${HOST}:${PORT}`);
+  if (request.method === 'GET' && route.pathname === '/stage-results') {
+    if (!isTrustedOrigin(origin)) { sendJson(response, 403, { ok: false, error: '不受信任的来源' }); return; }
+    try {
+      const results = await listStageResults(route.searchParams.get('conversationId'));
+      sendJson(response, 200, { ok: true, results });
+    } catch (error) {
+      sendJson(response, 500, { ok: false, error: error.message || '读取阶段结果失败' });
+    }
+    return;
+  }
+  if (request.method === 'POST' && route.pathname === '/stage-result') {
+    if (!isTrustedOrigin(origin)) { sendJson(response, 403, { ok: false, error: '不受信任的来源' }); return; }
+    try {
+      const payload = await readJson(request);
+      const result = await createStageResult(payload, stageAgents);
+      sendJson(response, 200, { ok: true, result });
+    } catch (error) {
+      sendJson(response, 502, { ok: false, error: error.message || '阶段生成失败' });
+    }
+    return;
+  }
+  if (request.method === 'POST' && route.pathname === '/final-result') {
+    if (!isTrustedOrigin(origin)) { sendJson(response, 403, { ok: false, error: '不受信任的来源' }); return; }
+    try {
+      const payload = await readJson(request);
+      const result = await createFinalResult(payload, ({ taskBrief, title, source }) => callStageModel([
+        { role: 'system', content: '你是任务主 Agent。请生成可交付的完整 Markdown 案例报告。依据任务说明和已保存的阶段草稿组织内容；没有阶段草稿时依据任务说明形成分析框架与待验证结论。严禁把推测写成已核实事实，严禁编造调研、来源、数据或完成状态。正文须明确区分已知信息、分析推论和待核实事项。只输出 Markdown。' },
+        { role: 'user', content: `任务标题：${title}\n任务说明：${taskBrief}\n已保存的阶段草稿：${source || '无'}\n请生成标题、摘要、主体分析、结论和待核实事项。` }
+      ], { maxTokens: 3000 }));
+      sendJson(response, 200, { ok: true, result });
+    } catch (error) {
+      sendJson(response, 502, { ok: false, error: error.message || '最终文档生成失败' });
+    }
     return;
   }
   if (request.method !== 'POST' || request.url !== '/agent') {
