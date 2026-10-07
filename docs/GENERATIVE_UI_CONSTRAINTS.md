@@ -101,9 +101,9 @@
 ## 九、相关文件
 
 - [生成式 UI 阶段性总结](./GENERATIVE_UI_STAGE_REVIEW.md)
-- [原文解析、版式约束与产物保存](./stage-pipeline.cjs)
-- [模型表达规则与调用入口](./agent-server.cjs)
-- [前端预览组件](./step-preview.js)
-- [版式测试用例](./stage-pipeline.test.cjs)
+- [原文解析、版式约束与产物保存](../stage-pipeline.cjs)
+- [模型表达规则与调用入口](../agent-server.cjs)
+- [前端预览组件](../step-preview.js)
+- [版式测试用例](../tests/stage-pipeline.test.cjs)
 
 维护原则：修改模板、判定顺序、内容上限或真实接入状态时，应同步更新本文件。

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { CodexClient } = require('./codex-client.cjs');
+const { CodexClient } = require('../codex-client.cjs');
 
 test('completed observable actions are returned in order', () => {
   const client = new CodexClient();

@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { makeArtifactFileName, normalizeFileArtifact, normalizeFilePreview } = require('./file-artifact.js');
+const { makeArtifactFileName, normalizeFileArtifact, normalizeFilePreview } = require('../file-artifact.js');
 
 test('file icons and labels follow the saved file extension', () => {
   const expected = [

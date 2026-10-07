@@ -8,7 +8,7 @@
     :root { --ink:#2b2b2b; --muted:rgba(17,17,17,.58); --line:rgba(17,17,17,.12); --blue:#4457de; --shell:rgba(246,250,255,.80); }
     * { box-sizing:border-box; }
     html,body { width:100%; min-height:100%; margin:0; }
-    body { overflow:hidden; background:#315b86 url('../desktop-background.png') center/cover fixed no-repeat; color:var(--ink); font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif; font-size:14px; }
+    body { overflow:hidden; background:#315b86 url('../assets/ui/desktop-background.png') center/cover fixed no-repeat; color:var(--ink); font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif; font-size:14px; }
     button,textarea { font:inherit; color:inherit; }
     button { cursor:pointer; }
     .app-shell { width:min(94vw,1512px); height:min(92vh,912px); min-height:680px; margin:4vh auto; display:grid; grid-template-columns:254px minmax(0,1fr); grid-template-rows:40px minmax(0,1fr); overflow:hidden; position:relative; border:.5px solid rgba(17,17,17,.16); border-radius:9px; background:var(--shell); box-shadow:0 4px 100px 4px rgba(0,0,0,.25); }
@@ -23,7 +23,7 @@
     .window-control { width:46px; display:grid; place-items:center; padding:0; border:0; background:transparent; -webkit-app-region:no-drag; }
     .window-control:hover { background:rgba(17,17,17,.07); }
     .window-control.close:hover { background:#d84141; }
-    .window-control-icon { width:20px; height:20px; display:block; background:url('../figma-window-controls.svg') no-repeat; background-size:106.667px 20px; }
+    .window-control-icon { width:20px; height:20px; display:block; background:url('../assets/ui/figma-window-controls.svg') no-repeat; background-size:106.667px 20px; }
     .window-control-icon.minimize { background-position:0 0; }.window-control-icon.maximize{background-position:-43.333px 0}.window-control-icon.close{background-position:-86.667px 0}
     .sidebar { grid-column:1; grid-row:2; width:254px; min-width:0; padding:4px 12px 18px; background:transparent; overflow-y:auto; overflow-x:hidden; }
     .product-name { margin:6px 8px 15px; font-size:18px; font-weight:500; letter-spacing:-.2px; }
@@ -76,7 +76,7 @@
   <script>(()=>{const params=new URLSearchParams(location.search);if(params.has('electron'))document.body.classList.add('electron-window');if(params.has('embedded'))document.body.classList.add('embedded');else{const suffix=params.has('electron')?'&electron=1':'';location.replace(new URL(location.protocol==='file:'?'../index.html?electron=1#view=new':`../?view=new${suffix}`,location.href).href)}})();</script>
   <main class="app-shell">
     <header class="window-bar">
-      <button class="brand-mark" id="sidebarToggle" type="button" aria-label="项目导航"><img src="../figma-sidebar-toggle.svg" alt="" /></button>
+      <button class="brand-mark" id="sidebarToggle" type="button" aria-label="项目导航"><img src="../assets/ui/figma-sidebar-toggle.svg" alt="" /></button>
       <div class="window-controls">
         <button class="window-control" id="windowMinimize" type="button"><span class="window-control-icon minimize"></span></button>
         <button class="window-control" id="windowMaximize" type="button"><span class="window-control-icon maximize"></span></button>
@@ -85,11 +85,11 @@
     </header>
     <aside class="sidebar">
       <div class="product-name">Alex Colleague agent</div>
-      <button class="nav-action" type="button"><img src="../new-conversation.svg" alt="" />新对话</button>
+      <button class="nav-action" type="button"><img src="../assets/ui/new-conversation.svg" alt="" />新对话</button>
       <button class="nav-action" id="toolsBtn" type="button"><img src="../assets/tools.svg" alt="" />工具</button>
       <div class="sidebar-heading">项目 <span>＋</span></div>
-      <button class="project-row" data-project="basketball-comparison" type="button"><img src="../project-collapsed.svg" alt="" /><span>科比和詹姆斯对比</span></button>
-      <button class="project-row" data-project="product-innovation" type="button"><img src="../project-expanded.svg" alt="" /><span>体验与智能产品创新</span></button>
+      <button class="project-row" data-project="basketball-comparison" type="button"><img src="../assets/ui/project-collapsed.svg" alt="" /><span>科比和詹姆斯对比</span></button>
+      <button class="project-row" data-project="product-innovation" type="button"><img src="../assets/ui/project-expanded.svg" alt="" /><span>体验与智能产品创新</span></button>
       <div id="projectConversationList"></div>
       <div class="sidebar-heading">最近</div>
       <div id="recentConversationList"></div>
@@ -99,7 +99,7 @@
       <form class="new-composer" id="newConversationForm">
         <div class="selectors">
           <div class="select-wrap">
-            <button class="selector project" id="projectSelector" type="button" aria-expanded="false"><img src="../project-collapsed.svg" alt="" /><span id="projectSelectorLabel">选择项目</span></button>
+            <button class="selector project" id="projectSelector" type="button" aria-expanded="false"><img src="../assets/ui/project-collapsed.svg" alt="" /><span id="projectSelectorLabel">选择项目</span></button>
             <div class="menu" id="projectMenu" hidden>
               <button type="button" data-value="product-innovation">体验与智能产品创新</button>
               <button type="button" data-value="basketball-comparison">科比和詹姆斯对比</button>

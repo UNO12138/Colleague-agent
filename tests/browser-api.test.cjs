@@ -30,7 +30,7 @@ test('temporary API keeps key in memory and produces stages and Word content', a
   };
   context.window.top = context.window;
   context.window.location = context.location;
-  vm.runInNewContext(fs.readFileSync(require.resolve('./browser-api.js'), 'utf8'), context);
+  vm.runInNewContext(fs.readFileSync(require.resolve('../browser-api.js'), 'utf8'), context);
   const api = context.window.temporaryAiApi;
   api.setKey('test-key');
   assert.equal((await api.ask('本次问题')).message, '本次回答');

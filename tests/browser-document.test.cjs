@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { createWordBlob } = require('./browser-document.js');
+const { createWordBlob } = require('../browser-document.js');
 const docx = require('docx');
 
 test('browser document creates an actual Word file from report content', async () => {

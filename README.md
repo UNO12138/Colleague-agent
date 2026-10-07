@@ -2,6 +2,18 @@
 
 一个探索「主任务进度、协助代理交流与阶段性可视化」的网页和 Electron 桌面原型。当前已接入 Codex 的真实对话会话；任务执行事件与进度可视化仍在设计阶段。
 
+## 仓库目录
+
+| 位置 | 内容 |
+| --- | --- |
+| 根目录 | 网页入口、浏览器逻辑、本地服务、Electron 入口与依赖配置 |
+| [`assets/`](./assets/) | 界面图标、背景和设计素材；通用界面图标在 `assets/ui/` |
+| [`docs/`](./docs/) | 产品规格、架构与生成式 UI 设计记录 |
+| [`tests/`](./tests/) | 自动化测试，运行 `npm test` |
+| [`tools/`](./tools/)、[`new-conversation/`](./new-conversation/) | 工具页和新对话页 |
+| [`scenario-archive/`](./scenario-archive/) | 预设情境的离线阶段记录 |
+| [`scripts/`](./scripts/) | 打包与情境快照脚本 |
+
 ## 目前能体验什么
 
 - **协作对话**：新对话选择 Codex 后，任务规划与后续消息由本机 Codex 会话处理，使用 `gpt-5.6-luna`；每个新建对话的确认状态、步骤进度、任务卡、消息历史、待处理决定和交付信息会在本机保存，重启窗口后按会话恢复。预设的首个情境对话继续使用原演示流程。
@@ -66,7 +78,7 @@ DEEPSEEK_API_KEY=你的密钥
 3. 服务端解析标题、段落、要点和表格。视觉协助代理只建议模板和原文块编号，服务端再校验并执行版式回退。
 4. 前端通过固定组件展示摘要、分类卡片、对比矩阵、数字图表、环形图、流程或画布。布局模型不能直接生成任意网页代码。
 
-分类内容优先卡片，非数字对比表使用矩阵；摘要只适合单一连续叙述。数量上限、图表判断和其他具体限定见[生成式 UI 范围与限定](./GENERATIVE_UI_CONSTRAINTS.md)。阶段原文、预览和最终文件是不同产物；预览可能只呈现部分原文内容。
+分类内容优先卡片，非数字对比表使用矩阵；摘要只适合单一连续叙述。数量上限、图表判断和其他具体限定见[生成式 UI 范围与限定](./docs/GENERATIVE_UI_CONSTRAINTS.md)。阶段原文、预览和最终文件是不同产物；预览可能只呈现部分原文内容。
 
 ## 当前未完成的部分
 
@@ -88,17 +100,17 @@ DEEPSEEK_API_KEY=你的密钥
 | [`codex-client.cjs`](./codex-client.cjs) | Codex 应用服务会话连接与 Luna 模型调用 |
 | [`stage-pipeline.cjs`](./stage-pipeline.cjs) | 阶段原文解析、版式约束、保存与报告生成 |
 | [`step-preview.js`](./step-preview.js) | 固定的阶段预览组件 |
-| [`GENERATIVE_UI_CONSTRAINTS.md`](./GENERATIVE_UI_CONSTRAINTS.md) | 生成式 UI 的范围、版式规则与数量限制 |
-| [`GENERATIVE_UI_STAGE_REVIEW.md`](./GENERATIVE_UI_STAGE_REVIEW.md) | 阶段性核验记录与后续对接事项 |
-| [`MAIN_AGENT_UI_SPEC.md`](./MAIN_AGENT_UI_SPEC.md) | 真实代理接入前的界面预留清单 |
-| [`MAIN_AGENT_INTEGRATION_ARCHITECTURE.md`](./MAIN_AGENT_INTEGRATION_ARCHITECTURE.md) | 多种编码代理的后续接入草案 |
-| [`STATE_AND_UI_SPEC.md`](./STATE_AND_UI_SPEC.md) | 协作状态与界面分支规格 |
-| [`ASSISTANT_AGENT_SPEC.md`](./ASSISTANT_AGENT_SPEC.md) | 协助代理的职责和输入输出约定 |
+| [`GENERATIVE_UI_CONSTRAINTS.md`](./docs/GENERATIVE_UI_CONSTRAINTS.md) | 生成式 UI 的范围、版式规则与数量限制 |
+| [`GENERATIVE_UI_STAGE_REVIEW.md`](./docs/GENERATIVE_UI_STAGE_REVIEW.md) | 阶段性核验记录与后续对接事项 |
+| [`MAIN_AGENT_UI_SPEC.md`](./docs/MAIN_AGENT_UI_SPEC.md) | 真实代理接入前的界面预留清单 |
+| [`MAIN_AGENT_INTEGRATION_ARCHITECTURE.md`](./docs/MAIN_AGENT_INTEGRATION_ARCHITECTURE.md) | 多种编码代理的后续接入草案 |
+| [`STATE_AND_UI_SPEC.md`](./docs/STATE_AND_UI_SPEC.md) | 协作状态与界面分支规格 |
+| [`ASSISTANT_AGENT_SPEC.md`](./docs/ASSISTANT_AGENT_SPEC.md) | 协助代理的职责和输入输出约定 |
 
 ## 本地验证
 
 ```bash
-node --test stage-pipeline.test.cjs file-artifact.test.cjs
+npm test
 ```
 
 测试覆盖部分版式回退、分类卡片、数字表格与交付文件状态。运行结果仅证明这些用例通过；真实主 Agent 执行和外部资料准确性需要独立验证。

@@ -24,7 +24,7 @@
     html, body { width: 100%; min-height: 100%; margin: 0; }
     body {
       background-color: #315b86;
-      background-image: url('./desktop-background.png');
+      background-image: url('./assets/ui/desktop-background.png');
       background-position: center;
       background-size: cover;
       background-repeat: no-repeat;
@@ -85,7 +85,7 @@
     .brand-mark img { display: block; width: 20px; height: 20px; object-fit: contain; }
     .window-controls { height: 40px; display: flex; justify-content: flex-end; align-items: stretch; }
     .window-control { display: grid; width: 46px; place-items: center; border: 0; background: transparent; color: var(--ink); cursor: pointer; padding: 0; -webkit-app-region: no-drag; }
-    .window-control-icon { display: block; width: 20px; height: 20px; background-image: url('./figma-window-controls.svg'); background-repeat: no-repeat; background-size: 106.667px 20px; }
+    .window-control-icon { display: block; width: 20px; height: 20px; background-image: url('./assets/ui/figma-window-controls.svg'); background-repeat: no-repeat; background-size: 106.667px 20px; }
     .window-control-icon.minimize { background-position: 0 0; }
     .window-control-icon.maximize { background-position: -43.333px 0; }
     .window-control-icon.close { background-position: -86.667px 0; }
@@ -765,7 +765,7 @@
   </script>
   <main class="app-shell">
     <header class="window-bar" aria-label="窗口控制栏">
-      <button class="brand-mark" id="sidebarToggle" type="button" aria-label="收起项目导航" aria-expanded="true"><img src="./figma-sidebar-toggle.svg" alt="" /></button>
+      <button class="brand-mark" id="sidebarToggle" type="button" aria-label="收起项目导航" aria-expanded="true"><img src="./assets/ui/figma-sidebar-toggle.svg" alt="" /></button>
       <div class="window-controls" aria-label="窗口控制">
         <button class="window-control minimize" id="windowMinimize" type="button" aria-label="最小化">
           <span class="window-control-icon minimize" aria-hidden="true"></span>
@@ -782,7 +782,7 @@
     <aside class="sidebar" aria-label="项目导航">
       <div class="product-name">Alex Colleague agent</div>
       <button class="side-action" id="newConversationAction" type="button">
-        <span class="with-icon"><img class="figma-icon" src="./new-conversation-figma.svg" alt="" />新对话</span>
+        <span class="with-icon"><img class="figma-icon" src="./assets/ui/new-conversation-figma.svg" alt="" />新对话</span>
       </button>
       <button class="side-action" id="toolsAction" type="button">
         <span class="with-icon"><img class="figma-icon" src="./assets/tools.svg" alt="" />工具</span>
@@ -790,35 +790,35 @@
 
       <div class="sidebar-section-heading">
         <div class="section-label">项目</div>
-        <button class="sidebar-icon-action" id="newProjectBtn" type="button" aria-label="新建项目"><img src="./new-project.svg" data-active-src="./new-project-active.svg" alt="" /></button>
+        <button class="sidebar-icon-action" id="newProjectBtn" type="button" aria-label="新建项目"><img src="./assets/ui/new-project.svg" data-active-src="./assets/ui/new-project-active.svg" alt="" /></button>
       </div>
       <div class="project-item" data-project-id="basketball-comparison">
-        <button class="project-row" type="button"><span class="with-icon"><img class="figma-icon project-state-icon" src="./project-collapsed.svg" data-collapsed-src="./project-collapsed.svg" data-expanded-src="./project-expanded.svg" alt="" /><span class="row-title">科比和詹姆斯对比</span></span></button>
-        <button class="sidebar-icon-action pin-project-action" type="button" aria-label="置顶项目：科比和詹姆斯对比"><img src="./pin-project.svg" data-active-src="./pin-project-active.svg" alt="" /></button>
-        <button class="sidebar-icon-action delete-project-action" type="button" aria-label="删除项目：科比和詹姆斯对比"><img src="./delete-project.svg" data-active-src="./delete-active.svg" alt="" /></button>
+        <button class="project-row" type="button"><span class="with-icon"><img class="figma-icon project-state-icon" src="./assets/ui/project-collapsed.svg" data-collapsed-src="./assets/ui/project-collapsed.svg" data-expanded-src="./assets/ui/project-expanded.svg" alt="" /><span class="row-title">科比和詹姆斯对比</span></span></button>
+        <button class="sidebar-icon-action pin-project-action" type="button" aria-label="置顶项目：科比和詹姆斯对比"><img src="./assets/ui/pin-project.svg" data-active-src="./assets/ui/pin-project-active.svg" alt="" /></button>
+        <button class="sidebar-icon-action delete-project-action" type="button" aria-label="删除项目：科比和詹姆斯对比"><img src="./assets/ui/delete-project.svg" data-active-src="./assets/ui/delete-active.svg" alt="" /></button>
       </div>
       <div class="conversation-list project-conversations is-collapsed" id="basketballComparisonConversations" data-project-id="basketball-comparison">
         <div class="project-conversation-content"></div>
       </div>
       <div class="project-item is-expanded" data-project-id="product-innovation">
         <button class="project-row" type="button" aria-expanded="true" aria-controls="productInnovationConversations">
-          <span class="with-icon"><img class="figma-icon project-state-icon" src="./project-expanded.svg" data-collapsed-src="./project-collapsed.svg" data-expanded-src="./project-expanded.svg" alt="" /><span class="row-title">体验与智能产品创新</span></span>
+          <span class="with-icon"><img class="figma-icon project-state-icon" src="./assets/ui/project-expanded.svg" data-collapsed-src="./assets/ui/project-collapsed.svg" data-expanded-src="./assets/ui/project-expanded.svg" alt="" /><span class="row-title">体验与智能产品创新</span></span>
         </button>
-        <button class="sidebar-icon-action pin-project-action" type="button" aria-label="置顶项目：体验与智能产品创新"><img src="./pin-project.svg" data-active-src="./pin-project-active.svg" alt="" /></button>
-        <button class="sidebar-icon-action delete-project-action" type="button" aria-label="删除项目：体验与智能产品创新"><img src="./delete-project.svg" data-active-src="./delete-active.svg" alt="" /></button>
+        <button class="sidebar-icon-action pin-project-action" type="button" aria-label="置顶项目：体验与智能产品创新"><img src="./assets/ui/pin-project.svg" data-active-src="./assets/ui/pin-project-active.svg" alt="" /></button>
+        <button class="sidebar-icon-action delete-project-action" type="button" aria-label="删除项目：体验与智能产品创新"><img src="./assets/ui/delete-project.svg" data-active-src="./assets/ui/delete-active.svg" alt="" /></button>
       </div>
       <div class="conversation-list project-conversations" id="productInnovationConversations" data-project-id="product-innovation">
         <div class="project-conversation-content">
-          <div class="conversation-item active" data-conversation-id="weekly-report"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
+          <div class="conversation-item active" data-conversation-id="weekly-report"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./assets/ui/delete-conversation.svg" data-active-src="./assets/ui/delete-active.svg" alt="" /></button></div>
         </div>
       </div>
 
       <div class="sidebar-section-heading">
         <div class="section-label">最近</div>
-        <button class="sidebar-icon-action" id="newConversationBtn" type="button" aria-label="新建对话"><img src="./new-conversation.svg" data-active-src="./new-conversation-active.svg" alt="" /></button>
+        <button class="sidebar-icon-action" id="newConversationBtn" type="button" aria-label="新建对话"><img src="./assets/ui/new-conversation.svg" data-active-src="./assets/ui/new-conversation-active.svg" alt="" /></button>
       </div>
       <div class="conversation-list" id="recentConversationList">
-        <div class="conversation-item active" data-conversation-id="weekly-report"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
+        <div class="conversation-item active" data-conversation-id="weekly-report"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./assets/ui/delete-conversation.svg" data-active-src="./assets/ui/delete-active.svg" alt="" /></button></div>
       </div>
     </aside>
 
@@ -884,7 +884,7 @@
                     </div>
                     <div class="work-card-toggle-row">
                       <button class="work-card-toggle" id="workCardToggle" type="button" aria-label="收起进度详情" aria-expanded="true">
-                        <img src="./allow-menu-chevron.svg" alt="" aria-hidden="true" />
+                        <img src="./assets/ui/allow-menu-chevron.svg" alt="" aria-hidden="true" />
                       </button>
                     </div>
                   </section>
@@ -982,7 +982,7 @@
         <section class="project-modal" role="dialog" aria-modal="true" aria-labelledby="projectModalTitle">
           <header class="project-modal-header">
             <h2 id="projectModalTitle">创建新项目</h2>
-            <button class="project-modal-close" id="projectModalClose" type="button" aria-label="关闭创建新项目弹窗"><img src="./modal-close.svg" alt="" /></button>
+            <button class="project-modal-close" id="projectModalClose" type="button" aria-label="关闭创建新项目弹窗"><img src="./assets/ui/modal-close.svg" alt="" /></button>
           </header>
           <div class="project-modal-body">
             <div class="project-field">
@@ -993,7 +993,7 @@
               <label>源文件</label>
               <div class="project-file-drop" id="projectFileDrop">
                 <div class="project-file-copy"><strong id="projectSourcePath">拖放文件</strong><span>文件夹、文档、PDF等</span></div>
-                <button class="choose-folder" id="chooseProjectFolderBtn" type="button"><img src="./select-folder.svg" alt="" /><span id="chooseFolderText">选择文件夹</span></button>
+                <button class="choose-folder" id="chooseProjectFolderBtn" type="button"><img src="./assets/ui/select-folder.svg" alt="" /><span id="chooseFolderText">选择文件夹</span></button>
                 <input id="projectSourceInput" type="file" hidden webkitdirectory directory multiple />
               </div>
             </div>
@@ -1007,7 +1007,7 @@
           <h2 id="deleteModalTitle">是否删除？</h2>
           <p id="deleteModalDescription">删除后，该对话将不可恢复。</p>
           <footer class="delete-modal-footer">
-            <button class="delete-reminder" id="deleteReminderBtn" type="button" aria-label="今天不再提示" aria-pressed="false"><img id="deleteReminderIcon" src="./delete-dialog-option.svg" alt="" /><span>今天不再提示</span></button>
+            <button class="delete-reminder" id="deleteReminderBtn" type="button" aria-label="今天不再提示" aria-pressed="false"><img id="deleteReminderIcon" src="./assets/ui/delete-dialog-option.svg" alt="" /><span>今天不再提示</span></button>
             <div class="delete-modal-actions"><button class="modal-secondary-action" id="cancelDeleteBtn" type="button">取消</button><button class="modal-danger-action" id="confirmDeleteBtn" type="button">删除该对话</button></div>
           </footer>
         </section>
@@ -1717,8 +1717,8 @@
     function renderDeleteReminder() {
       deleteReminderBtn.setAttribute('aria-pressed', String(skipDeleteConfirmation));
       deleteReminderIcon.src = skipDeleteConfirmation
-        ? './delete-dialog-option-selected.svg'
-        : './delete-dialog-option.svg';
+        ? './assets/ui/delete-dialog-option-selected.svg'
+        : './assets/ui/delete-dialog-option.svg';
     }
 
     function performDeletion(item, type) {
@@ -1997,7 +1997,7 @@
       const item = document.createElement('div');
       const safeName = escapeHtml(name);
       item.className = 'project-item';
-      item.innerHTML = `<button class="project-row" type="button" aria-expanded="false"><span class="with-icon"><img class="figma-icon project-state-icon" src="./project-collapsed.svg" data-collapsed-src="./project-collapsed.svg" data-expanded-src="./project-expanded.svg" alt="" /><span class="row-title">${safeName}</span></span></button><button class="sidebar-icon-action pin-project-action" type="button" aria-label="置顶项目：${safeName}"><img src="./pin-project.svg" data-active-src="./pin-project-active.svg" alt="" /></button><button class="sidebar-icon-action delete-project-action" type="button" aria-label="删除项目：${safeName}"><img src="./delete-project.svg" data-active-src="./delete-active.svg" alt="" /></button>`;
+      item.innerHTML = `<button class="project-row" type="button" aria-expanded="false"><span class="with-icon"><img class="figma-icon project-state-icon" src="./assets/ui/project-collapsed.svg" data-collapsed-src="./assets/ui/project-collapsed.svg" data-expanded-src="./assets/ui/project-expanded.svg" alt="" /><span class="row-title">${safeName}</span></span></button><button class="sidebar-icon-action pin-project-action" type="button" aria-label="置顶项目：${safeName}"><img src="./assets/ui/pin-project.svg" data-active-src="./assets/ui/pin-project-active.svg" alt="" /></button><button class="sidebar-icon-action delete-project-action" type="button" aria-label="删除项目：${safeName}"><img src="./assets/ui/delete-project.svg" data-active-src="./assets/ui/delete-active.svg" alt="" /></button>`;
       bindProjectItem(item);
       return item;
     }
@@ -2248,7 +2248,7 @@
       time.textContent = '等待';
       const chevron = document.createElement('img');
       chevron.className = 'step-chevron';
-      chevron.src = './allow-menu-chevron.svg';
+      chevron.src = './assets/ui/allow-menu-chevron.svg';
       chevron.alt = '';
       chevron.setAttribute('aria-hidden', 'true');
       const content = document.createElement('div');
@@ -3562,7 +3562,7 @@
       deleteButton.className = 'sidebar-icon-action delete-conversation-action';
       deleteButton.type = 'button';
       deleteButton.setAttribute('aria-label', `删除对话：${record.title}`);
-      deleteButton.innerHTML = '<img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" />';
+      deleteButton.innerHTML = '<img src="./assets/ui/delete-conversation.svg" data-active-src="./assets/ui/delete-active.svg" alt="" />';
       deleteButton.addEventListener('click', event => {
         event.stopPropagation();
         showDeleteModal(item, '对话');

@@ -3,16 +3,17 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
-const { ARTIFACT_ROOT, createStageResult, parseMarkdownBlocks, safeLayout, visualData } = require('./stage-pipeline.cjs');
+const { ARTIFACT_ROOT, createStageResult, parseMarkdownBlocks, safeLayout, visualData } = require('../stage-pipeline.cjs');
+const projectRoot = path.resolve(__dirname, '..');
 
 test('预设情境的阶段记录可从离线存档读取', async () => {
   const output = execFileSync(process.execPath, ['-e', "require('./stage-pipeline.cjs').listStageResults('weekly-report').then(value => console.log(JSON.stringify(value)))"], {
-    cwd: __dirname,
-    env: { ...process.env, COLLEAGUE_DATA_DIR: path.join(__dirname, 'missing-test-user-data') },
+    cwd: projectRoot,
+    env: { ...process.env, COLLEAGUE_DATA_DIR: path.join(projectRoot, 'missing-test-user-data') },
     encoding: 'utf8',
   });
   const archived = JSON.parse(output);
-  const originalDirs = await fs.readdir(path.join(__dirname, 'scenario-archive'), { withFileTypes: true });
+  const originalDirs = await fs.readdir(path.join(projectRoot, 'scenario-archive'), { withFileTypes: true });
   assert.equal(originalDirs.filter(entry => entry.isDirectory()).length, 24);
   assert.equal(archived.length, 10);
   assert.ok(archived.some(result => result.stepTitle.includes('Linear') && result.preview?.previewType === 'document'));
