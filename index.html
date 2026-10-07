@@ -437,6 +437,8 @@
     .progress-track { height: 5px; margin: 0 20px; overflow: hidden; border-radius: 10px; background: var(--soft); }
     .progress-fill { width: 75%; height: 100%; border-radius: inherit; background: var(--deep); transition: width .45s ease; }
     .work-card-meta { min-height: 28px; display: flex; align-items: center; padding: 7px 20px 0; }
+    .task-requirements { margin: 2px 20px 0 !important; padding: 8px 10px; border-radius: 8px; background: #f4f6fa; color: #454e61 !important; font-size: 12px; }
+    .task-requirements[hidden] { display: none; }
     .step-list { max-height: min(440px, 55vh); padding: 14px 20px 10px; display: grid; align-content: start; gap: 10px; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: auto; opacity: 1; transition: max-height .34s cubic-bezier(.2, .72, .2, 1), padding .34s cubic-bezier(.2, .72, .2, 1), opacity .22s ease; }
     .step { width: 100%; display: grid; grid-template-columns: 17px minmax(0, 1fr) auto 12px; gap: 10px; align-items: center; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
     .step:focus-visible { outline: 2px solid #4457de; outline-offset: 3px; border-radius: 4px; }
@@ -860,6 +862,7 @@
                     </div>
                     <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
                     <div class="work-card-meta"><span class="elapsed-time" id="elapsedTime">已处理 3分钟 22秒</span></div>
+                    <p class="task-requirements" id="taskRequirements" hidden></p>
                     <div class="step-list" id="stepList">
                       <div class="step done" id="notionStep"><span class="step-mark">✓</span><span>Notion · 异步信息如何进入团队协作</span><time>14:31</time></div>
                       <div class="step done" id="figmaStep"><span class="step-mark">✓</span><span>Figma · 多人编辑如何形成实时同步</span><time>14:36</time></div>
@@ -1007,12 +1010,12 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </main>
 
-  <script src="./file-artifact.js?v=20261007-8"></script>
-  <script src="./vendor/docx.iife.js?v=20261007-8"></script>
-  <script src="./browser-document.js?v=20261007-8"></script>
+  <script src="./file-artifact.js?v=20261007-9"></script>
+  <script src="./vendor/docx.iife.js?v=20261007-9"></script>
+  <script src="./browser-document.js?v=20261007-9"></script>
   <script src="./step-preview.js"></script>
   <script src="./scenario-archive/records.js"></script>
-  <script src="./browser-api.js?v=20261007-8"></script>
+  <script src="./browser-api.js?v=20261007-9"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -1038,6 +1041,7 @@
     const workCardSentinel = document.getElementById('workCardSentinel');
     const workCardToggle = document.getElementById('workCardToggle');
     const elapsedTime = document.getElementById('elapsedTime');
+    const taskRequirements = document.getElementById('taskRequirements');
     const composer = document.getElementById('composer');
     const composerWrap = document.querySelector('.composer-wrap');
     const messageInput = document.getElementById('messageInput');
@@ -1154,6 +1158,7 @@
     let savedDeliverable = null;
     let generatedWordBlob = null;
     let pendingChange = null;
+    let confirmedRequirements = '';
     let restoringConversation = false;
     let autoPlanInFlight = false;
     let autoPlanComplete = false;
@@ -1308,7 +1313,12 @@
           progress: `${progress}/${total}`,
           taskStarted,
           inputIntent: extraContext.inputIntent || '',
-          planningHistory: !taskStarted && mode !== 'initial_plan' ? recentPlanningHistory(message) : []
+          planningHistory: !taskStarted && mode !== 'initial_plan' ? recentPlanningHistory(message) : [],
+          currentTaskCard: extraContext.currentTaskCard || getCurrentTaskCardContext(),
+          currentRequirements: confirmedRequirements,
+          recentUserInputs: taskStarted && extraContext.inputIntent === 'task_change'
+            ? conversationHistory.filter(item => item.phase === 'execution' && item.role === 'user').slice(-10).map(item => String(item.text || '').slice(0, 500))
+            : []
         });
         const response = await fetch(LOCAL_AGENT_URL, {
           method: 'POST',
@@ -2011,7 +2021,7 @@
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-8`);
+      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-9`);
       workspaceViewFrame.title = '新对话';
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
@@ -2024,7 +2034,7 @@
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       workspaceViewFrame.title = '工具';
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-8`);
+      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-9`);
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
@@ -2045,7 +2055,7 @@
         const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
         const target = isLocalFile
           ? new URL(`index.html?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`, window.location.href).href
-          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-8`, window.location.href).href;
+          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-9`, window.location.href).href;
         if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
       }
     }
@@ -2382,6 +2392,12 @@
       } catch { /* The packaged scenario archive remains available without the local service. */ }
     }
 
+    function isExecutionTaskChange(message) {
+      const source = String(message || '').trim();
+      if (/(?:修改|更新|添加|加入|写进|写入|纳入|应用|确认到).{0,16}(?:主任务|进度|规划|计划|任务)|(?:主任务|进度|规划|计划|任务).{0,16}(?:修改|更新|添加|加入|写进|写入|纳入|应用|确认)/u.test(source)) return true;
+      return /(?:\d+\s*天|\d+\s*间房|\d+\s*个?(?:家庭|小孩|孩子|老人)|\d+\s*人|国庆|春节|暑假|寒假|沿途住|自然景观|古城人文)/u.test(source) && !isQuestionOnly(source);
+    }
+
     async function generateRealStageResult() {
       if (taskCompleted || previewDemoActive || !taskStarted) return;
       const index = progress - 1;
@@ -2496,12 +2512,13 @@
       return pending;
     }
 
-    function applyTaskCardUpdate(nextCard) {
+    function applyTaskCardUpdate(nextCard, { restoreExisting = true } = {}) {
       closePreviewDemo();
       const nextSteps = Array.isArray(nextCard?.steps)
         ? nextCard.steps.map(step => String(step || '').trim()).filter(Boolean).slice(0, 8)
         : [];
       if (nextSteps.length < 2) return false;
+      const previousPreviews = new Map(taskCardState.steps.map((title, index) => [title, liveStepPreviews[index]]));
 
       taskCardState = {
         title: String(nextCard.title || taskCardState.title || '当前任务').trim().slice(0, 80),
@@ -2512,20 +2529,22 @@
       progress = Math.max(1, Math.min(progress, total));
       workCardTitle.textContent = taskCardState.title;
       progressTotal.textContent = total;
-      liveStepPreviews = nextSteps.map(title => ({ title, previewType: 'process', artifactState: 'pending' }));
+      liveStepPreviews = nextSteps.map(title => previousPreviews.get(title) || ({ title, previewType: 'process', artifactState: 'pending' }));
       expandedStepIndex = progress - 1;
       stepList.replaceChildren(...nextSteps.map((label, index) => createTaskStep(label, index, liveStepPreviews[index])));
       renderProgress(progress, taskCardState.statusText);
-      restoreStageResults();
+      if (restoreExisting) restoreStageResults();
       return true;
     }
 
     function appendChangeProposal(result) {
+      aside.querySelectorAll('[data-pending-change]').forEach(node => node.remove());
       pendingChange = result;
       persistConversationState();
       setConversationWorking(routeParams().get('conversation') || sidebarState.activeConversationId, false);
       const card = document.createElement('div');
       card.className = 'intent-card is-revealing';
+      card.dataset.pendingChange = 'true';
       const title = document.createElement('strong');
       title.textContent = '这句话可能会改变当前任务';
       const copy = document.createElement('p');
@@ -2544,16 +2563,30 @@
       card.append(title, copy, actions);
       aside.appendChild(card);
       apply.addEventListener('click', () => {
-        const applied = applyTaskCardUpdate(result.taskCard);
+        const nextCard = result.taskCard?.steps?.length >= 2 ? result.taskCard : getCurrentTaskCardContext();
+        const applied = applyTaskCardUpdate(nextCard, { restoreExisting: false });
         if (applied) {
-          currentPlanText = [currentPlanText, result.changeSummary].filter(Boolean).join(' ');
+          currentPlanText = String(result.planSummary || integrateLocalPlanRevision(result.changeSummary || '', {
+            currentPlan: currentPlanText, currentTaskCard: nextCard
+          }).planSummary).trim();
+          confirmedRequirements = String(result.requirementsSummary || result.changeSummary || '').trim().slice(0, 500);
+          taskRequirements.textContent = `已确认条件：${confirmedRequirements}`;
+          taskRequirements.hidden = !confirmedRequirements;
+          renderInitialBrief(currentPlanText);
           card.innerHTML = '<strong>已应用到主任务</strong><p>主进程卡片已按这次修改重新整理，当前流程继续执行。</p>';
           notify('即时修改已应用到主进程卡片');
+          if (taskStarted && !taskCompleted && usesBrowserApi(readStoredConversations().find(item => item.id === currentConversationId()))) {
+            void (async () => {
+              if (stageGenerationPromise) await stageGenerationPromise;
+              await generateCurrentStagePreview();
+            })();
+          }
         } else {
           card.innerHTML = '<strong>暂未应用</strong><p>Alex 没有返回可执行的任务步骤，请重新描述要修改的内容。</p>';
           notify('未获得可应用的任务卡片');
         }
         if (taskStarted && !taskCompleted) setConversationWorking(routeParams().get('conversation') || sidebarState.activeConversationId, true);
+        delete card.dataset.pendingChange;
         pendingChange = null;
         recordConversationEvent({ phase: 'execution', role: 'notice', text: card.textContent.trim() });
         scrollToLatest();
@@ -2561,6 +2594,7 @@
       discuss.addEventListener('click', () => {
         card.innerHTML = '<strong>保留为即时交流</strong><p>当前任务范围保持不变。</p>';
         if (taskStarted && !taskCompleted) setConversationWorking(routeParams().get('conversation') || sidebarState.activeConversationId, true);
+        delete card.dataset.pendingChange;
         pendingChange = null;
         recordConversationEvent({ phase: 'execution', role: 'notice', text: card.textContent.trim() });
         notify('未改变当前任务');
@@ -3193,6 +3227,7 @@
       askBtn.textContent = '收起交流';
       const recentConversation = collectRecentConversation();
       const progressAction = applyExplicitProgressCommand(value);
+      const explicitTaskChange = !progressAction && isExecutionTaskChange(value);
       const message = document.createElement('p');
       message.className = 'aside-copy user is-revealing';
       message.textContent = value;
@@ -3206,17 +3241,21 @@
         currentTaskState: getCurrentTaskState(),
         currentTaskCard: getCurrentTaskCardContext(),
         progressAction,
+        inputIntent: explicitTaskChange ? 'task_change' : '',
         attachments,
         recentConversation,
         responseRequirement: '只回应用户这一次新增的问题或意图。结合近期对话，已经说过的背景和进度不要再次完整复述；用户没有明确询问进度、且答案不依赖进度时，完全不要提任务状态。任务状态必须以 currentTaskState 为准，不得沿用旧进度，也不要声称知道本地网络是否正常。progressAction 非空表示前端已执行用户明确要求的进度操作，简洁确认即可，不要把它识别成范围修改。意图分类仅用于 kind 字段。'
       });
       clearComposerAttachments();
       thinking.remove();
-      appendAgentMessage(result.message, result.kind === 'discussion' ? '即时交流 · 未改变当前任务' : '本地 Agent · 已识别意图');
+      const normalizedResult = explicitTaskChange && result.kind === 'discussion'
+        ? { ...result, kind: 'task_change', changeSummary: result.changeSummary || value, taskCard: result.taskCard?.steps?.length ? result.taskCard : getCurrentTaskCardContext() }
+        : result;
+      appendAgentMessage(normalizedResult.message, normalizedResult.kind === 'discussion' ? '即时交流 · 未改变当前任务' : '已识别主任务修改');
       if (progressAction === 'completed_task') completeTask();
-      if (result.kind === 'task_change') appendChangeProposal(result);
-      if (result.kind === 'decision_request' && result.decision.required) showAgentDecision(result.decision);
-      notify(result.kind === 'discussion' ? '已作为即时交流处理' : result.kind === 'task_change' ? '已识别任务修改' : '需要你的决定');
+      if (normalizedResult.kind === 'task_change') appendChangeProposal(normalizedResult);
+      if (normalizedResult.kind === 'decision_request' && normalizedResult.decision.required) showAgentDecision(normalizedResult.decision);
+      notify(normalizedResult.kind === 'discussion' ? '已作为即时交流处理' : normalizedResult.kind === 'task_change' ? '已识别任务修改' : '需要你的决定');
     });
 
     const conversationStorageKey = 'alex-colleague-agent-conversations-v1';
@@ -3266,6 +3305,7 @@
         history: conversationHistory,
         asideOpen: !aside.hidden,
         pendingChange,
+        confirmedRequirements,
         pendingDecision: permissionEvent.hidden ? null : {
           title: permissionTitle.textContent,
           command: permissionCommand.textContent,
@@ -3419,6 +3459,9 @@
         }
         currentPlanText = record.planSummary;
         renderInitialBrief(currentPlanText);
+        confirmedRequirements = String(state?.confirmedRequirements || '').slice(0, 500);
+        taskRequirements.textContent = confirmedRequirements ? `已确认条件：${confirmedRequirements}` : '';
+        taskRequirements.hidden = !confirmedRequirements;
         progress = Number.isInteger(state?.progress) ? state.progress : Math.max(1, recoveredStep + 1);
         elapsedSeconds = Number.isFinite(state?.elapsedSeconds) ? state.elapsedSeconds : 202;
         if (record.taskCard?.steps?.length) applyTaskCardUpdate(record.taskCard);

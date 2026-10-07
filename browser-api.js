@@ -99,22 +99,28 @@
         currentStep: String(context.currentStep || '').slice(0, 240),
         progress: String(context.progress || '').slice(0, 20),
         taskStarted: Boolean(context.taskStarted),
-        inputIntent: String(context.inputIntent || '').slice(0, 40)
+        inputIntent: String(context.inputIntent || '').slice(0, 40),
+        currentTaskCard: context.currentTaskCard || {},
+        currentRequirements: String(context.currentRequirements || '').slice(0, 500),
+        recentUserInputs: context.inputIntent === 'task_change' && Array.isArray(context.recentUserInputs)
+          ? context.recentUserInputs.slice(-10).map(value => String(value).slice(0, 500)) : []
       };
       const result = await request([
-              { role: 'system', content: '你是协作助手 Alex。规划阶段会给你当前规划和最近的规划讨论；请保持上下文连续，识别“这个”“再加上”等指代，在当前规划上完整修订，不要每轮从零开始。执行阶段只给当前任务状态，不附聊天历史。直接、有针对性地回答本次问题，不要只回复“收到”或复述固定进度。只返回 JSON 对象，字段为 kind、message、planSummary、taskCard。initial_plan：kind 为 plan_revision，从用户任务生成完整规划，planSummary 依次包含任务目标、调研对象、分析重点、推进方式、最终交付和确认句；taskCard 包含 title、statusText 和 2 到 8 条具体步骤。plan_revision：若本次输入明确要求调整，结合 currentPlan 和最近讨论生成吸收修改后的完整规划和任务卡，kind 为 plan_revision；若只是提问，kind 为 discussion，直接回答，不改规划。task_message：结合 currentPlan、currentStep 和 progress 回答本次问题，kind 默认为 discussion；不要把页面进度说成已验证的真实执行结果。不得声称已运行工具或生成文件。' },
+              { role: 'system', content: '你是协作助手 Alex。只返回 JSON 对象，字段为 kind、message、planSummary、changeSummary、requirementsSummary、taskCard。规划阶段根据当前规划与最近讨论连续修订。initial_plan：kind 为 plan_revision，生成完整规划和 2 到 8 条步骤。plan_revision：明确修改时生成吸收要求的完整规划及任务卡；单纯提问时直接回答，kind 为 discussion。task_message：普通问答 kind 为 discussion，直接回答本次问题，不要反复询问 currentPlan 或 currentRequirements 中已确认的条件，也不要把页面进度说成真实核验结果。若 inputIntent=task_change，用户是在执行中补充条件或要求写入主任务，kind 必须为 task_change；结合 currentPlan、currentRequirements 和 recentUserInputs，识别已经给出的天数、人数、儿童、出行时间、住宿、偏好等，不能丢失或反向猜测；message 简洁说明将弹出确认；changeSummary 简述要加入的完整条件；requirementsSummary 用一句紧凑文字列出所有已确认条件；planSummary 重写吸收这些条件的完整主任务规划；taskCard 在现有步骤上更新必要内容，返回完整的 title、statusText 和 2 到 8 条 steps。不要声称已实际应用，必须等待用户点击“应用到主任务”。不得声称已运行工具或生成文件。' },
               ...planningHistory,
               { role: 'user', content: JSON.stringify({ mode, message: String(message || '').slice(0, 12000), taskContext }) }
       ]);
         return {
-          kind: ['discussion', 'plan_revision', 'task_change', 'decision_request'].includes(result.kind) ? result.kind : 'discussion',
+          kind: context.inputIntent === 'task_change' ? 'task_change' : ['discussion', 'plan_revision', 'task_change', 'decision_request'].includes(result.kind) ? result.kind : 'discussion',
           message: String(result.message || '').slice(0, 4000),
           planSummary: String(result.planSummary || '').slice(0, 3000),
-          changeSummary: '',
+          changeSummary: String(result.changeSummary || (context.inputIntent === 'task_change' ? message : '')).slice(0, 1000),
+          requirementsSummary: String(result.requirementsSummary || [context.currentRequirements, result.changeSummary || (context.inputIntent === 'task_change' ? message : '')].filter(Boolean).join('；')).slice(0, 500),
           taskCard: {
-            title: String(result.taskCard?.title || '').slice(0, 80),
-            statusText: String(result.taskCard?.statusText || '').slice(0, 240),
-            steps: Array.isArray(result.taskCard?.steps) ? result.taskCard.steps.slice(0, 8).map(String) : []
+            title: String(result.taskCard?.title || context.currentTaskCard?.title || '').slice(0, 80),
+            statusText: String(result.taskCard?.statusText || context.currentTaskCard?.statusText || '').slice(0, 240),
+            steps: Array.isArray(result.taskCard?.steps) && result.taskCard.steps.length >= 2
+              ? result.taskCard.steps.slice(0, 8).map(String) : Array.isArray(context.currentTaskCard?.steps) ? context.currentTaskCard.steps.slice(0, 8).map(String) : []
           },
           decision: { required: false, title: '', detail: '', command: '', subject: '', tags: [] },
           deliverable: { summary: '', fileName: '', fileType: '', extension: '', path: '' }
