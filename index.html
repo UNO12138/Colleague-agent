@@ -355,7 +355,7 @@
     .presence-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ca95a; box-shadow: 0 0 0 4px rgba(76, 169, 90, .12); }
 
     .chat-view { min-height: 0; position: relative; overflow: hidden; }
-    .timeline-scroll { height: 100%; overflow-y: auto; overflow-anchor: none; padding: 0 32px calc(var(--composer-safe-space, 150px) + var(--work-card-collapse-buffer, 0px)); scroll-behavior: auto; scrollbar-width: thin; scrollbar-color: rgba(43,43,43,.16) transparent; }
+    .timeline-scroll { height: 100%; overflow-y: auto; overflow-anchor: none; padding: 0 32px var(--composer-safe-space, 150px); scroll-behavior: auto; scrollbar-width: thin; scrollbar-color: rgba(43,43,43,.16) transparent; }
     .timeline-scroll::-webkit-scrollbar { width: 7px; }
     .timeline-scroll::-webkit-scrollbar-track { background: transparent; }
     .timeline-scroll::-webkit-scrollbar-thumb { min-height: 48px; border-radius: 999px; background: rgba(43,43,43,.14); }
@@ -1010,12 +1010,12 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </main>
 
-  <script src="./file-artifact.js?v=20261007-9"></script>
-  <script src="./vendor/docx.iife.js?v=20261007-9"></script>
-  <script src="./browser-document.js?v=20261007-9"></script>
+  <script src="./file-artifact.js?v=20261007-10"></script>
+  <script src="./vendor/docx.iife.js?v=20261007-10"></script>
+  <script src="./browser-document.js?v=20261007-10"></script>
   <script src="./step-preview.js"></script>
   <script src="./scenario-archive/records.js"></script>
-  <script src="./browser-api.js?v=20261007-9"></script>
+  <script src="./browser-api.js?v=20261007-10"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -2021,7 +2021,7 @@
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-9`);
+      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-10`);
       workspaceViewFrame.title = '新对话';
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
@@ -2034,7 +2034,7 @@
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       workspaceViewFrame.title = '工具';
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-9`);
+      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-10`);
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
@@ -2055,7 +2055,7 @@
         const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
         const target = isLocalFile
           ? new URL(`index.html?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`, window.location.href).href
-          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-9`, window.location.href).href;
+          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-10`, window.location.href).href;
         if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
       }
     }
@@ -2080,7 +2080,11 @@
     function scrollToLatest() {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          timelineScroll.scrollTo({ top: timelineScroll.scrollHeight, behavior: 'smooth' });
+          const timeline = timelineScroll.querySelector('.timeline');
+          if (!timeline) return;
+          const visibleBottom = timelineScroll.getBoundingClientRect().bottom - composerWrap.getBoundingClientRect().height - 12;
+          const offset = timeline.getBoundingClientRect().bottom - visibleBottom;
+          timelineScroll.scrollTop = Math.max(0, timelineScroll.scrollTop + offset);
         });
       });
     }
@@ -2090,11 +2094,9 @@
     function syncComposerSafeSpace() {
       const composerHeight = Math.ceil(composerWrap.getBoundingClientRect().height);
       if (!composerHeight || composerHeight === previousComposerHeight) return;
-      const previousHeight = previousComposerHeight;
       const wasNearBottom = timelineScroll.scrollHeight - timelineScroll.clientHeight - timelineScroll.scrollTop < 80;
       previousComposerHeight = composerHeight;
       timelineScroll.style.setProperty('--composer-safe-space', `${composerHeight + 12}px`);
-      if (previousHeight) timelineScroll.scrollTop += composerHeight - previousHeight;
       if (wasNearBottom) scrollToLatest();
     }
 
@@ -2104,50 +2106,12 @@
     requestAnimationFrame(syncComposerSafeSpace);
 
     function setWorkCardCollapsed(collapsed) {
-      const wasCollapsed = workCard.classList.contains('is-stuck');
-      if (collapsed && !wasCollapsed) {
-        collapseBufferRemaining = 0;
-        collapseBufferConsumptionStarted = false;
-      }
       workCard.classList.toggle('is-stuck', collapsed);
       workCardToggle.setAttribute('aria-expanded', String(!collapsed));
       workCardToggle.setAttribute('aria-label', collapsed ? '展开进度详情' : '收起进度详情');
     }
 
-    let expandedWorkCardHeight = 0;
-    let collapseBufferRemaining = 0;
-    let collapseBufferConsumptionStarted = false;
-
-    function applyWorkCardCollapseBuffer() {
-      timelineScroll.style.setProperty('--work-card-collapse-buffer', `${Math.ceil(collapseBufferRemaining)}px`);
-    }
-
-    function syncWorkCardCollapseBuffer() {
-      const currentHeight = workCard.getBoundingClientRect().height;
-      if (!currentHeight) return;
-      if (!workCard.classList.contains('is-stuck')) {
-        expandedWorkCardHeight = Math.max(expandedWorkCardHeight, currentHeight);
-      }
-      const heightCompensation = Math.max(0, expandedWorkCardHeight - currentHeight);
-      collapseBufferRemaining = collapseBufferConsumptionStarted
-        ? Math.min(collapseBufferRemaining, heightCompensation)
-        : heightCompensation;
-      if (!workCard.classList.contains('is-stuck') && heightCompensation < 1) {
-        collapseBufferRemaining = 0;
-        collapseBufferConsumptionStarted = false;
-      }
-      applyWorkCardCollapseBuffer();
-    }
-
-    function consumeWorkCardCollapseBuffer(distance) {
-      if (distance <= 0 || collapseBufferRemaining <= 0 || !workCard.classList.contains('is-stuck')) return;
-      collapseBufferConsumptionStarted = true;
-      collapseBufferRemaining = Math.max(0, collapseBufferRemaining - distance);
-      applyWorkCardCollapseBuffer();
-    }
-
     const workCardResizeObserver = new ResizeObserver(() => {
-      syncWorkCardCollapseBuffer();
       scheduleStickyCardSync();
     });
     workCardResizeObserver.observe(workCard);
@@ -2952,25 +2916,7 @@
     const conversationResizeObserver = new ResizeObserver(scheduleStickyCardSync);
     conversationResizeObserver.observe(aside);
 
-    let previousTimelineScrollTop = timelineScroll.scrollTop;
-    let userScrollDirection = '';
-    let userScrollIntentTimer;
-
-    function markUserScrollDirection(direction) {
-      userScrollDirection = direction;
-      window.clearTimeout(userScrollIntentTimer);
-      userScrollIntentTimer = window.setTimeout(() => {
-        userScrollDirection = '';
-      }, 180);
-    }
-
     timelineScroll.addEventListener('scroll', () => {
-      const nextScrollTop = timelineScroll.scrollTop;
-      const upwardDistance = Math.max(0, previousTimelineScrollTop - nextScrollTop);
-      if (userScrollDirection === 'up' && upwardDistance > 0) {
-        consumeWorkCardCollapseBuffer(upwardDistance);
-      }
-      previousTimelineScrollTop = nextScrollTop;
       scheduleStickyCardSync();
     }, { passive: true });
 
@@ -2990,33 +2936,20 @@
       stepList.scrollTop = next;
       const overflow = delta - (next - before);
       if (Math.abs(overflow) > 0.5) {
-        markUserScrollDirection(overflow < 0 ? 'up' : 'down');
         timelineScroll.scrollTop += overflow;
       }
     }, { passive: false });
 
     timelineScroll.addEventListener('wheel', event => {
-      markUserScrollDirection(event.deltaY < 0 ? 'up' : 'down');
       preserveExpandedAfterLaunch = false;
       preserveManualExpansion = false;
       scheduleStickyCardSync();
     }, { passive: true });
-    let previousTouchY = 0;
     timelineScroll.addEventListener('touchstart', event => {
-      previousTouchY = event.touches[0]?.clientY || 0;
       preserveExpandedAfterLaunch = false;
       preserveManualExpansion = false;
       scheduleStickyCardSync();
     }, { passive: true });
-    timelineScroll.addEventListener('touchmove', event => {
-      const nextTouchY = event.touches[0]?.clientY || previousTouchY;
-      if (nextTouchY !== previousTouchY) markUserScrollDirection(nextTouchY > previousTouchY ? 'up' : 'down');
-      previousTouchY = nextTouchY;
-    }, { passive: true });
-    document.addEventListener('keydown', event => {
-      if (['ArrowUp', 'PageUp', 'Home'].includes(event.key)) markUserScrollDirection('up');
-      if (['ArrowDown', 'PageDown', 'End'].includes(event.key)) markUserScrollDirection('down');
-    });
     workCardToggle.addEventListener('click', () => {
       const isCollapsed = workCard.classList.contains('is-stuck');
       preserveExpandedAfterLaunch = false;
