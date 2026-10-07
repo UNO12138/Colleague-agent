@@ -1,0 +1,69 @@
+{
+  "id": "924b9ca3-3a1e-4de4-8488-88d1a680b550",
+  "conversationId": "weekly-report",
+  "stepTitle": "Miro · 画布共创如何沉淀团队共识",
+  "createdAt": "2026-09-27T07:06:42.606Z",
+  "markdownPath": "scenario-archive/924b9ca3-3a1e-4de4-8488-88d1a680b550/stage.md",
+  "visualLayoutPath": "scenario-archive/924b9ca3-3a1e-4de4-8488-88d1a680b550/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Miro · 画布共创如何沉淀团队共识",
+    "timestamp": "15:06",
+    "summary": "本阶段聚焦 Miro 的“画布共创”机制，尝试回答一个核心问题：无边画布上的分散编辑行为，如何转化为团队可复用的共识？。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "comparison",
+      "blocks": [
+        {
+          "kind": "heading1",
+          "text": "Miro · 画布共创如何沉淀团队共识（阶段草稿）"
+        },
+        {
+          "kind": "table",
+          "columns": [
+            "维度",
+            "Notion",
+            "Figma",
+            "Linear",
+            "Miro"
+          ],
+          "rows": [
+            [
+              "任务组织方式",
+              "待核实",
+              "待核实",
+              "待核实",
+              "待核实"
+            ],
+            [
+              "进度同步机制",
+              "待核实",
+              "待核实",
+              "待核实",
+              "待核实"
+            ],
+            [
+              "状态/评论/编辑感知",
+              "待核实",
+              "待核实",
+              "待核实",
+              "待核实"
+            ],
+            [
+              "共识沉淀路径",
+              "待核实",
+              "待核实",
+              "待核实",
+              "待核实"
+            ]
+          ]
+        }
+      ],
+      "chart": null,
+      "note": "由已保存的 Markdown 原文绘制；阶段草稿未核对外部资料。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}

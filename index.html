@@ -398,7 +398,7 @@
     .brief-revision-user { display: flex; justify-content: flex-end; margin: 18px 0; }
     .brief-revision-user.is-revealing { animation: stream-in .4s cubic-bezier(.2, .72, .2, 1) both; }
     .brief-revision-user .user-bubble { font-size: 14px; }
-    .agent-thinking-status { margin: 0 4px 12px; }
+    .aside-heading.agent-thinking-status { margin: 0 4px 12px; font-size: 16px; font-weight: 600; letter-spacing: 0; }
     .brief-revision-answer { margin: 0 4px 20px; color: #292929; font-size: 15px; line-height: 1.72; }
     .brief-change-summary { margin: 0 0 10px; color: #292929; line-height: 1.68; }
     .brief-change-summary strong { color: #202020; }
@@ -951,8 +951,8 @@
                 <img class="composer-divider" src="./assets/composer/divider.svg" alt="" aria-hidden="true" />
                 <button class="model-picker" type="button" aria-label="选择主进程模型和推理强度" title="主进程任务模型">
                   <img src="./assets/composer/agent.svg" alt="" aria-hidden="true" />
-                  <span class="model-name" id="modelName">Codex · GPT-6 Astra</span>
-                  <span class="model-effort" id="modelStatus">中</span>
+                  <span class="model-name" id="modelName">Codex · GPT-5.6 Luna</span>
+                  <span class="model-effort" id="modelStatus">低</span>
                   <img class="model-chevron" src="./assets/composer/model-chevron.svg" alt="" aria-hidden="true" />
                 </button>
               </div>
@@ -1006,6 +1006,7 @@
 
   <script src="./file-artifact.js"></script>
   <script src="./step-preview.js"></script>
+  <script src="./scenario-archive/records.js"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -1070,7 +1071,27 @@
     const newConversationAction = document.getElementById('newConversationAction');
     const toolsAction = document.getElementById('toolsAction');
     const workspaceViewFrame = document.getElementById('workspaceViewFrame');
-    const loadedConversationId = new URLSearchParams(window.location.search).get('conversation') || 'weekly-report';
+    const isLocalFile = window.location.protocol === 'file:';
+    function routeParams() {
+      return new URLSearchParams(isLocalFile && window.location.hash ? window.location.hash.slice(1) : window.location.search);
+    }
+    function setRoute(updates, state) {
+      const params = routeParams();
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === null) params.delete(key);
+        else params.set(key, value);
+      }
+      if (isLocalFile) {
+        window.location.hash = params.toString();
+      } else {
+        window.history.pushState(state, '', `${window.location.pathname}?${params.toString()}`);
+      }
+      syncWorkspaceViewFromUrl();
+    }
+    function embeddedPage(path, params) {
+      return new URL(`${path}/${isLocalFile ? 'index.html' : ''}?${params}`, window.location.href).href;
+    }
+    const loadedConversationId = routeParams().get('conversation') || 'weekly-report';
     const newConversationBtn = document.getElementById('newConversationBtn');
     const projectModalLayer = document.getElementById('projectModalLayer');
     const projectModalClose = document.getElementById('projectModalClose');
@@ -1120,6 +1141,10 @@
     let elapsedTimer;
     let currentDecision = { subject: 'Linear 官网' };
     let currentPlanText = briefReview.innerText.trim();
+    let conversationHistory = [];
+    let savedDeliverable = null;
+    let pendingChange = null;
+    let restoringConversation = false;
     let taskCardState = {
       title: workCardTitle.textContent.trim(),
       statusText: currentStep.textContent.trim(),
@@ -1256,8 +1281,11 @@
     }
 
     async function callLocalAgent(mode, message, extraContext = {}) {
+      const conversationId = routeParams().get('conversation');
+      const activeRecord = readStoredConversations().find(item => item.id === conversationId);
+      const usingCodex = activeRecord?.agent === 'Codex';
       const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 17000);
+      const timeout = window.setTimeout(() => controller.abort(), usingCodex ? 60000 : 17000);
       composer.classList.add('is-agent-busy');
       sendBtn.disabled = true;
       try {
@@ -1267,6 +1295,8 @@
           body: JSON.stringify({
             mode,
             message,
+            agent: activeRecord?.agent || 'DeepSeek Harness',
+            threadId: usingCodex ? activeRecord.codexThreadId || null : null,
             context: {
               taskStarted,
               progress: `${progress}/${total}`,
@@ -1276,10 +1306,29 @@
           }),
           signal: controller.signal
         });
-        if (!response.ok) throw new Error('Agent unavailable');
+        if (!response.ok) {
+          const problem = await response.json().catch(() => ({}));
+          throw new Error(problem.error || 'Agent 暂时不可用');
+        }
         const payload = await response.json();
+        if (payload.provider === 'deepseek-fallback') notify('Codex 30 秒内未返回，已由协助 Agent 继续');
+        if (usingCodex && payload.threadId) {
+          const records = readStoredConversations();
+          const record = records.find(item => item.id === conversationId);
+          if (record) {
+            record.codexThreadId = payload.threadId;
+            writeStoredConversations(records);
+          }
+        }
         return payload.result;
-      } catch {
+      } catch (error) {
+        if (usingCodex) {
+          const detail = error.name === 'AbortError' ? '等待响应超时' : error.message;
+          notify(`模型连接失败，已切换为本地演示规则：${detail}`);
+          const fallback = localFallback(mode, message, extraContext);
+          fallback.message = `模型暂时无法连接，以下为本地演示回复。${fallback.message}`;
+          return fallback;
+        }
         notify('Alex 暂时无法连接，已使用本地规则继续');
         return localFallback(mode, message, extraContext);
       } finally {
@@ -1349,7 +1398,7 @@
       notify.timer = window.setTimeout(() => toast.classList.remove('show'), 1800);
     }
 
-    function appendPlanningUserMessage(text) {
+    function appendPlanningUserMessage(text, persist = true) {
       const row = document.createElement('div');
       row.className = 'brief-revision-user is-revealing';
       const bubble = document.createElement('div');
@@ -1357,6 +1406,7 @@
       bubble.textContent = text;
       row.appendChild(bubble);
       briefRevisionStream.appendChild(row);
+      if (persist) recordConversationEvent({ phase: 'planning', role: 'user', text });
       scrollToLatest();
     }
 
@@ -1497,6 +1547,7 @@
     }
 
     function streamPlanningAnswer(entry, sections) {
+      recordConversationEvent({ phase: 'planning', role: 'revision', sections });
       entry.status.remove();
       const element = entry.answer;
       element.replaceChildren();
@@ -1530,6 +1581,7 @@
     }
 
     function streamPlanningDiscussion(entry, text) {
+      recordConversationEvent({ phase: 'planning', role: 'agent', text });
       entry.status.remove();
       const element = entry.answer;
       const source = String(text || '').trim();
@@ -1614,11 +1666,7 @@
 
     function navigateToConversation(conversationId) {
       if (!conversationId) return;
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.delete('view');
-      currentUrl.searchParams.set('conversation', conversationId);
-      window.history.pushState({ conversationId }, '', `${currentUrl.pathname}${currentUrl.search}`);
-      syncWorkspaceViewFromUrl();
+      setRoute({ view: null, conversation: conversationId }, { conversationId });
     }
 
     function renderDeleteReminder() {
@@ -1928,12 +1976,7 @@
     });
     function openNewConversation() {
       const electron = document.body.classList.contains('electron-window');
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.delete('conversation');
-      currentUrl.searchParams.set('view', 'new');
-      if (electron) currentUrl.searchParams.set('electron', '1');
-      window.history.pushState({ view: 'new' }, '', `${currentUrl.pathname}${currentUrl.search}`);
-      showNewConversationView();
+      setRoute({ conversation: null, view: 'new', ...(electron ? { electron: '1' } : {}) }, { view: 'new' });
     }
 
     function showNewConversationView() {
@@ -1943,7 +1986,7 @@
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = `/new-conversation/?embedded=1${electronQuery}`;
+      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}`);
       workspaceViewFrame.title = '新对话';
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
@@ -1956,12 +1999,12 @@
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       workspaceViewFrame.title = '工具';
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = `/tools/?embedded=1${electronQuery}`;
+      const target = embeddedPage('tools', `embedded=1${electronQuery}`);
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
     function syncWorkspaceViewFromUrl() {
-      const params = new URLSearchParams(window.location.search);
+      const params = routeParams();
       const view = params.get('view');
       if (view === 'new') { showNewConversationView(); return; }
       if (view === 'tools') { showToolsView(); return; }
@@ -1974,7 +2017,9 @@
       if (conversationId !== loadedConversationId) {
         workspaceViewFrame.title = '对话';
         const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-        const target = `/?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`;
+        const target = isLocalFile
+          ? new URL(`index.html?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`, window.location.href).href
+          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`, window.location.href).href;
         if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
       }
     }
@@ -1982,18 +2027,17 @@
     newConversationAction.addEventListener('click', openNewConversation);
     newConversationBtn.addEventListener('click', openNewConversation);
     window.addEventListener('popstate', syncWorkspaceViewFromUrl);
+    window.addEventListener('hashchange', syncWorkspaceViewFromUrl);
     toolsAction.addEventListener('click', () => {
-      const currentUrl = new URL(window.location.href);
-      currentUrl.searchParams.delete('conversation');
-      currentUrl.searchParams.set('view', 'tools');
-      window.history.pushState({ view: 'tools' }, '', `${currentUrl.pathname}${currentUrl.search}`);
-      showToolsView();
+      setRoute({ conversation: null, view: 'tools' }, { view: 'tools' });
     });
     window.addEventListener('message', event => {
-      if (event.origin !== window.location.origin || event.source !== workspaceViewFrame.contentWindow) return;
+      if (event.source !== workspaceViewFrame.contentWindow || (!isLocalFile && event.origin !== window.location.origin)) return;
       if (event.data?.type === 'open-conversation' && typeof event.data.conversationId === 'string') {
         hydrateStoredConversationLists(readStoredConversations());
         navigateToConversation(event.data.conversationId);
+      } else if (event.data?.type === 'open-view' && event.data.view === 'new') {
+        openNewConversation();
       }
     });
 
@@ -2079,7 +2123,7 @@
       elapsedTime.textContent = `已完成 ${taskCompleted ? total : Math.max(0, progress - 1)}/${total} 步 · 已处理 ${minutes}分钟 ${seconds}秒`;
     }
 
-    function appendAgentMessage(text, meta = '即时交流 · 未改变当前任务') {
+    function appendAgentMessage(text, meta = '即时交流 · 未改变当前任务', persist = true) {
       const message = document.createElement('p');
       message.className = 'aside-copy agent is-revealing';
       appendConversationTypography(message, text);
@@ -2088,6 +2132,7 @@
       messageMeta.textContent = meta;
       message.appendChild(messageMeta);
       aside.appendChild(message);
+      if (persist) recordConversationEvent({ phase: 'execution', role: 'agent', text, meta });
       scrollToLatest();
       return message;
     }
@@ -2257,7 +2302,7 @@
     }
 
     function currentConversationId() {
-      return new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId || 'weekly-report';
+      return routeParams().get('conversation') || sidebarState.activeConversationId || 'weekly-report';
     }
 
     function captureMainProcessData(stepTitle) {
@@ -2277,17 +2322,19 @@
 
     async function restoreStageResults() {
       const conversationId = currentConversationId();
-      try {
-        const response = await fetch(`${LOCAL_AGENT_BASE}/stage-results?conversationId=${encodeURIComponent(conversationId)}`);
-        if (!response.ok) return;
-        const payload = await response.json();
+      const activeRecord = readStoredConversations().find(item => item.id === conversationId);
+      const archived = conversationId === 'weekly-report' ? [...(window.OfflineScenarioRecords || [])] : [];
+      function showResults(results) {
         if (currentConversationId() !== conversationId) return;
         const seen = new Set();
-        for (const result of payload.results || []) {
+        for (const result of [...results].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))) {
+          if (activeRecord?.agent === 'Codex' && result.source?.provider !== 'codex') continue;
           const index = taskCardState.steps.indexOf(result.stepTitle);
           if (index < 0 || seen.has(index) || !result.preview) continue;
           seen.add(index);
-          const preview = result.preview;
+          const preview = result.archiveKind === 'offline-scenario'
+            ? { ...result.preview, previewData: { ...result.preview.previewData, offlineArchive: true, note: '离线情境存档；不是本机真实主 Agent 执行结果。' } }
+            : result.preview;
           liveStepPreviews[index] = preview;
           if (!previewDemoActive) {
             const step = stepList.querySelectorAll('.step')[index];
@@ -2295,9 +2342,16 @@
           }
         }
         if (seen.has(progress - 1)) generateStageBtn.textContent = '重新生成草稿';
-      } catch {
-        // The local agent may be unavailable while the browser-only prototype is open.
       }
+      showResults(archived);
+      try {
+        const response = await fetch(`${LOCAL_AGENT_BASE}/stage-results?conversationId=${encodeURIComponent(conversationId)}`);
+        if (!response.ok) return;
+        const payload = await response.json();
+        const byId = new Map(archived.map(result => [result.id, result]));
+        for (const result of payload.results || []) byId.set(result.id, result);
+        showResults([...byId.values()]);
+      } catch { /* The packaged scenario archive remains available without the local service. */ }
     }
 
     async function generateRealStageResult() {
@@ -2305,39 +2359,74 @@
       const index = progress - 1;
       const stepTitle = taskCardState.steps[index];
       const conversationId = currentConversationId();
+      const activeRecord = readStoredConversations().find(item => item.id === conversationId);
+      const usingCodex = activeRecord?.agent === 'Codex';
       generateStageBtn.disabled = true;
-      generateStageBtn.textContent = '主 Agent 正在写…';
+      generateStageBtn.textContent = usingCodex ? 'Codex 正在取数…' : '主 Agent 正在写…';
       const panel = stepList.querySelectorAll('.step-preview')[index];
       panel.replaceChildren(GenUIPreview.renderStepPreview({
         title: stepTitle,
         status: 'active',
-        summary: '主 Agent 正在生成并保存 Markdown 阶段文件。',
+        summary: usingCodex ? 'Codex 正在读取当前步骤的实际数据。' : '主 Agent 正在生成并保存 Markdown 阶段文件。',
         previewType: 'process',
-        previewData: { detail: '保存后，协助 Agent 会依据原文选择文档预览布局。' }
+        previewData: { detail: usingCodex ? '取得可核实的命令输出后，协助 Agent 才会依据结果选择版式。' : '保存后，协助 Agent 会依据原文选择文档预览布局。' }
       }));
       expandedStepIndex = index;
       syncStepExpansion();
       try {
-        const response = await fetch(`${LOCAL_AGENT_BASE}/stage-result`, {
+        const response = await fetch(`${LOCAL_AGENT_BASE}/stage-result/start`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             conversationId,
             stepTitle,
+            agent: activeRecord?.agent || 'DeepSeek Harness',
+            threadId: usingCodex ? activeRecord.codexThreadId || null : null,
             taskBrief: currentPlanText || document.querySelector('.user-message .user-bubble')?.textContent || '',
             mainProcessData: captureMainProcessData(stepTitle)
           })
         });
-        const payload = await response.json();
-        if (!response.ok || !payload.ok) throw new Error(payload.error || '生成失败');
+        const started = await response.json();
+        if (!response.ok || !started.ok) throw new Error(started.error || '启动失败');
+        let payload;
+        while (true) {
+          await new Promise(resolve => setTimeout(resolve, 900));
+          const statusResponse = await fetch(`${LOCAL_AGENT_BASE}/stage-result/status?id=${encodeURIComponent(started.id)}`);
+          const status = await statusResponse.json();
+          if (!statusResponse.ok || !status.ok) throw new Error(status.error || '进度读取失败');
+          if (currentConversationId() === conversationId && taskCardState.steps[index] === stepTitle) {
+            const seconds = Math.floor(status.elapsedMs / 1000);
+            generateStageBtn.textContent = `${status.progress} · ${seconds} 秒`;
+            const latestAction = status.actions?.at(-1);
+            panel.replaceChildren(GenUIPreview.renderStepPreview({
+              title: stepTitle, status: 'active', summary: status.progress,
+              previewType: 'process', previewData: { detail: latestAction
+                ? `已记录 ${status.actions.length} 项行动。最近一项：${latestAction.summary}`
+                : `已运行 ${seconds} 秒。取得可核实的数据后会自动生成阶段界面。` }
+            }));
+          }
+          if (status.state === 'failed') throw new Error(status.error || '生成失败');
+          if (status.state === 'completed') { payload = status; break; }
+        }
+        if (usingCodex && payload.threadId) {
+          const records = readStoredConversations();
+          const record = records.find(item => item.id === conversationId);
+          if (record) { record.codexThreadId = payload.threadId; writeStoredConversations(records); }
+        }
         if (currentConversationId() !== conversationId || taskCardState.steps[index] !== stepTitle) return;
         liveStepPreviews[index] = payload.result.preview;
         const step = stepList.querySelectorAll('.step')[index];
         refreshLiveStepPreview(index, step?.classList.contains('done') ? 'done' : 'active');
         generateStageBtn.textContent = '重新生成草稿';
-        notify(`阶段文本已保存：${payload.result.markdownPath}`);
+        notify(`${payload.result.source?.provider === 'fallback-demo' ? '已切换为演示生成；阶段文本已保存' : '阶段文本已保存'}：${payload.result.markdownPath}`);
       } catch (error) {
-        refreshLiveStepPreview(index, 'active');
+        panel.replaceChildren(GenUIPreview.renderStepPreview({
+          title: stepTitle,
+          status: 'active',
+          summary: '阶段结果未生成',
+          previewType: 'process',
+          previewData: { detail: error.message || '本地 Agent 不可用' }
+        }));
         generateStageBtn.textContent = '重试生成草稿';
         notify(`阶段结果未生成：${error.message || '本地 Agent 不可用'}`);
       } finally {
@@ -2370,7 +2459,9 @@
     }
 
     function appendChangeProposal(result) {
-      setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, false);
+      pendingChange = result;
+      persistConversationState();
+      setConversationWorking(routeParams().get('conversation') || sidebarState.activeConversationId, false);
       const card = document.createElement('div');
       card.className = 'intent-card is-revealing';
       const title = document.createElement('strong');
@@ -2400,12 +2491,16 @@
           card.innerHTML = '<strong>暂未应用</strong><p>Alex 没有返回可执行的任务步骤，请重新描述要修改的内容。</p>';
           notify('未获得可应用的任务卡片');
         }
-        if (taskStarted && !taskCompleted) setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, true);
+        if (taskStarted && !taskCompleted) setConversationWorking(routeParams().get('conversation') || sidebarState.activeConversationId, true);
+        pendingChange = null;
+        recordConversationEvent({ phase: 'execution', role: 'notice', text: card.textContent.trim() });
         scrollToLatest();
       });
       discuss.addEventListener('click', () => {
         card.innerHTML = '<strong>保留为即时交流</strong><p>当前任务范围保持不变。</p>';
-        if (taskStarted && !taskCompleted) setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, true);
+        if (taskStarted && !taskCompleted) setConversationWorking(routeParams().get('conversation') || sidebarState.activeConversationId, true);
+        pendingChange = null;
+        recordConversationEvent({ phase: 'execution', role: 'notice', text: card.textContent.trim() });
         notify('未改变当前任务');
       });
       scrollToLatest();
@@ -2423,6 +2518,7 @@
         permissionTags.appendChild(badge);
       });
       revealAccessRequest();
+      persistConversationState();
       scrollToLatest();
     }
 
@@ -2433,7 +2529,7 @@
       permissionSecondary.hidden = true;
       allowMoreBtn.setAttribute('aria-expanded', 'false');
       presenceText.textContent = 'ALEX 等待你的授权';
-      setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, false);
+      setConversationWorking(routeParams().get('conversation') || sidebarState.activeConversationId, false);
       notify('Alex 需要确认一个外部访问');
     }
 
@@ -2459,6 +2555,7 @@
       notify(allowsType ? '已允许此类访问' : allowed ? '已允许访问，主任务继续运行' : '已拒绝访问，主任务继续运行');
       scrollToLatest();
       window.clearTimeout(completionTimer);
+      persistConversationState();
     }
 
     function renderDeliverable(deliverable) {
@@ -2471,7 +2568,7 @@
     async function completeTask() {
       closePreviewDemo();
       if (taskCompleted) return;
-      const activeConversationId = new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId;
+      const activeConversationId = routeParams().get('conversation') || sidebarState.activeConversationId;
       advanceBtn.disabled = true;
       advanceBtn.textContent = '正在生成交付文件…';
       let finalDeliverable;
@@ -2495,6 +2592,7 @@
         return;
       }
       taskCompleted = true;
+      savedDeliverable = finalDeliverable;
       progressTimers.forEach(timer => window.clearTimeout(timer));
       progressTimers = [];
       window.clearTimeout(accessRequestTimer);
@@ -2525,7 +2623,7 @@
       document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = `任务已完成 · ${total}/${total}`);
       presenceText.textContent = 'ALEX 已完成';
       conversationStatuses.forEach(status => status.classList.add('complete'));
-      setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, false);
+      setConversationWorking(routeParams().get('conversation') || sidebarState.activeConversationId, false);
       advanceBtn.textContent = '任务已完成';
       advanceBtn.disabled = true;
       generateStageBtn.disabled = true;
@@ -2542,6 +2640,7 @@
       completionCard.classList.add('show');
       messageInput.placeholder = '继续追问，或提出下一步要求…';
       notify('案例报告已生成');
+      persistConversationState();
       scrollToLatest();
     }
 
@@ -2612,6 +2711,7 @@
           : `主任务仍在继续 · 当前 ${progress}/${total}`;
       });
       advanceBtn.textContent = progress < total ? '模拟推进' : '结束模拟任务';
+      persistConversationState();
     }
 
     function startProgressDemo(onComplete) {
@@ -2779,11 +2879,11 @@
       setWorkCardCollapsed(!isCollapsed);
     });
 
-    function beginTaskExecution() {
+    function beginTaskExecution(restoring = false) {
       if (taskStarted) return;
       taskStarted = true;
       window.clearInterval(elapsedTimer);
-      elapsedSeconds = 202;
+      if (!restoring) elapsedSeconds = 202;
       renderElapsedTime();
       elapsedTimer = window.setInterval(() => {
         elapsedSeconds += 1;
@@ -2793,15 +2893,15 @@
       launchConfirm.hidden = true;
       voiceIcon.src = './assets/composer/voice.svg';
       presenceText.textContent = 'ALEX 正在工作';
-      setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, true);
+      setConversationWorking(routeParams().get('conversation') || sidebarState.activeConversationId, true);
       messageInput.placeholder = '告诉 Alex 你想推进什么，或直接问问当前进展…';
       sendBtn.innerHTML = '<img class="send-icon" src="./assets/composer/send.svg" alt="" />';
       sendBtn.classList.remove('editing');
       sendBtn.setAttribute('aria-label', '发送');
       aside.hidden = true;
       askBtn.textContent = '问问 Alex';
-      const activeConversationId = new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId;
-      if (activeConversationId === 'weekly-report') {
+      const activeConversationId = routeParams().get('conversation') || sidebarState.activeConversationId;
+      if (activeConversationId === 'weekly-report' && !restoring) {
         startProgressDemo(startConversationDemo);
       } else {
         progressTimers.forEach(timer => window.clearTimeout(timer));
@@ -2810,17 +2910,21 @@
         advanceBtn.disabled = false;
       }
       executionStage.classList.add('active');
-      requestAnimationFrame(() => {
-        requestAnimationFrame(scrollWorkCardToTop);
-      });
+      if (!restoring) {
+        persistConversationState();
+        requestAnimationFrame(() => {
+          requestAnimationFrame(scrollWorkCardToTop);
+        });
+      }
     }
 
-    confirmBriefBtn.addEventListener('click', beginTaskExecution);
+    confirmBriefBtn.addEventListener('click', () => beginTaskExecution());
 
     askBtn.addEventListener('click', () => {
       const isHidden = aside.hidden;
       aside.hidden = !isHidden;
       askBtn.textContent = isHidden ? '收起交流' : '问问 Alex';
+      persistConversationState();
       if (isHidden) scrollToLatest();
     });
 
@@ -2950,6 +3054,7 @@
       message.className = 'aside-copy user is-revealing';
       message.textContent = value;
       aside.appendChild(message);
+      recordConversationEvent({ phase: 'execution', role: 'user', text: value });
       messageInput.value = '';
       scrollToLatest();
       const thinking = appendThinkingStatus(aside);
@@ -2983,6 +3088,103 @@
 
     function writeStoredConversations(records) {
       window.localStorage.setItem(conversationStorageKey, JSON.stringify(records));
+    }
+
+    function recordConversationEvent(event) {
+      if (restoringConversation) return;
+      conversationHistory.push(event);
+      persistConversationState();
+    }
+
+    function persistConversationState() {
+      if (restoringConversation) return;
+      const conversationId = routeParams().get('conversation');
+      if (!conversationId || conversationId === 'weekly-report') return;
+      const records = readStoredConversations();
+      const record = records.find(item => item.id === conversationId);
+      if (!record) return;
+      if (currentPlanText) record.planSummary = currentPlanText;
+      if (taskCardState.steps.length) record.taskCard = getCurrentTaskCardContext();
+      record.uiState = {
+        version: 1,
+        taskStarted,
+        taskCompleted,
+        progress,
+        elapsedSeconds,
+        history: conversationHistory,
+        asideOpen: !aside.hidden,
+        pendingChange,
+        pendingDecision: permissionEvent.hidden ? null : {
+          title: permissionTitle.textContent,
+          command: permissionCommand.textContent,
+          tags: Array.from(permissionTags.children).map(tag => tag.textContent),
+          subject: currentDecision.subject
+        },
+        decisionRecord: decisionRecord.hidden ? null : {
+          text: decisionRecord.textContent,
+          denied: decisionRecord.classList.contains('denied')
+        },
+        deliverable: savedDeliverable,
+        savedAt: new Date().toISOString()
+      };
+      writeStoredConversations(records);
+    }
+
+    function restoreConversationHistory(history) {
+      briefRevisionStream.replaceChildren();
+      aside.querySelectorAll('[data-restored-history]').forEach(node => node.remove());
+      for (const event of history) {
+        if (event.phase === 'planning' && event.role === 'user') {
+          appendPlanningUserMessage(String(event.text || ''), false);
+        } else if (event.phase === 'planning' && ['agent', 'revision'].includes(event.role)) {
+          const answer = document.createElement('div');
+          answer.className = 'brief-revision-answer';
+          if (event.role === 'revision') renderPlanningTypography(answer, Array.isArray(event.sections) ? event.sections : []);
+          else renderPlanningDiscussion(answer, String(event.text || ''));
+          briefRevisionStream.appendChild(answer);
+        } else if (event.phase === 'execution' && event.role === 'user') {
+          const message = document.createElement('p');
+          message.className = 'aside-copy user';
+          message.dataset.restoredHistory = 'true';
+          message.textContent = String(event.text || '');
+          aside.appendChild(message);
+        } else if (event.phase === 'execution' && event.role === 'agent') {
+          const message = appendAgentMessage(String(event.text || ''), String(event.meta || '即时交流'), false);
+          message.dataset.restoredHistory = 'true';
+        } else if (event.phase === 'execution' && event.role === 'notice') {
+          const notice = document.createElement('div');
+          notice.className = 'intent-card';
+          notice.dataset.restoredHistory = 'true';
+          notice.textContent = String(event.text || '');
+          aside.appendChild(notice);
+        }
+      }
+    }
+
+    function restoreCompletedConversation(deliverable) {
+      taskCompleted = true;
+      savedDeliverable = deliverable || null;
+      window.clearInterval(elapsedTimer);
+      progress = total;
+      renderProgress(total);
+      Array.from(stepList.querySelectorAll('.step')).forEach(step => {
+        step.classList.remove('active');
+        step.classList.add('done');
+        step.querySelector('.step-mark').textContent = '✓';
+      });
+      taskCardState.statusText = `${taskCardState.title}的案例报告已生成。`;
+      currentStep.textContent = taskCardState.statusText;
+      renderElapsedTime();
+      presenceText.textContent = 'ALEX 已完成';
+      advanceBtn.textContent = '任务已完成';
+      advanceBtn.disabled = true;
+      generateStageBtn.disabled = true;
+      completionCard.hidden = false;
+      completionCard.classList.add('show');
+      aside.appendChild(completionCard);
+      renderDeliverable(savedDeliverable);
+      messageInput.placeholder = '继续追问，或提出下一步要求…';
+      setConversationWorking(currentConversationId(), false);
     }
 
     function createStoredConversationItem(record) {
@@ -3038,22 +3240,59 @@
     async function initializeStoredConversation() {
       const records = readStoredConversations();
       hydrateStoredConversationLists(records);
-      const conversationId = new URLSearchParams(window.location.search).get('conversation');
+      const conversationId = routeParams().get('conversation');
       if (!conversationId) return;
       const record = records.find(item => item.id === conversationId);
       if (!record) return;
 
       document.querySelector('.workspace-header .header-title strong').textContent = record.title;
       document.querySelector('.user-message .user-bubble').textContent = record.prompt;
-      document.getElementById('modelName').textContent = record.agent === 'Codex' ? 'Codex · GPT-6 Astra' : record.agent;
+      document.getElementById('modelName').textContent = record.agent === 'Codex' ? 'Codex · GPT-5.6 Luna' : record.agent;
       briefRevisionStream.replaceChildren();
       if (record.planSummary) {
+        restoringConversation = true;
+        const state = record.uiState?.version === 1 ? record.uiState : null;
+        let recoveredStep = -1;
+        if (!state) {
+          try {
+            const response = await fetch(`${LOCAL_AGENT_BASE}/stage-results?conversationId=${encodeURIComponent(record.id)}`);
+            if (response.ok) {
+              const saved = await response.json();
+              recoveredStep = Math.max(-1, ...(saved.results || [])
+                .filter(result => record.agent !== 'Codex' || result.source?.provider === 'codex')
+                .map(result => record.taskCard?.steps?.indexOf(result.stepTitle) ?? -1));
+            }
+          } catch { /* Older conversations can still open while the local service is offline. */ }
+        }
         currentPlanText = record.planSummary;
         renderInitialBrief(currentPlanText);
-        progress = 1;
+        progress = Number.isInteger(state?.progress) ? state.progress : Math.max(1, recoveredStep + 1);
+        elapsedSeconds = Number.isFinite(state?.elapsedSeconds) ? state.elapsedSeconds : 202;
         if (record.taskCard?.steps?.length) applyTaskCardUpdate(record.taskCard);
+        conversationHistory = Array.isArray(state?.history) ? state.history : [];
+        const wasStarted = state?.taskStarted || (!state && (record.status === 'working' || recoveredStep >= 0));
+        if (wasStarted) {
+          beginTaskExecution(true);
+          renderProgress(progress, record.taskCard?.statusText || '');
+          restoreConversationHistory(conversationHistory);
+          aside.hidden = state ? !state.asideOpen : true;
+          askBtn.textContent = aside.hidden ? '问问 Alex' : '收起交流';
+          if (state?.decisionRecord) {
+            decisionRecord.hidden = false;
+            decisionRecord.textContent = String(state.decisionRecord.text || '');
+            decisionRecord.classList.toggle('denied', Boolean(state.decisionRecord.denied));
+          }
+          if (state?.pendingChange) appendChangeProposal(state.pendingChange);
+          if (state?.pendingDecision) showAgentDecision(state.pendingDecision);
+          if (state?.taskCompleted) restoreCompletedConversation(state.deliverable);
+        } else {
+          restoreConversationHistory(conversationHistory);
+          setConversationWorking(record.id, false);
+        }
         setActiveConversation(record.id);
         window.localStorage.removeItem('alex-colleague-agent-pending-conversation');
+        restoringConversation = false;
+        persistConversationState();
         scrollToLatest();
         return;
       }
@@ -3070,6 +3309,10 @@
         currentTaskCard: { title: '', statusText: '', steps: [] },
         outputRequirement: '这是新对话的第一条任务请求。请从零生成完整任务 brief，依次包含任务目标、调研对象、分析重点、推进方式、最终交付五项和独立确认句；不要称为修改，也不要沿用任何旧任务。'
       });
+      if (result.error) {
+        briefReview.textContent = `${result.message}。刷新页面可重试。`;
+        return;
+      }
       const fallbackPlan = `任务目标：完成用户提出的任务：“${record.prompt}”。 调研对象：围绕任务直接涉及的对象、信息与必要资料展开。 分析重点：识别目标、范围、关键问题与完成标准。 推进方式：先澄清和拆解任务，再按顺序执行并同步关键过程结果。 最终交付：形成符合用户要求、可以直接使用的完整结果。 如果这个理解没有偏差，你确认后我就按这个规划开始。`;
       currentPlanText = sanitizeRevisedPlan(result.planSummary) || fallbackPlan;
       renderInitialBrief(currentPlanText);
@@ -3088,9 +3331,7 @@
 
     syncWorkspaceViewFromUrl();
     initializeStoredConversation().then(restoreStageResults);
-    if (!taskStarted || !permissionEvent.hidden) {
-      setConversationWorking(new URLSearchParams(window.location.search).get('conversation') || sidebarState.activeConversationId, false);
-    }
+    window.addEventListener('pagehide', persistConversationState);
 
     messageInput.addEventListener('keydown', (event) => {
       if (event.key !== 'Enter' || event.shiftKey || event.isComposing || event.keyCode === 229) return;

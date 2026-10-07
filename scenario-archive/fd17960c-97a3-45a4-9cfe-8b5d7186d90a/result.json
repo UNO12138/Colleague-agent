@@ -1,0 +1,46 @@
+{
+  "previewSchemaVersion": 2,
+  "id": "fd17960c-97a3-45a4-9cfe-8b5d7186d90a",
+  "conversationId": "weekly-report",
+  "stepTitle": "Miro · 画布共创如何沉淀团队共识",
+  "createdAt": "2026-09-28T08:08:08.683Z",
+  "markdownPath": "scenario-archive/fd17960c-97a3-45a4-9cfe-8b5d7186d90a/Miro-画布共创如何沉淀团队共识-阶段草稿.md",
+  "visualLayoutPath": "scenario-archive/fd17960c-97a3-45a4-9cfe-8b5d7186d90a/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Miro · 画布共创如何沉淀团队共识",
+    "timestamp": "16:08",
+    "summary": "Miro 的协作核心是一块无限画布。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "workflow",
+      "blocks": [
+        {
+          "kind": "heading2",
+          "text": "共识沉淀的关键环节"
+        },
+        {
+          "kind": "bullet",
+          "text": "发散阶段的可视化堆积：参与者把想法以独立对象的形式放上画布，彼此并列可见。每个人的输入都占据明确位置，避免想法在口头讨论中被淹没。"
+        },
+        {
+          "kind": "bullet",
+          "text": "结构化整理：通过分组、连线、框架模板等方式，把零散对象归拢成主题或流程。这一步把“很多人的想法”转化为“有关系的结构”。"
+        },
+        {
+          "kind": "bullet",
+          "text": "收敛与表态：投票、点状标记等机制让团队对选项做集中表态，把分散意见压缩成可读的倾向。"
+        },
+        {
+          "kind": "bullet",
+          "text": "结果留存：画布本身保留整理后的结构，成为团队可回看的共识载体，而不是一次性的会议记录。"
+        }
+      ],
+      "chart": null,
+      "note": "由协作 Agent 从主进程阶段结果中抽取并重组；缺失字段不会作为占位内容显示。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}

@@ -1,0 +1,52 @@
+{
+  "id": "46c21759-c740-44ea-877c-ee72a16e6815",
+  "conversationId": "weekly-report",
+  "stepTitle": "Linear · 任务状态如何成为团队沟通",
+  "createdAt": "2026-09-27T05:11:05.818Z",
+  "markdownPath": "scenario-archive/46c21759-c740-44ea-877c-ee72a16e6815/stage.md",
+  "visualLayoutPath": "scenario-archive/46c21759-c740-44ea-877c-ee72a16e6815/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Linear · 任务状态如何成为团队沟通",
+    "timestamp": "13:11",
+    "summary": "本阶段聚焦 Linear，尝试从三个维度拆解其任务状态与团队沟通的关系：状态本身的语义设计、状态变更的可见性、以及状态作为协作信号被谁消费。初步设想是，Linear 的状态不只是任务进度的标记，也可能承担“谁需要知道、谁需要行动”的沟通职能。这一设想尚待资料核对。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "notes",
+      "blocks": [
+        {
+          "kind": "heading1",
+          "text": "阶段草稿：Linear 的任务状态如何成为团队沟通"
+        },
+        {
+          "kind": "heading2",
+          "text": "当前分析框架"
+        },
+        {
+          "kind": "paragraph",
+          "text": "本阶段聚焦 Linear，尝试从三个维度拆解其任务状态与团队沟通的关系：状态本身的语义设计、状态变更的可见性、以及状态作为协作信号被谁消费。初步设想是，Linear 的状态不只是任务进度的标记，也可能承担“谁需要知道、谁需要行动”的沟通职能。这一设想尚待资料核对。"
+        },
+        {
+          "kind": "heading2",
+          "text": "待核实问题"
+        },
+        {
+          "kind": "bullet",
+          "text": "Linear 的任务状态集合具体包含哪些，是否可自定义，默认语义如何划分。"
+        },
+        {
+          "kind": "heading2",
+          "text": "初步设计推论"
+        },
+        {
+          "kind": "paragraph",
+          "text": "若 Linear 将状态设计为轻量且高频更新的信号，则团队感知变化的方式可能更依赖状态流转而非评论或会议。这意味着协作产品的启发在于：状态字段可以同时是进度载体和沟通载体，减少额外同步成本。此推论需在核对官方文档与实际使用资料后再确认或修正。"
+        }
+      ],
+      "note": "由已保存的 Markdown 原文绘制；阶段草稿未核对外部资料。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}

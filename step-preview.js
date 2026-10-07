@@ -83,7 +83,7 @@
     visual.append(head);
     if (flow.childElementCount) visual.append(flow);
     if (lead) visual.append(make('p', 'workflow-lead', lead));
-    visual.append(make('p', 'semantic-source-note', '协作 Agent 从本次主进程内容中抽取并生成'));
+    visual.append(make('p', 'semantic-source-note', data.offlineArchive ? '预设情境的离线阶段界面存档' : '协作 Agent 从本次主进程内容中抽取并生成'));
     return visual;
   }
 
@@ -116,10 +116,10 @@
     if (canvas.childElementCount) visual.append(canvas);
     if (lead) {
       const synthesis = make('aside', 'miro-synthesis');
-      synthesis.append(make('span', '', '主进程摘要'), make('strong', '', lead));
+      synthesis.append(make('span', '', data.offlineArchive ? '存档摘要' : '主进程摘要'), make('strong', '', lead));
       visual.append(synthesis);
     }
-    visual.append(make('p', 'semantic-source-note', '协作 Agent 从本次主进程内容中抽取并生成'));
+    visual.append(make('p', 'semantic-source-note', data.offlineArchive ? '预设情境的离线阶段界面存档' : '协作 Agent 从本次主进程内容中抽取并生成'));
     return visual;
   }
 

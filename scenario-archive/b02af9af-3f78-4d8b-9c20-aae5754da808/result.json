@@ -1,0 +1,52 @@
+{
+  "id": "b02af9af-3f78-4d8b-9c20-aae5754da808",
+  "conversationId": "weekly-report",
+  "stepTitle": "Linear · 任务状态如何成为团队沟通",
+  "createdAt": "2026-09-27T05:19:06.280Z",
+  "markdownPath": "scenario-archive/b02af9af-3f78-4d8b-9c20-aae5754da808/stage.md",
+  "visualLayoutPath": "scenario-archive/b02af9af-3f78-4d8b-9c20-aae5754da808/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Linear · 任务状态如何成为团队沟通",
+    "timestamp": "13:19",
+    "summary": "> 状态说明：以下为基于任务说明整理的**未核实分析框架**，尚未访问 Linear 官方文档、产品界面或任何一手来源。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "board",
+      "blocks": [
+        {
+          "kind": "heading1",
+          "text": "Linear 竞品分析阶段草稿：任务状态如何成为团队沟通"
+        },
+        {
+          "kind": "heading2",
+          "text": "一、分析切入点：把状态当作沟通载体"
+        },
+        {
+          "kind": "paragraph",
+          "text": "本次梳理的核心问题不是\"Linear 有哪些功能\"，而是：**任务状态本身是否承担了团队沟通的职能**。初步设想是，状态变更可能同时充当进度信号、责任归属信号与变更通知信号，从而减少额外的口头同步。此假设需通过实际产品观察验证。"
+        },
+        {
+          "kind": "heading2",
+          "text": "二、待验证的关键问题"
+        },
+        {
+          "kind": "bullet",
+          "text": "状态集合如何定义？是否为固定工作流，还是允许团队自定义？待核实。"
+        },
+        {
+          "kind": "heading2",
+          "text": "三、设计推论（待证）"
+        },
+        {
+          "kind": "paragraph",
+          "text": "若上述机制成立，Linear 的差异点可能在于**用状态机替代沟通动作**：状态即消息，流转即同步。但这一推论目前缺乏证据支撑，需在核实界面与文档后再判断是否成立，并明确区分\"产品设计意图\"与\"团队实际使用方式\"。"
+        }
+      ],
+      "note": "由已保存的 Markdown 原文绘制；阶段草稿未核对外部资料。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}

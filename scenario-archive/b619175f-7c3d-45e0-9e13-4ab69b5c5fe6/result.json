@@ -1,0 +1,52 @@
+{
+  "id": "b619175f-7c3d-45e0-9e13-4ab69b5c5fe6",
+  "conversationId": "weekly-report",
+  "stepTitle": "Linear · 任务状态如何成为团队沟通",
+  "createdAt": "2026-09-27T06:40:23.613Z",
+  "markdownPath": "scenario-archive/b619175f-7c3d-45e0-9e13-4ab69b5c5fe6/stage.md",
+  "visualLayoutPath": "scenario-archive/b619175f-7c3d-45e0-9e13-4ab69b5c5fe6/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Linear · 任务状态如何成为团队沟通",
+    "timestamp": "14:40",
+    "summary": "本阶段聚焦 Linear，核心问题是：任务状态在 Linear 中如何从“个人进度标记”转化为“团队沟通信号”。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "board",
+      "blocks": [
+        {
+          "kind": "heading1",
+          "text": "协作产品竞品调研 · 阶段草稿：Linear 的任务状态与团队沟通"
+        },
+        {
+          "kind": "heading2",
+          "text": "本阶段的分析框架"
+        },
+        {
+          "kind": "paragraph",
+          "text": "本阶段聚焦 Linear，核心问题是：任务状态在 Linear 中如何从“个人进度标记”转化为“团队沟通信号”。我计划从三个层面拆解：状态的语义设计（有哪些状态、如何分类）、状态变更的可见性（谁在什么位置感知到变化）、以及状态与评论、负责人、周期等元素的耦合方式。这一框架后续会复用到 Notion、Figma、Miro 的对比中，但各产品的机制命名与边界需要分别核实。"
+        },
+        {
+          "kind": "heading2",
+          "text": "待核实的问题"
+        },
+        {
+          "kind": "paragraph",
+          "text": "以下内容目前只是基于任务说明提出的假设，尚未通过实际访问产品、文档或用户反馈验证："
+        },
+        {
+          "kind": "bullet",
+          "text": "Linear 的状态集合是否区分“未开始 / 进行中 / 已完成 / 已取消”等类别，以及是否存在按团队自定义的状态分组。"
+        },
+        {
+          "kind": "bullet",
+          "text": "状态变更是否会触发对相关成员的主动通知，还是仅依赖列表、看板等视图的被动刷新。"
+        }
+      ],
+      "note": "由已保存的 Markdown 原文绘制；阶段草稿未核对外部资料。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}

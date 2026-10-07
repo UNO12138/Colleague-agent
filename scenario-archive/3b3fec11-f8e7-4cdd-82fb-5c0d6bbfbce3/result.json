@@ -1,0 +1,46 @@
+{
+  "previewSchemaVersion": 2,
+  "id": "3b3fec11-f8e7-4cdd-82fb-5c0d6bbfbce3",
+  "conversationId": "weekly-report",
+  "stepTitle": "Miro · 画布共创如何沉淀团队共识",
+  "createdAt": "2026-09-27T09:30:28.928Z",
+  "markdownPath": "scenario-archive/3b3fec11-f8e7-4cdd-82fb-5c0d6bbfbce3/Miro-画布共创如何沉淀团队共识-阶段草稿.md",
+  "visualLayoutPath": "scenario-archive/3b3fec11-f8e7-4cdd-82fb-5c0d6bbfbce3/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Miro · 画布共创如何沉淀团队共识",
+    "timestamp": "17:30",
+    "summary": "Miro 的协作核心是一块无限画布。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "workflow",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "text": "Miro 的协作核心是一块无限画布。团队成员在同一个空间里放置便签、图形、连线、文本与投票等元素，讨论过程本身就以可视化的方式留在画布上。与“先讨论、再记录结论”的线性流程不同，Miro 让讨论与产出发生在同一层：每一次拖拽、贴便签、连线或投票，都是对当前共识的一次直接表达。"
+        },
+        {
+          "kind": "bullet",
+          "text": "从发散到收敛有可见路径：便签先铺开想法，再通过分组、连线、投票逐步收拢。团队能直观看到“哪些想法被保留、哪些被合并、哪些被放弃”，共识不是一句结论，而是一段可回看的过程。"
+        },
+        {
+          "kind": "bullet",
+          "text": "空间位置承载语义：元素放在哪里、和谁连在一起，本身就传递了关系与优先级。这种“用位置说话”的方式，降低了用文字反复解释的成本。"
+        },
+        {
+          "kind": "bullet",
+          "text": "投票与标记提供轻量决策信号：通过点投票、表情或颜色标记，团队可以快速看出倾向分布，把“大家怎么看”变成画布上可读的图形，而不是靠会议中的口头表态。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "Miro 的价值不在于“画得好”，而在于把团队思考的外化过程变成可共享、可追溯的对象。共识因此不再依赖某个人事后整理纪要，而是从协作行为中自然沉淀下来。这一点对协作产品设计的提示是：让讨论的中间态可见、可操作，团队就更容易在同一份事实上对齐，而不是各自带着不同理解离开会议。"
+        }
+      ],
+      "chart": null,
+      "note": "由协作 Agent 从主进程阶段结果中抽取并重组；缺失字段不会作为占位内容显示。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}

@@ -1,7 +1,9 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { createStageResult, listStageResults, createFinalResult } = require('./stage-pipeline.cjs');
+const { CodexClient, MODEL: CODEX_MODEL } = require('./codex-client.cjs');
 
 const HOST = '127.0.0.1';
 const PORT = Number(process.env.COLLEAGUE_AGENT_PORT || 8787);
@@ -11,7 +13,19 @@ let apiKey = process.env.DEEPSEEK_API_KEY || '';
 const ALLOWED_MODES = new Set(['initial_plan', 'plan_revision', 'task_message', 'decision_request', 'completion']);
 const ALLOWED_KINDS = new Set(['plan_revision', 'discussion', 'task_change', 'decision_request']);
 const PLANNING_GUIDE_PATH = path.join(__dirname, 'prompts', 'alex-planning.md');
-const LOCAL_ENV_PATH = path.join(__dirname, '.env.local');
+const LOCAL_ENV_PATH = path.join(process.env.COLLEAGUE_DATA_DIR || __dirname, '.env.local');
+const codexClient = new CodexClient();
+const stageJobs = new Map();
+
+function stageSourceMode(taskBrief, stepTitle) {
+  const local = /(本地|磁盘|盘符|文件夹|目录|文件类型|缓存|硬盘|C\s*盘|[A-Z]:\\)/i;
+  const web = /(联网|网上|网页|搜索|官网|公开资料|新闻|最新|奖项|荣誉|人物|赛事|NBA|维基|论文|文献)/i;
+  if (web.test(stepTitle)) return 'web';
+  if (local.test(stepTitle)) return 'local';
+  if (web.test(taskBrief)) return 'web';
+  if (local.test(taskBrief)) return 'local';
+  return 'auto';
+}
 
 function isTrustedOrigin(origin) {
   return /^http:\/\/127\.0\.0\.1:\d+$/.test(origin || '') || origin === 'null' || origin === 'file://';
@@ -112,7 +126,7 @@ JSON 必须完整包含以下字段：
 
 function normalizeResult(value) {
   if (!value || typeof value !== 'object' || !ALLOWED_KINDS.has(value.kind)) {
-    throw new Error('DeepSeek 返回了无效的意图类型');
+    throw new Error('Agent 返回了无效的意图类型');
   }
   const decision = value.decision && typeof value.decision === 'object' ? value.decision : {};
   const taskCard = value.taskCard && typeof value.taskCard === 'object' ? value.taskCard : {};
@@ -194,10 +208,76 @@ async function runDeepSeek(payload) {
   }
 }
 
-async function callStageModel(messages, { json = false, maxTokens = 1800 } = {}) {
+async function runCodex(payload) {
+  try {
+    const answer = await codexClient.run({
+      threadId: payload.threadId || null,
+      prompt: buildPrompt(payload),
+      firstActionTimeoutMs: 30000,
+      timeoutMs: 30000
+    });
+    const raw = answer.text.trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '');
+    let value;
+    try { value = JSON.parse(raw); }
+    catch { throw new Error('Codex 未返回有效的结构化内容'); }
+    return { result: normalizeResult(value), threadId: answer.threadId, provider: 'codex' };
+  } catch (error) {
+    const result = await runDeepSeek(payload);
+    result.message = `Codex 暂未返回，本条由协助 Agent 继续。${result.message}`;
+    return { result, threadId: null, provider: 'deepseek-fallback', fallbackReason: error.message };
+  }
+}
+
+async function runCodexStep(payload, onProgress, onAction) {
+  const stepTitle = String(payload.stepTitle || '').trim();
+  const taskBrief = String(payload.taskBrief || '').trim();
+  if (!stepTitle || !taskBrief) throw new Error('缺少步骤或任务说明');
+  const sourceMode = stageSourceMode(taskBrief, stepTitle);
+  const sourceInstruction = sourceMode === 'local'
+    ? '这是本地读取任务。只读取与步骤直接相关的路径。禁止对整个磁盘或用户目录执行递归 Get-ChildItem、全量文件枚举或先把所有文件放进数组。先用系统接口取得磁盘总量与剩余量；目录占用若不能快速精确取得，应明确说明尚未完成，不得把抽样值写成全量统计。单条命令应控制在约 10 秒内。'
+    : sourceMode === 'web'
+      ? '这是联网资料任务。只使用内置网页搜索并打开相关公开页面核实，在阶段记录中写出已打开页面的可点击网址。不要运行本地命令，不要读取项目目录。'
+      : '根据任务实际对象选择本地读取或内置网页搜索。公开资料必须使用网页搜索并给出来源网址；本地数据只读取相关范围。';
+  const answer = await codexClient.run({
+    threadId: payload.threadId || null,
+    onProgress,
+    onAction,
+    firstActionTimeoutMs: 30000,
+    timeoutMs: sourceMode === 'local' ? 45000 : 65000,
+    prompt: `请实际完成当前任务步骤中的只读调查，并把可以核实的结果写成 Markdown 阶段记录。\n\n总任务：${taskBrief.slice(0, 4000)}\n当前步骤：${stepTitle.slice(0, 160)}\n\n取数方式：${sourceInstruction}\n\n要求：\n1. 必须取得与当前步骤直接相关的实际数据；不要根据标题或任务计划推测结果。不要读取密钥、凭证或无关隐私内容。\n2. 数据需标注数值、单位、统计范围和来源；无法取得的部分明确说明，不得编造。\n3. 只整理当前步骤，优先使用 Markdown 表格或分类小节。不要修改文件。\n4. 尽快返回已经核实的信息，不要为求完整而长时间扫描或反复搜索。`
+  });
+  const commands = answer.events.filter(event => event.type === 'commandExecution').slice(0, 30).map(event => ({
+    ...event, command: String(event.command || '').slice(0, 2000), output: String(event.output || '').slice(0, 12000)
+  }));
+  const successful = commands.filter(event => event.status === 'completed' && event.exitCode === 0 && event.output.trim());
+  const webSearches = answer.events.filter(event => event.type === 'webSearch');
+  const actions = answer.events.map((event, index) => ({
+    ...event, sequence: index + 1,
+    ...(event.output ? { output: String(event.output).slice(0, 12000) } : {}),
+    ...(event.detail ? { detail: String(event.detail).slice(0, 8000) } : {})
+  }));
+  const searched = webSearches.some(event => event.action?.type === 'search');
+  if (sourceMode === 'web' && (!searched || !/https?:\/\/[^\s)\]]+/i.test(answer.text || ''))) {
+    throw new Error('Codex 未取得带来源网址的网页搜索结果，本次不生成阶段可视化');
+  }
+  if (sourceMode !== 'web' && !successful.length && !webSearches.length
+    && !actions.some(event => ['mcpToolCall', 'dynamicToolCall', 'collabAgentToolCall'].includes(event.type) && event.detail)) {
+    throw new Error('Codex 没有取得可核实的数据，本次不生成阶段可视化');
+  }
+  if (!answer.text?.trim()) throw new Error('Codex 没有返回阶段记录');
+  return {
+    markdown: answer.text,
+    evidence: {
+      provider: 'codex', model: CODEX_MODEL, threadId: answer.threadId,
+      turnId: answer.turnId, commands, webSearches, actions, sourceMode
+    }
+  };
+}
+
+async function callStageModel(messages, { json = false, maxTokens = 1800, timeoutMs = 45000 } = {}) {
   if (!apiKey || apiKey.includes('粘贴到这里')) throw new Error('尚未配置 DEEPSEEK_API_KEY');
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 45000);
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const response = await fetch(`${API_BASE}/chat/completions`, {
       method: 'POST',
@@ -231,15 +311,44 @@ async function callStageModel(messages, { json = false, maxTokens = 1800 } = {})
 }
 
 const stageAgents = {
-  writer: async ({ taskBrief, stepTitle, mainProcessData }) => callStageModel([
-    { role: 'system', content: '你负责把主进程已经完成的数据整理成阶段 Markdown，约 300–500 个汉字。当前步骤是严格的内容边界：只整理当前步骤点名的对象与议题；总任务中出现的其他产品、其他环节只是背景，不得拉进当前结果做横向比较。单一对象分析禁止使用 Markdown 表格，应根据内容写成连贯摘要、分点洞察、分类小节或过程步骤。只有当前步骤明确要求比较多个对象，且主进程确实提供了相同维度的数据时才可使用表格。当前情景处于“数据已就绪”状态，不输出“待核实”“未知”“暂无数据”等占位词；没有出现在主进程中的字段直接省略。不能自行搜索、补写事实、发明比较维度或虚构数字。只输出 Markdown，不要解释。' },
-    { role: 'user', content: `总任务背景：${taskBrief}\n当前步骤（唯一分析范围）：${stepTitle}\n主进程当前快照：${mainProcessData}\n请只收集和整理与当前步骤直接相关的信息。先判断适合用摘要、分点、分类还是过程表达，不要为了结构完整引入其他产品或无关变量。` }
-  ], { maxTokens: 1300 }),
-  visualizer: async ({ blocks, stepTitle }) => JSON.parse(await callStageModel([
-    { role: 'system', content: '你是视觉协作 Agent。必须逐块阅读主进程保存的 Markdown 数据，再依据数据本身的关系选择画面；步骤标题只用于显示，禁止作为模板判断依据。你只能抽取和编排已有信息，不能搜索、改写事实或补充数据。返回 JSON：{"template":"summary|cards|comparison|chart|donut|workflow|canvas","blockIds":[整数编号]}。选择规则：只有单一连续结论或叙事、确实没有可视化的分类关系时才用 summary；两个以上并列分类小节或要点用 cards，并选入各分类的标题与内容；非数值对照表用 comparison；明确存在先后、状态变化或因果推进才用 workflow；明确存在分组、聚类或空间关系才用 canvas；同单位数字对比用 chart；合计 100% 的构成比例用 donut。选择 workflow 或 canvas 时，所选 blockIds 必须包含支撑各节点或分组的原文块。不要根据产品名称固定模板，不要把分类叙述压成摘要。只选最能表达当前数据关系的一种形式。' },
-    { role: 'user', content: `步骤：${stepTitle}\n原文块：${JSON.stringify(blocks.map(block => block.kind === 'table' ? { id: block.id, kind: block.kind, columns: block.columns, rows: block.rows.slice(0, 5) } : { id: block.id, kind: block.kind, text: block.text.slice(0, 300) }))}\n请只返回 JSON。` }
-  ], { json: true, maxTokens: 350 }))
+  writer: async ({ taskBrief, stepTitle, mainProcessData }) => {
+    try {
+      return await callStageModel([
+        { role: 'system', content: '你负责把已提供的主进程数据整理成阶段 Markdown。当前步骤是严格的内容边界。只有输入中出现的具体数据才能写成已完成结果；没有数值或证据时，必须明确写出尚未取得，不能根据标题或计划推测。不能自行搜索、补写事实、发明比较维度或虚构数字。只输出 Markdown。' },
+        { role: 'user', content: `总任务背景：${taskBrief}\n当前步骤（唯一分析范围）：${stepTitle}\n主进程当前快照：${mainProcessData}\n请只收集和整理与当前步骤直接相关的信息。先判断适合用摘要、分点、分类还是过程表达，不要为了结构完整引入其他产品或无关变量。` }
+      ], { maxTokens: 1300 });
+    } catch {
+      return `# ${stepTitle}\n\n## 当前状态\n\n协助 Agent 暂时无法连接。本阶段尚未取得可核实的执行数据，以下仅为任务规划演示，不能视为已完成的调查结果。\n\n## 待核实事项\n\n- 任务背景：${taskBrief.slice(0, 300)}\n- 当前步骤：${stepTitle}\n- 下一步：连接主 Agent 后重新取数并生成真实阶段结果。`;
+    }
+  },
+  visualizer: async ({ blocks, stepTitle, sourceEvidence }) => JSON.parse(await callStageModel([
+    { role: 'system', content: '你是视觉协作 Agent。必须逐块阅读主进程保存的 Markdown 数据，结合 Codex 完成的各项可观察行动及结果整理信息关系，再依据数据本身选择画面；步骤标题只用于显示，禁止作为模板判断依据。你只能抽取和编排已有信息，不能搜索、改写事实或补充数据。行动记录只代表实际调用与输出，不代表模型内部推理。返回 JSON：{"template":"summary|cards|comparison|chart|donut|workflow|canvas","blockIds":[整数编号]}。选择规则：只有单一连续结论或叙事、确实没有可视化的分类关系时才用 summary；两个以上并列分类小节或要点用 cards，并选入各分类的标题与内容；非数值对照表用 comparison；明确存在先后、状态变化或因果推进才用 workflow；明确存在分组、聚类或空间关系才用 canvas；同单位数字对比用 chart；合计 100% 的构成比例用 donut。选择 workflow 或 canvas 时，所选 blockIds 必须包含支撑各节点或分组的原文块。不要根据产品名称固定模板，不要把分类叙述压成摘要。' },
+    { role: 'user', content: `步骤：${stepTitle}\nCodex 可观察行动及结果：${JSON.stringify((sourceEvidence?.actions || []).map(action => ({ sequence: action.sequence, type: action.type, command: action.command, query: action.query, action: action.action, exitCode: action.exitCode, output: action.output?.slice(0, 3000), detail: action.detail?.slice(0, 3000) })))}\n阶段原文块：${JSON.stringify(blocks.map(block => block.kind === 'table' ? { id: block.id, kind: block.kind, columns: block.columns, rows: block.rows.slice(0, 5) } : { id: block.id, kind: block.kind, text: block.text.slice(0, 300) }))}\n请只返回 JSON。` }
+  ], { json: true, maxTokens: 350, timeoutMs: 10000 }))
 };
+
+async function buildStageResult(payload, onProgress = () => {}, onAction = () => {}) {
+  let source = null;
+  let fallbackReason = null;
+  if (payload.agent === 'Codex') {
+    let receivedAction = false;
+    try {
+      source = await runCodexStep(payload, onProgress, action => { receivedAction = true; onAction(action); });
+    } catch (error) {
+      if (receivedAction) throw error;
+      fallbackReason = `Codex 未返回可用行动：${error.message}`;
+      onProgress('Codex 未返回行动，已切换为演示生成');
+    }
+  }
+  if (!fallbackReason) onProgress('数据已取得，正在生成阶段界面');
+  const result = await createStageResult({
+    ...payload,
+    sourceMarkdown: source?.markdown,
+    sourceEvidence: source?.evidence,
+    fallbackReason
+  }, stageAgents);
+  return { result, threadId: source?.evidence.threadId || null };
+}
 
 const server = http.createServer(async (request, response) => {
   const origin = request.headers.origin || '';
@@ -247,6 +356,12 @@ const server = http.createServer(async (request, response) => {
   if (request.method === 'OPTIONS') {
     response.writeHead(204);
     response.end();
+    return;
+  }
+  if (request.method === 'GET' && (request.url === '/codex/status' || request.url === '/codex/status?refresh=1')) {
+    if (!isTrustedOrigin(origin)) { sendJson(response, 403, { ok: false, error: '不受信任的来源' }); return; }
+    try { sendJson(response, 200, { ok: true, ...(await codexClient.status(request.url.endsWith('?refresh=1'))) }); }
+    catch (error) { sendJson(response, 503, { ok: false, connected: false, error: error.message }); }
     return;
   }
   if (request.method === 'GET' && request.url === '/setup') {
@@ -277,6 +392,35 @@ const server = http.createServer(async (request, response) => {
     return;
   }
   const route = new URL(request.url || '/', `http://${HOST}:${PORT}`);
+  if (request.method === 'GET' && route.pathname === '/stage-result/status') {
+    if (!isTrustedOrigin(origin)) { sendJson(response, 403, { ok: false, error: '不受信任的来源' }); return; }
+    const job = stageJobs.get(route.searchParams.get('id'));
+    if (!job) { sendJson(response, 404, { ok: false, error: '任务不存在或服务已重启' }); return; }
+    const elapsedMs = Date.now() - job.startedAt;
+    const progress = job.state === 'running' && job.actions.length === 0 && elapsedMs > 10000 && job.progress === 'Codex 已开始执行'
+      ? '等待 Codex 返回首个行动' : job.progress;
+    sendJson(response, 200, { ok: true, state: job.state, progress, actions: job.actions, elapsedMs, ...job.output });
+    return;
+  }
+  if (request.method === 'POST' && route.pathname === '/stage-result/start') {
+    if (!isTrustedOrigin(origin)) { sendJson(response, 403, { ok: false, error: '不受信任的来源' }); return; }
+    try {
+      const payload = await readJson(request);
+      if (!payload.stepTitle || !payload.taskBrief) throw new Error('缺少步骤或任务说明');
+      const id = crypto.randomUUID();
+      const job = { state: 'running', progress: '正在准备取数', startedAt: Date.now(), actions: [], output: {} };
+      stageJobs.set(id, job);
+      buildStageResult(payload, progress => { job.progress = progress; }, action => {
+        const summary = action.command || action.query || action.action?.url || action.detail || action.type;
+        job.actions.push({ type: action.type, summary: String(summary).slice(0, 240) });
+      })
+        .then(output => { job.state = 'completed'; job.progress = '阶段结果已保存'; job.output = output; })
+        .catch(error => { job.state = 'failed'; job.progress = '阶段结果未生成'; job.output = { error: error.message || '生成失败' }; })
+        .finally(() => setTimeout(() => stageJobs.delete(id), 10 * 60 * 1000));
+      sendJson(response, 202, { ok: true, id });
+    } catch (error) { sendJson(response, 400, { ok: false, error: error.message || '启动失败' }); }
+    return;
+  }
   if (request.method === 'GET' && route.pathname === '/stage-results') {
     if (!isTrustedOrigin(origin)) { sendJson(response, 403, { ok: false, error: '不受信任的来源' }); return; }
     try {
@@ -291,8 +435,7 @@ const server = http.createServer(async (request, response) => {
     if (!isTrustedOrigin(origin)) { sendJson(response, 403, { ok: false, error: '不受信任的来源' }); return; }
     try {
       const payload = await readJson(request);
-      const result = await createStageResult(payload, stageAgents);
-      sendJson(response, 200, { ok: true, result });
+      sendJson(response, 200, { ok: true, ...await buildStageResult(payload) });
     } catch (error) {
       sendJson(response, 502, { ok: false, error: error.message || '阶段生成失败' });
     }
@@ -327,13 +470,18 @@ const server = http.createServer(async (request, response) => {
       throw new Error('消息长度无效');
     }
     const startedAt = Date.now();
-    const result = await runDeepSeek({ ...payload, message: payload.message.trim() });
+    const usingCodex = payload.agent === 'Codex';
+    const outcome = usingCodex
+      ? await runCodex({ ...payload, message: payload.message.trim() })
+      : { result: await runDeepSeek({ ...payload, message: payload.message.trim() }) };
     sendJson(response, 200, {
       ok: true,
-      provider: 'deepseek',
-      model: MODEL,
+      provider: outcome.provider || 'deepseek',
+      model: outcome.provider === 'codex' ? CODEX_MODEL : MODEL,
+      threadId: outcome.threadId || null,
+      fallbackReason: outcome.fallbackReason || null,
       latencyMs: Date.now() - startedAt,
-      result
+      result: outcome.result
     });
   } catch (error) {
     sendJson(response, 502, { ok: false, error: error.message || 'Agent 调用失败' });

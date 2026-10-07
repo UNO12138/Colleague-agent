@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="./page.css" />
 </head>
 <body>
-  <script>(()=>{const params=new URLSearchParams(location.search);if(params.has('electron'))document.body.classList.add('electron-window');if(params.has('embedded'))document.body.classList.add('embedded');else location.replace(`/?view=tools${params.has('electron')?'&electron=1':''}`)})()</script>
+  <script>(()=>{const params=new URLSearchParams(location.search);if(params.has('electron'))document.body.classList.add('electron-window');if(params.has('embedded'))document.body.classList.add('embedded');else location.replace(new URL(location.protocol==='file:'?'../index.html?electron=1#view=tools':`../?view=tools${params.has('electron')?'&electron=1':''}`,location.href).href)})()</script>
   <main class="shell">
     <header class="bar"><button class="brand" type="button"><img src="../figma-sidebar-toggle.svg" alt="" /></button><div class="window-controls"><button class="window-control" type="button"><span class="window-control-icon minimize"></span></button><button class="window-control" type="button"><span class="window-control-icon maximize"></span></button><button class="window-control" type="button"><span class="window-control-icon close"></span></button></div></header>
     <aside class="sidebar"><div class="name">Alex Colleague agent</div><button class="nav" id="newConversation"><img src="../new-conversation.svg" alt="" />新对话</button><button class="nav active"><img src="../assets/tools.svg" alt="" />工具</button><div class="heading">项目</div><button class="project"><img src="../project-collapsed.svg" alt="" />科比和詹姆斯对比</button><button class="project"><img src="../project-expanded.svg" alt="" />体验与智能产品创新</button></aside>
@@ -31,12 +31,13 @@
       <div class="dialog-header"><img id="dialogLogo" src="../assets/figma-agents/234-imgIcons8Chatgpt961.png" alt="" /><div><strong id="dialogTitle">Codex</strong><span id="dialogVendor">Open AI</span></div></div>
       <button class="dialog-close" id="dialogClose" type="button" aria-label="关闭管理弹窗"><img src="../assets/figma-agents/234-imgFrame.svg" alt="" /></button>
       <div class="settings-card"><button class="setting-row" id="defaultToggle" type="button" role="switch" aria-checked="true"><span class="setting-copy"><strong>设置为默认Agent</strong><small>将本 Agent 设置为默认主 Agent 选择</small></span><span class="switch" aria-hidden="true"><img src="../assets/figma-agents/234-imgFrame2147239644.svg" alt="" /></span></button><img class="setting-divider" src="../assets/figma-agents/234-imgVector4203.svg" alt="" /><button class="setting-row" id="autoStartToggle" type="button" role="switch" aria-checked="true"><span class="setting-copy"><strong>启动权限</strong><small>打开本程序时自动启动此代理</small></span><span class="switch" aria-hidden="true"><img src="../assets/figma-agents/234-imgFrame2147239644.svg" alt="" /></span></button></div>
-      <div class="settings-card account-card"><div class="setting-row"><span class="setting-copy"><strong>连接账户</strong><small id="accountText">kskblzdjd@qq.com</small></span><button class="reconnect" id="reconnectButton" type="button"><img src="../assets/figma-agents/234-imgFrame1.svg" alt="" />重新连接</button></div></div>
-      <label class="model-field"><span>默认模型</span><select id="modelPicker"><option>GPT-6 Astra</option><option>GPT-6 Sol</option><option>GPT-6 Luna</option></select></label>
+      <div class="settings-card account-card"><div class="setting-row"><span class="setting-copy"><strong>连接账户</strong><small id="accountText">检查中…</small></span><button class="reconnect" id="reconnectButton" type="button"><img src="../assets/figma-agents/234-imgFrame1.svg" alt="" />重新连接</button></div></div>
+      <form class="settings-card api-key-card" id="apiKeyCard" hidden><label for="apiKeyInput">接口密钥</label><div class="api-key-entry"><input id="apiKeyInput" type="password" autocomplete="off" placeholder="填写本机 DeepSeek 密钥" required /><button id="saveApiKeyBtn" type="submit">保存</button></div><small id="apiKeyStatus">密钥仅保存在当前设备</small></form>
+      <label class="model-field"><span>默认模型</span><select id="modelPicker"><option>GPT-5.6 Luna</option></select></label>
       <div class="dialog-actions"><button id="dialogCancel" type="button">取消</button><button id="uninstallButton" type="button">卸载</button></div>
     </section>
   </div>
-  <script>(()=>{const electron=document.body.classList.contains('electron-window');document.getElementById('newConversation').onclick=()=>location.assign(`/new-conversation/${electron?'?electron=1':''}`)})()</script>
+  <script>(()=>{const electron=document.body.classList.contains('electron-window');document.getElementById('newConversation').onclick=()=>{if(window.parent!==window){window.parent.postMessage({type:'open-view',view:'new'},location.protocol==='file:'?'*':location.origin);return}location.assign(new URL(location.protocol==='file:'?'../index.html?electron=1#view=new':`../new-conversation/${electron?'?electron=1':''}`,location.href).href)}})()</script>
   <script src="./page.js"></script>
 </body>
 </html>

@@ -1,0 +1,52 @@
+{
+  "id": "68358826-1b67-4908-854f-34decc289b1a",
+  "conversationId": "weekly-report",
+  "stepTitle": "Linear · 任务状态如何成为团队沟通",
+  "createdAt": "2026-09-27T06:40:27.969Z",
+  "markdownPath": "scenario-archive/68358826-1b67-4908-854f-34decc289b1a/stage.md",
+  "visualLayoutPath": "scenario-archive/68358826-1b67-4908-854f-34decc289b1a/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Linear · 任务状态如何成为团队沟通",
+    "timestamp": "14:40",
+    "summary": "本轮调研覆盖 Notion、Figma、Linear、Miro 四个产品，聚焦任务组织、进度同步、状态感知、评论与编辑行为的变化。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "board",
+      "blocks": [
+        {
+          "kind": "heading1",
+          "text": "协作产品竞品调研 · 阶段草稿"
+        },
+        {
+          "kind": "heading2",
+          "text": "当前进度与范围确认"
+        },
+        {
+          "kind": "paragraph",
+          "text": "本轮调研覆盖 Notion、Figma、Linear、Miro 四个产品，聚焦任务组织、进度同步、状态感知、评论与编辑行为的变化。推进方式为先拆解各产品代表性协作机制，再做横向比较，最终整理为可放入周二汇报的竞品结论与产品启发，输出 Word 文档。当前进入 Linear 环节，主题是任务状态如何成为团队沟通。"
+        },
+        {
+          "kind": "heading2",
+          "text": "Linear：任务状态作为沟通载体（分析框架）"
+        },
+        {
+          "kind": "paragraph",
+          "text": "本环节拟从三个层面拆解：一是状态本身的语义设计，即状态集合如何被定义、是否可自定义、是否区分“进行中”的不同阶段；二是状态变更的可见性，即变更如何被团队感知、是否形成时间线或活动流；三是状态与讨论的关系，即评论、阻塞标记等是否依附于状态而非独立存在。"
+        },
+        {
+          "kind": "heading2",
+          "text": "横向比较的预留维度"
+        },
+        {
+          "kind": "paragraph",
+          "text": "为后续与 Notion、Figma、Miro 对比，先预留几个维度：状态是显式字段还是隐含在视图与画布中；进度同步是推送式还是拉取式；评论与编辑行为是绑定在对象上还是散落在会话中。这些维度将用于归纳共同点、差异与取舍。"
+        }
+      ],
+      "note": "由已保存的 Markdown 原文绘制；阶段草稿未核对外部资料。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}

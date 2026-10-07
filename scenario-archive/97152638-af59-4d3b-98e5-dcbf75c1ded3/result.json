@@ -1,0 +1,69 @@
+{
+  "id": "97152638-af59-4d3b-98e5-dcbf75c1ded3",
+  "conversationId": "weekly-report",
+  "stepTitle": "Miro · 画布共创如何沉淀团队共识",
+  "createdAt": "2026-09-27T08:58:23.642Z",
+  "markdownPath": "scenario-archive/97152638-af59-4d3b-98e5-dcbf75c1ded3/Miro-画布共创如何沉淀团队共识-阶段草稿.md",
+  "visualLayoutPath": "scenario-archive/97152638-af59-4d3b-98e5-dcbf75c1ded3/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Miro · 画布共创如何沉淀团队共识",
+    "timestamp": "16:58",
+    "summary": "Miro 的协作机制以无限画布为载体。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "comparison",
+      "blocks": [
+        {
+          "kind": "heading1",
+          "text": "Miro · 画布共创如何沉淀团队共识（阶段草稿）"
+        },
+        {
+          "kind": "table",
+          "columns": [
+            "比较维度",
+            "Miro",
+            "Notion",
+            "Figma",
+            "Linear"
+          ],
+          "rows": [
+            [
+              "任务组织方式",
+              "待核实",
+              "待核实",
+              "待核实",
+              "待核实"
+            ],
+            [
+              "进度同步机制",
+              "待核实",
+              "待核实",
+              "待核实",
+              "待核实"
+            ],
+            [
+              "状态/评论/编辑感知",
+              "待核实",
+              "待核实",
+              "待核实",
+              "待核实"
+            ],
+            [
+              "共识沉淀路径",
+              "待核实",
+              "待核实",
+              "待核实",
+              "待核实"
+            ]
+          ]
+        }
+      ],
+      "chart": null,
+      "note": "由已保存的 Markdown 原文绘制；阶段草稿未核对外部资料。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}

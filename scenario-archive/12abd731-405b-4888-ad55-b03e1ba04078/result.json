@@ -1,0 +1,69 @@
+{
+  "id": "12abd731-405b-4888-ad55-b03e1ba04078",
+  "conversationId": "weekly-report",
+  "stepTitle": "Linear · 任务状态如何成为团队沟通",
+  "createdAt": "2026-09-27T08:46:18.079Z",
+  "markdownPath": "scenario-archive/12abd731-405b-4888-ad55-b03e1ba04078/Linear-任务状态如何成为团队沟通-阶段草稿.md",
+  "visualLayoutPath": "scenario-archive/12abd731-405b-4888-ad55-b03e1ba04078/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Linear · 任务状态如何成为团队沟通",
+    "timestamp": "16:46",
+    "summary": "本阶段聚焦一个机制：在 Linear 中，任务状态本身是否承担了沟通功能，而不只是进度标记。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "comparison",
+      "blocks": [
+        {
+          "kind": "heading1",
+          "text": "Linear · 任务状态如何成为团队沟通（阶段草稿）"
+        },
+        {
+          "kind": "table",
+          "columns": [
+            "维度",
+            "Linear",
+            "Notion",
+            "Figma",
+            "Miro"
+          ],
+          "rows": [
+            [
+              "状态定义方式",
+              "待核实",
+              "待核实",
+              "待核实",
+              "待核实"
+            ],
+            [
+              "状态变更可见性",
+              "待核实",
+              "待核实",
+              "待核实",
+              "待核实"
+            ],
+            [
+              "评论与状态耦合",
+              "待核实",
+              "待核实",
+              "待核实",
+              "待核实"
+            ],
+            [
+              "编辑行为可追溯性",
+              "待核实",
+              "待核实",
+              "待核实",
+              "待核实"
+            ]
+          ]
+        }
+      ],
+      "chart": null,
+      "note": "由已保存的 Markdown 原文绘制；阶段草稿未核对外部资料。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}

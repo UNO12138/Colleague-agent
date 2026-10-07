@@ -44,11 +44,12 @@
     .welcome p strong { color:var(--blue); font-weight:400; }
     .welcome h1 { height:36px; margin:20px 0 0; font-size:36px; line-height:36px; font-weight:400; letter-spacing:-.55px; white-space:nowrap; }
     .new-composer { position:absolute; left:50%; bottom:22px; transform:translateX(-50%); width:min(760px,calc(100% - 64px)); border:1px solid var(--line); border-radius:16px; background:#fff; box-shadow:0 10px 32px rgba(0,0,0,.07); }
-    .selectors { min-height:47px; display:flex; align-items:center; gap:4px; padding:8px 12px; border-bottom:1px solid rgba(17,17,17,.12); border-radius:15px 15px 0 0; background:#fafafa; }
+    .selectors { min-height:47px; display:flex; align-items:center; gap:4px; padding:8px 12px; border-bottom:1px solid rgba(17,17,17,.12); border-radius:15px 15px 0 0; background:#fff; }
     .select-wrap { position:relative; }
     .selector { min-height:31px; display:flex; align-items:center; gap:8px; padding:6px 12px; border:0; border-radius:999px; background:transparent; font-size:14px; }
-    .selector.project { background:rgba(17,17,17,.08); color:rgba(17,17,17,.58); }
-    .selector.has-selection { background:rgba(17,17,17,.08); color:rgba(17,17,17,.8); }
+    .selector.project { color:rgba(17,17,17,.58); }
+    .selector.has-selection { color:rgba(17,17,17,.8); }
+    .selector:hover,.selector:focus-visible,.selector[aria-expanded="true"] { background:rgba(17,17,17,.08); }
     .selector img { width:16px; height:16px; }
     .menu { position:absolute; z-index:10; bottom:calc(100% + 10px); left:0; width:240px; display:grid; gap:4px; padding:8px; border:1px solid var(--line); border-radius:10px; background:#fff; box-shadow:0 10px 20px rgba(0,0,0,.1); }
     .menu[hidden] { display:none; }
@@ -72,7 +73,7 @@
   </style>
 </head>
 <body>
-  <script>(()=>{const params=new URLSearchParams(location.search);if(params.has('electron'))document.body.classList.add('electron-window');if(params.has('embedded'))document.body.classList.add('embedded');else{const suffix=params.has('electron')?'&electron=1':'';location.replace(`/?view=new${suffix}`)}})();</script>
+  <script>(()=>{const params=new URLSearchParams(location.search);if(params.has('electron'))document.body.classList.add('electron-window');if(params.has('embedded'))document.body.classList.add('embedded');else{const suffix=params.has('electron')?'&electron=1':'';location.replace(new URL(location.protocol==='file:'?'../index.html?electron=1#view=new':`../?view=new${suffix}`,location.href).href)}})();</script>
   <main class="app-shell">
     <header class="window-bar">
       <button class="brand-mark" id="sidebarToggle" type="button" aria-label="项目导航"><img src="../figma-sidebar-toggle.svg" alt="" /></button>
@@ -98,7 +99,7 @@
       <form class="new-composer" id="newConversationForm">
         <div class="selectors">
           <div class="select-wrap">
-            <button class="selector project" id="projectSelector" type="button"><img src="../project-collapsed.svg" alt="" /><span id="projectSelectorLabel">选择项目</span></button>
+            <button class="selector project" id="projectSelector" type="button" aria-expanded="false"><img src="../project-collapsed.svg" alt="" /><span id="projectSelectorLabel">选择项目</span></button>
             <div class="menu" id="projectMenu" hidden>
               <button type="button" data-value="product-innovation">体验与智能产品创新</button>
               <button type="button" data-value="basketball-comparison">科比和詹姆斯对比</button>
@@ -107,7 +108,7 @@
             </div>
           </div>
           <div class="select-wrap">
-            <button class="selector has-selection" id="agentSelector" type="button"><img src="../assets/composer/agent.svg" alt="" /><span id="agentSelectorLabel">Codex</span></button>
+            <button class="selector has-selection" id="agentSelector" type="button" aria-expanded="false"><img src="../assets/composer/agent.svg" alt="" /><span id="agentSelectorLabel">Codex</span></button>
             <div class="menu" id="agentMenu" hidden>
               <button class="selected" type="button" data-value="Codex">Codex</button>
               <button type="button" data-value="Kimi Code">Kimi Code</button>
@@ -118,7 +119,7 @@
         </div>
         <textarea class="prompt" id="prompt" placeholder="描述你想完成的任务、目标、范围或交付要求…"></textarea>
         <div class="actions">
-          <div class="left-actions"><button class="icon-button" id="attachBtn" type="button" aria-label="添加文件"><img src="../assets/composer/attach.svg" alt="" /></button><input id="fileInput" type="file" multiple hidden /><span class="model-label"><img src="../assets/composer/agent.svg" alt="" /><span id="modelLabel">Codex · GPT-6 Astra</span><small>中</small></span></div>
+          <div class="left-actions"><button class="icon-button" id="attachBtn" type="button" aria-label="添加文件"><img src="../assets/composer/attach.svg" alt="" /></button><input id="fileInput" type="file" multiple hidden /><span class="model-label"><img src="../assets/composer/agent.svg" alt="" /><span id="modelLabel">Codex · GPT-5.6 Luna</span><small>低</small></span></div>
           <button class="send" id="sendBtn" type="submit" disabled><img src="../assets/composer/edit.svg" alt="" /><span>开始</span></button>
         </div>
       </form>
@@ -139,7 +140,16 @@
       const workspace=document.querySelector('.workspace'); const welcome=document.querySelector('.welcome'); const newComposer=document.querySelector('.new-composer');
       const readConversations=()=>{try{return JSON.parse(localStorage.getItem(storageKey))||[]}catch{return[]}};
       const writeConversations=value=>localStorage.setItem(storageKey,JSON.stringify(value));
-      function destination(path){if(!isElectron)return path;return `${path}${path.includes('?')?'&':'?'}electron=1`}
+      function destination(path){
+        if(location.protocol==='file:'){
+          const url=new URL('../index.html?electron=1',location.href);
+          url.hash=path.startsWith('/tools/')?'view=tools':path.split('?')[1]||'view=new';
+          return url.href;
+        }
+        const target=new URL(`..${path}`,location.href);
+        if(isElectron)target.searchParams.set('electron','1');
+        return target.href;
+      }
       function titleFromPrompt(value){const text=value.replace(/\s+/gu,' ').trim();return text.length>24?`${text.slice(0,24)}…`:text}
       function syncWelcomePosition(){const workspaceTop=workspace.getBoundingClientRect().top;const composerTop=newComposer.getBoundingClientRect().top;const bannerHeight=welcome.getBoundingClientRect().height;const openHeight=Math.max(0,composerTop-workspaceTop);const freeHeight=Math.max(0,openHeight-bannerHeight);const centerY=freeHeight*.6+bannerHeight/2;welcome.style.setProperty('--welcome-center-y',`${Math.max(bannerHeight/2,centerY)}px`)}
       function renderLists(){
@@ -150,17 +160,18 @@
       function makeConversationRow(item){const button=document.createElement('button');button.type='button';button.className='conversation-row';button.innerHTML=`<span>${escapeHtml(item.title)}</span>`;button.addEventListener('click',()=>location.assign(destination(`/?conversation=${encodeURIComponent(item.id)}`)));return button}
       function escapeHtml(value){const node=document.createElement('div');node.textContent=value;return node.innerHTML}
       function renderProjectSelection(){const project=projects[selectedProject];document.getElementById('projectSelectorLabel').textContent=project.name;document.getElementById('projectSelector').classList.add('has-selection');document.getElementById('bannerEyebrow').innerHTML='I am <strong>Alex.</strong>';const title=document.getElementById('bannerTitle');title.replaceChildren(document.createTextNode('这次在 '));const name=document.createElement('span');name.textContent=project.name;name.style.color='var(--blue)';title.append(name,document.createTextNode(' 做点什么呢？'))}
-      function toggleMenu(menu){const opening=menu.hidden;projectMenu.hidden=true;agentMenu.hidden=true;menu.hidden=!opening}
+      function syncMenuTriggers(){document.getElementById('projectSelector').setAttribute('aria-expanded',String(!projectMenu.hidden));document.getElementById('agentSelector').setAttribute('aria-expanded',String(!agentMenu.hidden))}
+      function toggleMenu(menu){const opening=menu.hidden;projectMenu.hidden=true;agentMenu.hidden=true;menu.hidden=!opening;syncMenuTriggers()}
       document.getElementById('projectSelector').addEventListener('click',()=>toggleMenu(projectMenu));
       document.getElementById('agentSelector').addEventListener('click',()=>toggleMenu(agentMenu));
-      projectMenu.addEventListener('click',event=>{const button=event.target.closest('button[data-value]');if(!button)return;const value=button.dataset.value;if(value==='new-project'){projectMenu.hidden=true;document.getElementById('projectSelectorLabel').textContent='新项目（待创建）';return}selectedProject=value;renderProjectSelection();projectMenu.querySelectorAll('button').forEach(item=>item.classList.toggle('selected',item===button));projectMenu.hidden=true});
-      agentMenu.addEventListener('click',event=>{const button=event.target.closest('button[data-value]');if(!button)return;selectedAgent=button.dataset.value;document.getElementById('agentSelectorLabel').textContent=selectedAgent;document.getElementById('agentSelector').classList.add('has-selection');document.getElementById('modelLabel').textContent=selectedAgent==='Codex'?'Codex · GPT-6 Astra':selectedAgent;agentMenu.querySelectorAll('button').forEach(item=>item.classList.toggle('selected',item===button));agentMenu.hidden=true});
+      projectMenu.addEventListener('click',event=>{const button=event.target.closest('button[data-value]');if(!button)return;const value=button.dataset.value;if(value==='new-project'){projectMenu.hidden=true;syncMenuTriggers();document.getElementById('projectSelectorLabel').textContent='新项目（待创建）';return}selectedProject=value;renderProjectSelection();projectMenu.querySelectorAll('button').forEach(item=>item.classList.toggle('selected',item===button));projectMenu.hidden=true;syncMenuTriggers()});
+      agentMenu.addEventListener('click',event=>{const button=event.target.closest('button[data-value]');if(!button)return;selectedAgent=button.dataset.value;document.getElementById('agentSelectorLabel').textContent=selectedAgent;document.getElementById('agentSelector').classList.add('has-selection');document.getElementById('modelLabel').textContent=selectedAgent==='Codex'?'Codex · GPT-5.6 Luna':selectedAgent;agentMenu.querySelectorAll('button').forEach(item=>item.classList.toggle('selected',item===button));agentMenu.hidden=true;syncMenuTriggers()});
       document.querySelectorAll('.project-row').forEach(row=>row.addEventListener('click',()=>{selectedProject=row.dataset.project;renderProjectSelection()}));
       prompt.addEventListener('input',()=>{sendBtn.disabled=!prompt.value.trim();prompt.style.height='72px';prompt.style.height=`${Math.min(180,prompt.scrollHeight)}px`;syncWelcomePosition()});
       prompt.addEventListener('keydown',event=>{if(event.key==='Enter'&&!event.shiftKey&&!event.isComposing){event.preventDefault();if(!sendBtn.disabled)document.getElementById('newConversationForm').requestSubmit()}});
       document.getElementById('attachBtn').addEventListener('click',()=>document.getElementById('fileInput').click());
       document.getElementById('fileInput').addEventListener('change',event=>{const count=event.target.files.length;if(count){const toast=document.getElementById('toast');toast.textContent=`已添加 ${count} 个文件`;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),1500)}});
-      document.getElementById('newConversationForm').addEventListener('submit',event=>{event.preventDefault();const value=prompt.value.trim();if(!value)return;const id=`conversation-${Date.now()}`;const record={id,title:titleFromPrompt(value),prompt:value,projectId:selectedProject,agent:selectedAgent,createdAt:new Date().toISOString()};const items=readConversations();items.push(record);writeConversations(items.slice(-50));localStorage.setItem('alex-colleague-agent-pending-conversation',id);const target=destination(`/?conversation=${encodeURIComponent(id)}`);if(window.parent!==window)window.parent.postMessage({type:'open-conversation',conversationId:id},location.origin);else location.assign(target)});
+      document.getElementById('newConversationForm').addEventListener('submit',event=>{event.preventDefault();const value=prompt.value.trim();if(!value)return;const id=`conversation-${Date.now()}`;const record={id,title:titleFromPrompt(value),prompt:value,projectId:selectedProject,agent:selectedAgent,createdAt:new Date().toISOString()};const items=readConversations();items.push(record);writeConversations(items.slice(-50));localStorage.setItem('alex-colleague-agent-pending-conversation',id);const target=destination(`/?conversation=${encodeURIComponent(id)}`);if(window.parent!==window)window.parent.postMessage({type:'open-conversation',conversationId:id},location.protocol==='file:'?'*':location.origin);else location.assign(target)});
       document.getElementById('toolsBtn').addEventListener('click',()=>location.assign(destination('/tools/')));
       const desktop=window.desktopWindow;if(desktop){document.getElementById('windowMinimize').onclick=()=>desktop.minimize();document.getElementById('windowMaximize').onclick=()=>desktop.toggleMaximize();document.getElementById('windowClose').onclick=()=>desktop.close()}
       new ResizeObserver(syncWelcomePosition).observe(newComposer);window.addEventListener('resize',syncWelcomePosition);renderLists();syncWelcomePosition();prompt.focus();

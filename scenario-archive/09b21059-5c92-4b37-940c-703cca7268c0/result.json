@@ -1,0 +1,58 @@
+{
+  "previewSchemaVersion": 2,
+  "id": "09b21059-5c92-4b37-940c-703cca7268c0",
+  "conversationId": "weekly-report",
+  "stepTitle": "Linear · 任务状态如何成为团队沟通与商业模式",
+  "createdAt": "2026-10-06T14:59:19.587Z",
+  "markdownPath": "scenario-archive/09b21059-5c92-4b37-940c-703cca7268c0/Linear-任务状态如何成为团队沟通与商业模式-阶段草稿.md",
+  "source": {
+    "provider": "demo",
+    "evidencePath": null
+  },
+  "visualLayoutPath": "scenario-archive/09b21059-5c92-4b37-940c-703cca7268c0/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Linear · 任务状态如何成为团队沟通与商业模式",
+    "timestamp": "22:59",
+    "summary": "本步骤仅整理 Linear 相关信息。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "cards",
+      "blocks": [
+        {
+          "kind": "heading1",
+          "text": "Linear · 任务状态如何成为团队沟通与商业模式"
+        },
+        {
+          "kind": "heading2",
+          "text": "一、当前可确认的结论"
+        },
+        {
+          "kind": "bullet",
+          "text": "Linear 把“状态变化”直接变成了团队沟通的一部分，而不是额外写一份进度报告。"
+        },
+        {
+          "kind": "heading2",
+          "text": "二、当前步骤的推进状态"
+        },
+        {
+          "kind": "bullet",
+          "text": "任务状态：正在读取 Linear 官网信息，并继续分析任务状态、协作沟通与商业模式。"
+        },
+        {
+          "kind": "heading2",
+          "text": "三、尚未取得的信息"
+        },
+        {
+          "kind": "bullet",
+          "text": "关于 Linear 商业模式的进一步分析结果：尚未取得。"
+        }
+      ],
+      "chart": null,
+      "note": "演示阶段内容；尚未接入真实主 Agent 执行记录。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}

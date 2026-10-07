@@ -1,0 +1,46 @@
+{
+  "previewSchemaVersion": 2,
+  "id": "20330b8d-0bfa-4e05-abcd-585ffbb3e7ff",
+  "conversationId": "weekly-report",
+  "stepTitle": "Linear · 任务状态如何成为团队沟通",
+  "createdAt": "2026-09-27T09:30:17.933Z",
+  "markdownPath": "scenario-archive/20330b8d-0bfa-4e05-abcd-585ffbb3e7ff/Linear-任务状态如何成为团队沟通-阶段草稿.md",
+  "visualLayoutPath": "scenario-archive/20330b8d-0bfa-4e05-abcd-585ffbb3e7ff/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Linear · 任务状态如何成为团队沟通",
+    "timestamp": "17:30",
+    "summary": "Linear 最值得写进汇报的一点，是它把“状态变化”本身变成了团队沟通的一部分，而不是在任务之外再补一份进度报告。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "workflow",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "text": "Linear 最值得写进汇报的一点，是它把“状态变化”本身变成了团队沟通的一部分，而不是在任务之外再补一份进度报告。成员完成一次真实操作，进度就同步成为团队可见的信息，沟通被嵌进了工作流，而不是附加在工作流之上。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "状态即信号。 任务状态不是静态标签，而是团队感知进展的主要载体。状态一变动，协作者就能读到“事情走到哪了”，无需额外同步。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "负责人、状态与项目周期绑定。 三者直接挂在同一条任务上，使“谁在做、做到哪、什么时候要”成为同一份可读信息。责任与节奏因此不需要靠会议或文档二次确认。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "按需打断。 常规推进不触发通知式沟通，只有出现偏差、风险或需要决策时才主动打断协作者。沟通的默认状态是安静，例外状态才发声。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "Linear 的取舍在于：用状态的结构化换取沟通的克制。它假设团队能通过状态字段读懂彼此，从而把大量“进度同步”从对话中省掉。这正好对照我们关心的“对话如何进入工作流”——Linear 给出的答案是反向的：让工作流的状态先承担沟通职能，对话只在状态无法表达时才介入。这一条可作为汇报中关于“减少无效同步”的支撑结论。"
+        }
+      ],
+      "chart": null,
+      "note": "由协作 Agent 从主进程阶段结果中抽取并重组；缺失字段不会作为占位内容显示。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}

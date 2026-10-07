@@ -1,5 +1,6 @@
 const { app, BrowserWindow, dialog, ipcMain, screen } = require('electron');
 const { spawn } = require('node:child_process');
+const fs = require('node:fs');
 const path = require('node:path');
 
 let mainWindow = null;
@@ -54,13 +55,15 @@ function registerWindowControls() {
 
 function startLocalAgent() {
   if (agentProcess && !agentProcess.killed) return;
-  const envFile = path.join(__dirname, '.env.local');
+  const dataDir = app.isPackaged ? app.getPath('userData') : __dirname;
+  fs.mkdirSync(dataDir, { recursive: true });
+  const envFile = path.join(dataDir, '.env.local');
   agentProcess = spawn(
     process.execPath,
     [`--env-file-if-exists=${envFile}`, path.join(__dirname, 'agent-server.cjs')],
     {
-      cwd: __dirname,
-      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1' },
+      cwd: dataDir,
+      env: { ...process.env, ELECTRON_RUN_AS_NODE: '1', COLLEAGUE_DATA_DIR: dataDir },
       stdio: 'ignore',
       windowsHide: true,
     },
@@ -83,7 +86,9 @@ function removeWindowsFrameBorder(window) {
   const handleValue = nativeHandle.length >= 8
     ? nativeHandle.readBigUInt64LE(0).toString(10)
     : String(nativeHandle.readUInt32LE(0));
-  const borderHelperPath = path.join(__dirname, 'set-dwm-border.ps1');
+  const borderHelperPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'set-dwm-border.ps1')
+    : path.join(__dirname, 'set-dwm-border.ps1');
   const helperProcess = spawn(
     'powershell.exe',
     ['-NoProfile', '-NonInteractive', '-ExecutionPolicy', 'Bypass', '-File', borderHelperPath, handleValue],

@@ -1,0 +1,46 @@
+{
+  "previewSchemaVersion": 2,
+  "id": "7c8c8458-daa4-49b6-be7d-b4c16d92387e",
+  "conversationId": "weekly-report",
+  "stepTitle": "Linear · 任务状态如何成为团队沟通",
+  "createdAt": "2026-09-27T16:51:59.494Z",
+  "markdownPath": "scenario-archive/7c8c8458-daa4-49b6-be7d-b4c16d92387e/Linear-任务状态如何成为团队沟通-阶段草稿.md",
+  "visualLayoutPath": "scenario-archive/7c8c8458-daa4-49b6-be7d-b4c16d92387e/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Linear · 任务状态如何成为团队沟通",
+    "timestamp": "00:51",
+    "summary": "Linear 最值得关注的协作机制，是把“任务状态”本身变成团队沟通的载体。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "summary",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "text": "Linear 最值得关注的协作机制，是把“任务状态”本身变成团队沟通的载体。成员不需要在任务之外额外写一份进度报告，状态变化就已经承担了同步信息的职责。这使协作沟通从“主动汇报”转向“状态驱动”。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "状态即信息。 在 Linear 中，任务状态的变化会直接成为团队可见的信息。一次真实操作——比如推进、完成或调整——就会同步为进度信号，而不是依赖成员事后描述。沟通因此内嵌在工作流里，而非附加在工作流之外。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "负责人、状态与周期绑定。 Linear 会把负责人、状态和项目周期直接绑定在任务上。三者组合后，单个任务的状态就不再是孤立字段，而是能反映“谁在做、做到哪、处于哪个时间窗口”的完整信号。团队据此感知进度，无需额外询问。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "按需打断。 只有当出现偏差、风险或需要决策时，Linear 才主动打断协作者。日常推进保持低噪音，异常和关键节点才触发沟通。这种取舍让状态同步成为默认背景，把注意力留给真正需要协作介入的时刻。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "Linear 的做法提示：协作产品的沟通设计，未必需要更多消息或更频繁的提醒，而可以把沟通压缩进状态字段与操作行为中。让“做事”与“同步”合一，减少额外的汇报动作，同时用异常触发机制保证关键信息不被淹没。这一思路与“对话如何进入工作流”的命题高度相关，可作为汇报中关于状态驱动协作的核心结论。"
+        }
+      ],
+      "chart": null,
+      "note": "由协作 Agent 从主进程阶段结果中抽取并重组；缺失字段不会作为占位内容显示。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}

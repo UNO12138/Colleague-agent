@@ -4,7 +4,9 @@ const path = require('node:path');
 const { makeArtifactFileName } = require('./file-artifact.js');
 const { saveWordReport } = require('./word-report.cjs');
 
-const ARTIFACT_ROOT = path.join(__dirname, 'runtime-artifacts');
+const DATA_ROOT = process.env.COLLEAGUE_DATA_DIR || __dirname;
+const ARTIFACT_ROOT = path.join(DATA_ROOT, 'runtime-artifacts');
+const SCENARIO_ARCHIVE_ROOT = path.join(__dirname, 'scenario-archive');
 const PREVIEW_SCHEMA_VERSION = 2;
 function tableCells(line) {
   const trimmed = line.trim();
@@ -117,7 +119,7 @@ function safeLayout(raw, blocks) {
   return { template, blockIds: selected };
 }
 
-function visualData(blocks, layout) {
+function visualData(blocks, layout, note = '由协作 Agent 从主进程阶段结果中抽取并重组；缺失字段不会作为占位内容显示。') {
   const byId = new Map(blocks.map(block => [block.id, block]));
   return {
     template: layout.template,
@@ -125,7 +127,7 @@ function visualData(blocks, layout) {
       ? { kind: 'table', columns: block.columns, rows: block.rows }
       : { kind: block.kind, text: block.text }),
     chart: ['chart', 'donut'].includes(layout.template) ? numericSeries(blocks.find(block => block.kind === 'table')) : null,
-    note: '由协作 Agent 从主进程阶段结果中抽取并重组；缺失字段不会作为占位内容显示。'
+    note
   };
 }
 
@@ -137,21 +139,31 @@ async function createStageResult(input, agents) {
     ? JSON.stringify(input.mainProcessData).slice(0, 8000)
     : '{"state":"ready"}';
   if (!taskBrief) throw new Error('缺少任务说明');
-
-  const markdown = String(await agents.writer({ taskBrief, stepTitle, mainProcessData })).trim();
-  if (markdown.length < 60 || markdown.length > 12000) throw new Error('主 Agent 未生成有效的阶段文本');
+  const evidence = input.sourceEvidence;
+  const fromCodex = evidence?.provider === 'codex';
+  const fallbackReason = String(input.fallbackReason || '').slice(0, 300);
+  if (fromCodex && (!evidence.threadId || !evidence.turnId || !Array.isArray(evidence.commands)
+    || !(evidence.commands.some(command => command.status === 'completed' && command.exitCode === 0 && String(command.output || '').trim())
+      || evidence.webSearches?.some(item => item.action?.type === 'search')
+      || evidence.actions?.some(item => item.detail && ['mcpToolCall', 'dynamicToolCall', 'collabAgentToolCall'].includes(item.type))))) {
+    throw new Error('缺少可核实的 Codex 取数证据');
+  }
+  const markdown = String(fromCodex ? input.sourceMarkdown : await agents.writer({ taskBrief, stepTitle, mainProcessData })).trim();
+  if (markdown.length < (fromCodex ? 30 : 60) || markdown.length > 12000) throw new Error('主 Agent 未生成有效的阶段文本');
   const id = crypto.randomUUID();
   const artifactDir = path.join(ARTIFACT_ROOT, id);
   const fileName = makeArtifactFileName(stepTitle, 'md', '阶段草稿');
   const markdownPath = path.join('runtime-artifacts', id, fileName).replace(/\\/g, '/');
   await fs.mkdir(artifactDir, { recursive: true });
   await fs.writeFile(path.join(artifactDir, fileName), `${markdown}\n`, 'utf8');
+  const evidencePath = fromCodex ? path.join('runtime-artifacts', id, 'codex-evidence.json').replace(/\\/g, '/') : null;
+  if (fromCodex) await fs.writeFile(path.join(artifactDir, 'codex-evidence.json'), JSON.stringify(evidence, null, 2), 'utf8');
 
   const blocks = parseMarkdownBlocks(markdown);
   let layoutInput = {};
   let renderedBy = 'fallback';
   try {
-    layoutInput = await agents.visualizer({ blocks, stepTitle });
+    layoutInput = await agents.visualizer({ blocks, stepTitle, sourceEvidence: fromCodex ? evidence : null });
     renderedBy = 'visual-assistant';
   } catch (error) {
     renderedBy = `fallback: ${String(error.message || '视觉助手不可用').slice(0, 120)}`;
@@ -169,6 +181,13 @@ async function createStageResult(input, agents) {
     stepTitle,
     createdAt: new Date().toISOString(),
     markdownPath,
+    source: fromCodex ? {
+      provider: 'codex', model: evidence.model, threadId: evidence.threadId,
+      turnId: evidence.turnId, commandCount: evidence.commands.length,
+      actionCount: evidence.actions?.length || evidence.commands.length,
+      webSearchCount: evidence.webSearches?.filter(item => item.action?.type === 'search').length || 0,
+      evidencePath
+    } : { provider: fallbackReason ? 'fallback-demo' : 'demo', evidencePath: null, ...(fallbackReason ? { reason: fallbackReason } : {}) },
     visualLayoutPath: path.join('runtime-artifacts', id, 'visual-layout.json').replace(/\\/g, '/'),
     renderedBy,
     preview: {
@@ -178,7 +197,11 @@ async function createStageResult(input, agents) {
       summary: `${firstSentence.slice(0, 90)}${firstSentence ? '。' : ''}`,
       previewType: 'document',
       artifactState: 'available',
-      previewData: visualData(blocks, layout)
+      previewData: visualData(blocks, layout, fromCodex
+        ? `依据 Codex 实际取数结果排版 · ${evidence.actions?.length || evidence.commands.length} 项行动 · 证据已保存`
+        : fallbackReason
+          ? 'Codex 未及时返回行动；已切换为演示生成，内容未经 Codex 实际执行核实。'
+          : '演示阶段内容；尚未接入真实主 Agent 执行记录。')
     }
   };
   await fs.writeFile(path.join(artifactDir, 'result.json'), JSON.stringify(result, null, 2), 'utf8');
@@ -188,20 +211,27 @@ async function createStageResult(input, agents) {
 async function listStageResults(conversationId) {
   const target = String(conversationId || '').slice(0, 100);
   if (!target) return [];
-  let dirs;
-  try { dirs = await fs.readdir(ARTIFACT_ROOT, { withFileTypes: true }); }
-  catch (error) { if (error.code === 'ENOENT') return []; throw error; }
-  const results = await Promise.all(dirs.filter(dir => dir.isDirectory()).slice(-100).map(async dir => {
+  async function readFrom(root, dataRoot) {
+    let dirs;
+    try { dirs = await fs.readdir(root, { withFileTypes: true }); }
+    catch (error) { if (error.code === 'ENOENT') return []; throw error; }
+    return Promise.all(dirs.filter(dir => dir.isDirectory()).slice(-100).map(async dir => {
     try {
-      const result = JSON.parse(await fs.readFile(path.join(ARTIFACT_ROOT, dir.name, 'result.json'), 'utf8'));
-      const savedFile = path.resolve(__dirname, result.markdownPath || '');
-      if (!savedFile.startsWith(`${ARTIFACT_ROOT}${path.sep}`)) return null;
+      const result = JSON.parse(await fs.readFile(path.join(root, dir.name, 'result.json'), 'utf8'));
+      const savedFile = path.resolve(dataRoot, result.markdownPath || '');
+      if (!savedFile.startsWith(`${root}${path.sep}`)) return null;
       await fs.access(savedFile);
       return result.previewSchemaVersion === PREVIEW_SCHEMA_VERSION ? result : null;
     }
     catch { return null; }
-  }));
-  return results.filter(result => result?.conversationId === target).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    }));
+  }
+  const current = await readFrom(ARTIFACT_ROOT, DATA_ROOT);
+  const archived = target === 'weekly-report' ? await readFrom(SCENARIO_ARCHIVE_ROOT, __dirname) : [];
+  const byId = new Map(archived.filter(Boolean).map(result => [result.id, result]));
+  for (const result of current.filter(Boolean)) byId.set(result.id, result);
+  return [...byId.values()].filter(result => result.conversationId === target)
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 async function createFinalResult(input, writer) {
@@ -211,7 +241,7 @@ async function createFinalResult(input, writer) {
   if (!conversationId || !taskBrief) throw new Error('缺少任务说明或会话标识');
   const stages = await listStageResults(conversationId);
   const source = (await Promise.all(stages.slice(0, 8).reverse().map(async stage =>
-    `阶段：${stage.stepTitle}\n${(await fs.readFile(path.join(__dirname, stage.markdownPath), 'utf8')).slice(0, 5000)}`
+    `阶段：${stage.stepTitle}\n${(await fs.readFile(path.join(stage.archiveKind === 'offline-scenario' ? __dirname : DATA_ROOT, stage.markdownPath), 'utf8')).slice(0, 5000)}`
   ))).join('\n\n');
   const markdown = String(await writer({ taskBrief, title, source })).trim();
   if (markdown.length < 100 || markdown.length > 30000) throw new Error('未生成有效的最终文档');

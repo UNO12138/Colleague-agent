@@ -1,0 +1,42 @@
+{
+  "previewSchemaVersion": 2,
+  "id": "4053be2f-c401-453c-8cae-b72a4217e827",
+  "conversationId": "weekly-report",
+  "stepTitle": "Miro · 画布共创如何沉淀团队共识",
+  "createdAt": "2026-09-27T09:30:42.647Z",
+  "markdownPath": "scenario-archive/4053be2f-c401-453c-8cae-b72a4217e827/Miro-画布共创如何沉淀团队共识-阶段草稿.md",
+  "visualLayoutPath": "scenario-archive/4053be2f-c401-453c-8cae-b72a4217e827/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Miro · 画布共创如何沉淀团队共识",
+    "timestamp": "17:30",
+    "summary": "Miro 的协作核心是一块无限画布。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "workflow",
+      "blocks": [
+        {
+          "kind": "bullet",
+          "text": "发散阶段的可视化堆积：想法以独立对象进入画布，彼此并列、可移动、可分组。参与者能同时看到全部候选内容，避免观点在口头交流中被遗漏或覆盖。"
+        },
+        {
+          "kind": "bullet",
+          "text": "结构化整理：通过分组、连线、框架和区域划分，零散便签被归入主题或流程。整理动作本身就是团队对信息关系的公开判断，谁把什么和什么放在一起，其他成员都能看到。"
+        },
+        {
+          "kind": "bullet",
+          "text": "收敛与表态：投票、点数和标记等机制把偏好与优先级变成画布上的可见结果。共识不再依赖主持人总结，而是由参与者共同操作后留下的分布来体现。"
+        },
+        {
+          "kind": "bullet",
+          "text": "过程留痕：画布保留对象的增删与位置变化，讨论的演进路径可被回看。后来者或未实时参与的人能沿着画布结构理解结论是怎么形成的。"
+        }
+      ],
+      "chart": null,
+      "note": "由协作 Agent 从主进程阶段结果中抽取并重组；缺失字段不会作为占位内容显示。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}

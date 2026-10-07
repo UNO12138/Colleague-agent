@@ -1,0 +1,50 @@
+{
+  "previewSchemaVersion": 2,
+  "id": "0ad1d5b4-41c8-4f36-bcae-16b625c1fb57",
+  "conversationId": "weekly-report",
+  "stepTitle": "Linear · 任务状态如何成为团队沟通",
+  "createdAt": "2026-09-27T09:30:11.505Z",
+  "markdownPath": "scenario-archive/0ad1d5b4-41c8-4f36-bcae-16b625c1fb57/Linear-任务状态如何成为团队沟通-阶段草稿.md",
+  "visualLayoutPath": "scenario-archive/0ad1d5b4-41c8-4f36-bcae-16b625c1fb57/visual-layout.json",
+  "renderedBy": "visual-assistant",
+  "preview": {
+    "status": "active",
+    "title": "Linear · 任务状态如何成为团队沟通",
+    "timestamp": "17:30",
+    "summary": "Linear 最值得写进汇报的一点，是它没有把“同步进度”当成一项额外动作，而是让任务状态本身承担了沟通职能。",
+    "previewType": "document",
+    "artifactState": "available",
+    "previewData": {
+      "template": "summary",
+      "blocks": [
+        {
+          "kind": "paragraph",
+          "text": "Linear 最值得写进汇报的一点，是它没有把“同步进度”当成一项额外动作，而是让任务状态本身承担了沟通职能。成员在推进任务时做出的真实操作，会直接转化为团队可见的进度信息，不需要再补一份进度报告。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "状态即信号。 任务状态的变化不是私人记录，而是对团队公开的表达。一次状态流转，同时完成了“我做到哪了”和“接下来谁该接手”两件事。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "负责人、状态、项目周期三者绑定。 这三项信息挂在同一个任务上，意味着任何一项变动都会连带更新团队对整体进度的认知。成员不需要单独说明上下文，信息结构本身就提供了上下文。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "操作即同步。 进度更新来自成员完成的一次真实操作，而不是事后填写的汇报。这让同步的边际成本接近于零，也让信息的时效性更强。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "打断是有条件的。 常规推进不触发通知；只有当出现偏差、风险或需要决策时，才会主动打断协作者。沟通被留给真正需要人介入的时刻。"
+        },
+        {
+          "kind": "paragraph",
+          "text": "这条结论可以直接支撑一个观点：高效的协作工具不是增加沟通渠道，而是把沟通压缩进工作动作里。Linear 用状态变化替代了进度汇报，用条件式打断替代了持续打扰，这两点都可以作为后续横向比较时的参照基准。"
+        }
+      ],
+      "chart": null,
+      "note": "由协作 Agent 从主进程阶段结果中抽取并重组；缺失字段不会作为占位内容显示。"
+    }
+  },
+  "archiveKind": "offline-scenario"
+}
