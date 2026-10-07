@@ -800,7 +800,7 @@
       </div>
       <div class="conversation-list project-conversations" id="productInnovationConversations" data-project-id="product-innovation">
         <div class="project-conversation-content">
-          <div class="conversation-item active" data-conversation-id="weekly-report"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span><span class="conversation-status" title="Agent 正在工作" aria-label="Agent 正在工作"></span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
+          <div class="conversation-item active" data-conversation-id="weekly-report"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
         </div>
       </div>
 
@@ -809,7 +809,7 @@
         <button class="sidebar-icon-action" id="newConversationBtn" type="button" aria-label="新建对话"><img src="./new-conversation.svg" data-active-src="./new-conversation-active.svg" alt="" /></button>
       </div>
       <div class="conversation-list" id="recentConversationList">
-        <div class="conversation-item active" data-conversation-id="weekly-report"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span><span class="conversation-status" title="Agent 正在工作" aria-label="Agent 正在工作"></span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
+        <div class="conversation-item active" data-conversation-id="weekly-report"><button class="conversation-row" type="button"><span class="conversation-title">这个对话我们来解决周二的汇报问题</span></button><button class="sidebar-icon-action delete-conversation-action" type="button" aria-label="删除对话：这个对话我们来解决周二的汇报问题"><img src="./delete-conversation.svg" data-active-src="./delete-active.svg" alt="" /></button></div>
       </div>
     </aside>
 
@@ -1007,12 +1007,12 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </main>
 
-  <script src="./file-artifact.js?v=20261007-7"></script>
-  <script src="./vendor/docx.iife.js?v=20261007-7"></script>
-  <script src="./browser-document.js?v=20261007-7"></script>
+  <script src="./file-artifact.js?v=20261007-8"></script>
+  <script src="./vendor/docx.iife.js?v=20261007-8"></script>
+  <script src="./browser-document.js?v=20261007-8"></script>
   <script src="./step-preview.js"></script>
   <script src="./scenario-archive/records.js"></script>
-  <script src="./browser-api.js?v=20261007-7"></script>
+  <script src="./browser-api.js?v=20261007-8"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -2011,7 +2011,7 @@
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-7`);
+      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-8`);
       workspaceViewFrame.title = '新对话';
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
@@ -2024,7 +2024,7 @@
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       workspaceViewFrame.title = '工具';
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-7`);
+      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-8`);
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
@@ -2045,7 +2045,7 @@
         const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
         const target = isLocalFile
           ? new URL(`index.html?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`, window.location.href).href
-          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-7`, window.location.href).href;
+          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-8`, window.location.href).href;
         if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
       }
     }
@@ -3351,7 +3351,7 @@
       title.className = 'conversation-title';
       title.textContent = record.title;
       row.appendChild(title);
-      if (record.status === 'working') {
+      if (record.status === 'working' && record.uiState?.taskStarted === true && !record.uiState?.taskCompleted) {
         const status = document.createElement('span');
         status.className = 'conversation-status';
         status.title = 'Agent 正在工作';
