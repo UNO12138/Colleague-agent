@@ -1010,12 +1010,12 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </main>
 
-  <script src="./file-artifact.js?v=20261007-11"></script>
-  <script src="./vendor/docx.iife.js?v=20261007-11"></script>
-  <script src="./browser-document.js?v=20261007-11"></script>
+  <script src="./file-artifact.js?v=20261007-12"></script>
+  <script src="./vendor/docx.iife.js?v=20261007-12"></script>
+  <script src="./browser-document.js?v=20261007-12"></script>
   <script src="./step-preview.js"></script>
   <script src="./scenario-archive/records.js"></script>
-  <script src="./browser-api.js?v=20261007-11"></script>
+  <script src="./browser-api.js?v=20261007-12"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -1160,8 +1160,6 @@
     let pendingChange = null;
     let confirmedRequirements = '';
     let restoringConversation = false;
-    let autoPlanInFlight = false;
-    let autoPlanComplete = false;
     let taskCardState = {
       title: workCardTitle.textContent.trim(),
       statusText: currentStep.textContent.trim(),
@@ -2021,7 +2019,7 @@
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-11`);
+      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-12`);
       workspaceViewFrame.title = '新对话';
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
@@ -2034,7 +2032,7 @@
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       workspaceViewFrame.title = '工具';
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-11`);
+      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-12`);
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
@@ -2049,13 +2047,12 @@
       toolsAction.classList.remove('active');
       workspaceViewFrame.setAttribute('aria-hidden', String(conversationId === loadedConversationId));
       setActiveConversation(conversationId);
-      if (conversationId === loadedConversationId && conversationId === 'weekly-report') void maybeAutoPlanPreset();
       if (conversationId !== loadedConversationId) {
         workspaceViewFrame.title = '对话';
         const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
         const target = isLocalFile
           ? new URL(`index.html?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`, window.location.href).href
-          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-11`, window.location.href).href;
+          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-12`, window.location.href).href;
         if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
       }
     }
@@ -2496,17 +2493,24 @@
       return pending;
     }
 
+    function taskStepLabel(value) {
+      const text = typeof value === 'string' ? value : value && typeof value === 'object'
+        ? [value.title, value.text, value.label, value.name, value.step, value.description].find(item => typeof item === 'string') || '' : '';
+      const label = String(text || '').trim();
+      return label === '[object Object]' ? '' : label;
+    }
+
     function applyTaskCardUpdate(nextCard, { restoreExisting = true } = {}) {
       closePreviewDemo();
       const nextSteps = Array.isArray(nextCard?.steps)
-        ? nextCard.steps.map(step => String(step || '').trim()).filter(Boolean).slice(0, 8)
+        ? nextCard.steps.map(taskStepLabel).filter(Boolean).slice(0, 8)
         : [];
       if (nextSteps.length < 2) return false;
       const previousPreviews = new Map(taskCardState.steps.map((title, index) => [title, liveStepPreviews[index]]));
 
       taskCardState = {
-        title: String(nextCard.title || taskCardState.title || '当前任务').trim().slice(0, 80),
-        statusText: String(nextCard.statusText || '').trim().slice(0, 240),
+        title: (taskStepLabel(nextCard.title) || taskCardState.title || '当前任务').slice(0, 80),
+        statusText: taskStepLabel(nextCard.statusText).slice(0, 240),
         steps: nextSteps
       };
       total = nextSteps.length;
@@ -3020,27 +3024,6 @@
     }
 
     confirmBriefBtn.addEventListener('click', () => beginTaskExecution());
-    async function maybeAutoPlanPreset() {
-      if (!isHostedSite || routeParams().get('view') || loadedConversationId !== 'weekly-report'
-        || taskStarted || autoPlanInFlight || autoPlanComplete || !window.top.temporaryAiApi?.ready()) return;
-      const prompt = document.querySelector('.user-message .user-bubble')?.textContent?.trim();
-      if (!prompt) return;
-      autoPlanInFlight = true;
-      presenceText.textContent = 'ALEX 正在规划';
-      confirmBriefBtn.disabled = true;
-      try {
-        const result = await callLocalAgent('initial_plan', prompt);
-        if (result.error) { notify(result.message); return; }
-        if (!result.planSummary) throw new Error('API 未返回规划');
-        currentPlanText = result.planSummary;
-        renderInitialBrief(currentPlanText);
-        if (result.taskCard?.steps?.length) applyTaskCardUpdate(result.taskCard);
-        autoPlanComplete = true;
-        notify('任务规划已生成');
-      } catch (error) { notify(error.message || '规划生成失败'); }
-      finally { autoPlanInFlight = false; confirmBriefBtn.disabled = false; presenceText.textContent = 'ALEX 等待确认'; }
-    }
-
     askBtn.addEventListener('click', () => {
       const isHidden = aside.hidden;
       aside.hidden = !isHidden;
@@ -3444,23 +3427,6 @@
         restoringConversation = false;
         persistConversationState();
         scrollToLatest();
-        if (isHostedSite && !wasStarted && record.planSource !== 'browser-api' && window.top.temporaryAiApi?.ready()) {
-          presenceText.textContent = 'ALEX 正在规划';
-          confirmBriefBtn.disabled = true;
-          try {
-            const generated = await callLocalAgent('initial_plan', record.prompt);
-            if (!generated.error && generated.planSummary) {
-              currentPlanText = generated.planSummary;
-              renderInitialBrief(currentPlanText);
-              if (generated.taskCard?.steps?.length) applyTaskCardUpdate(generated.taskCard);
-              const fresh = readStoredConversations();
-              const saved = fresh.find(item => item.id === record.id);
-              if (saved) { saved.planSummary = currentPlanText; saved.taskCard = generated.taskCard; saved.planSource = 'browser-api'; writeStoredConversations(fresh); }
-              notify('任务规划已生成');
-            } else if (generated.error) notify(generated.message);
-          } catch (error) { notify(error.message || '规划生成失败'); }
-          finally { confirmBriefBtn.disabled = false; presenceText.textContent = 'ALEX 等待确认'; }
-        }
         return;
       }
       briefReview.innerHTML = '<div class="aside-heading agent-thinking-status">Alex 正在思考</div>';

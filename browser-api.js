@@ -3,6 +3,12 @@
   if (owner.temporaryAiApi) return;
   let key = '';
   const stageResults = new Map();
+  function taskStepLabel(value) {
+    const text = typeof value === 'string' ? value : value && typeof value === 'object'
+      ? [value.title, value.text, value.label, value.name, value.step, value.description].find(item => typeof item === 'string') || '' : '';
+    const label = String(text || '').trim();
+    return label === '[object Object]' ? '' : label.slice(0, 160);
+  }
   function stageTable(raw) {
     if (!raw || !Array.isArray(raw.columns) || !Array.isArray(raw.rows)) return null;
     const columns = raw.columns.slice(0, 6).map(value => String(value || '').trim().slice(0, 80));
@@ -117,10 +123,10 @@
           changeSummary: String(result.changeSummary || (context.inputIntent === 'task_change' ? message : '')).slice(0, 1000),
           requirementsSummary: String(result.requirementsSummary || [context.currentRequirements, result.changeSummary || (context.inputIntent === 'task_change' ? message : '')].filter(Boolean).join('；')).slice(0, 500),
           taskCard: {
-            title: String(result.taskCard?.title || context.currentTaskCard?.title || '').slice(0, 80),
-            statusText: String(result.taskCard?.statusText || context.currentTaskCard?.statusText || '').slice(0, 240),
+            title: (taskStepLabel(result.taskCard?.title) || taskStepLabel(context.currentTaskCard?.title)).slice(0, 80),
+            statusText: (taskStepLabel(result.taskCard?.statusText) || taskStepLabel(context.currentTaskCard?.statusText)).slice(0, 240),
             steps: Array.isArray(result.taskCard?.steps) && result.taskCard.steps.length >= 2
-              ? result.taskCard.steps.slice(0, 8).map(String) : Array.isArray(context.currentTaskCard?.steps) ? context.currentTaskCard.steps.slice(0, 8).map(String) : []
+              ? result.taskCard.steps.slice(0, 8).map(taskStepLabel).filter(Boolean) : Array.isArray(context.currentTaskCard?.steps) ? context.currentTaskCard.steps.slice(0, 8).map(taskStepLabel).filter(Boolean) : []
           },
           decision: { required: false, title: '', detail: '', command: '', subject: '', tags: [] },
           deliverable: { summary: '', fileName: '', fileType: '', extension: '', path: '' }
