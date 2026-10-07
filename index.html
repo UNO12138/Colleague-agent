@@ -1007,7 +1007,7 @@
   <script src="./file-artifact.js"></script>
   <script src="./step-preview.js"></script>
   <script src="./scenario-archive/records.js"></script>
-  <script src="./browser-api.js?v=20261007-2"></script>
+  <script src="./browser-api.js?v=20261007-3"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -1993,7 +1993,7 @@
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-2`);
+      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-3`);
       workspaceViewFrame.title = '新对话';
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
@@ -2006,7 +2006,7 @@
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       workspaceViewFrame.title = '工具';
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-2`);
+      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-3`);
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
@@ -2331,6 +2331,7 @@
       const conversationId = currentConversationId();
       const activeRecord = readStoredConversations().find(item => item.id === conversationId);
       const archived = conversationId === 'weekly-report' ? [...(window.OfflineScenarioRecords || [])] : [];
+      const temporaryResults = activeRecord?.agent === '临时 API' ? window.top.temporaryAiApi.listStages(conversationId) : [];
       function showResults(results) {
         if (currentConversationId() !== conversationId) return;
         const seen = new Set();
@@ -2350,7 +2351,8 @@
         }
         if (seen.has(progress - 1)) generateStageBtn.textContent = '重新生成草稿';
       }
-      showResults(archived);
+      showResults([...archived, ...temporaryResults]);
+      if (activeRecord?.agent === '临时 API') return;
       try {
         const response = await fetch(`${LOCAL_AGENT_BASE}/stage-results?conversationId=${encodeURIComponent(conversationId)}`);
         if (!response.ok) return;
@@ -2368,19 +2370,33 @@
       const conversationId = currentConversationId();
       const activeRecord = readStoredConversations().find(item => item.id === conversationId);
       const usingCodex = activeRecord?.agent === 'Codex';
+      const usingTemporaryApi = activeRecord?.agent === '临时 API';
       generateStageBtn.disabled = true;
-      generateStageBtn.textContent = usingCodex ? 'Codex 正在取数…' : '主 Agent 正在写…';
+      generateStageBtn.textContent = usingTemporaryApi ? '协助 Agent 正在写…' : usingCodex ? 'Codex 正在取数…' : '主 Agent 正在写…';
       const panel = stepList.querySelectorAll('.step-preview')[index];
       panel.replaceChildren(GenUIPreview.renderStepPreview({
         title: stepTitle,
         status: 'active',
-        summary: usingCodex ? 'Codex 正在读取当前步骤的实际数据。' : '主 Agent 正在生成并保存 Markdown 阶段文件。',
+        summary: usingTemporaryApi ? '协助 Agent 正在生成阶段草稿。' : usingCodex ? 'Codex 正在读取当前步骤的实际数据。' : '主 Agent 正在生成并保存 Markdown 阶段文件。',
         previewType: 'process',
         previewData: { detail: usingCodex ? '取得可核实的命令输出后，协助 Agent 才会依据结果选择版式。' : '保存后，协助 Agent 会依据原文选择文档预览布局。' }
       }));
       expandedStepIndex = index;
       syncStepExpansion();
       try {
+        if (usingTemporaryApi) {
+          const result = await window.top.temporaryAiApi.generateStage({
+            conversationId, stepTitle,
+            taskBrief: currentPlanText || document.querySelector('.user-message .user-bubble')?.textContent || ''
+          });
+          if (currentConversationId() !== conversationId || taskCardState.steps[index] !== stepTitle) return;
+          liveStepPreviews[index] = result.preview;
+          const step = stepList.querySelectorAll('.step')[index];
+          refreshLiveStepPreview(index, step?.classList.contains('done') ? 'done' : 'active');
+          generateStageBtn.textContent = '重新生成草稿';
+          notify('阶段草稿已生成');
+          return;
+        }
         const response = await fetch(`${LOCAL_AGENT_BASE}/stage-result/start`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2566,6 +2582,25 @@
     }
 
     function renderDeliverable(deliverable) {
+      if (deliverable?.simulatedMarkdown) {
+        fileCard.replaceChildren();
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = '下载报告草稿 · Markdown';
+        button.addEventListener('click', () => {
+          const blob = new Blob([deliverable.simulatedMarkdown], { type: 'text/markdown;charset=utf-8' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = '报告草稿.md';
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        });
+        fileCard.append(button);
+        fileCard.hidden = false;
+        completionSummary.textContent = '报告草稿已生成，可下载 Markdown。';
+        return;
+      }
       const artifact = FileArtifact.renderFileArtifact(fileCard, deliverable, { label: '最终交付' });
       completionSummary.textContent = artifact
         ? String(deliverable.summary || `已生成 ${artifact.fileType}。`)
@@ -2580,6 +2615,15 @@
       advanceBtn.textContent = '正在生成交付文件…';
       let finalDeliverable;
       try {
+        const activeRecord = readStoredConversations().find(item => item.id === activeConversationId);
+        if (activeRecord?.agent === '临时 API') {
+          const simulatedMarkdown = await window.top.temporaryAiApi.generateFinal({
+            conversationId: activeConversationId,
+            title: taskCardState.title,
+            taskBrief: currentPlanText || document.querySelector('.user-message .user-bubble')?.textContent || ''
+          });
+          finalDeliverable = { simulatedMarkdown, summary: '报告草稿已生成。' };
+        } else {
         const response = await fetch(`${LOCAL_AGENT_BASE}/final-result`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -2592,6 +2636,7 @@
         const payload = await response.json();
         if (!response.ok || !payload.ok) throw new Error(payload.error || '生成失败');
         finalDeliverable = payload.result;
+        }
       } catch (error) {
         advanceBtn.disabled = false;
         advanceBtn.textContent = '重试生成交付文件';
@@ -2625,7 +2670,7 @@
       expandedStepIndex = total - 1;
       syncStepExpansion();
 
-      taskCardState.statusText = `${taskCardState.title}的案例报告已生成。`;
+      taskCardState.statusText = finalDeliverable.simulatedMarkdown ? '报告草稿已生成。' : `${taskCardState.title}的案例报告已生成。`;
       currentStep.textContent = taskCardState.statusText;
       document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = `任务已完成 · ${total}/${total}`);
       presenceText.textContent = 'ALEX 已完成';
@@ -2636,7 +2681,7 @@
       generateStageBtn.disabled = true;
       const completionLabel = document.createElement('span');
       completionLabel.className = 'proactive-label';
-      completionLabel.textContent = '案例交付已完成';
+      completionLabel.textContent = finalDeliverable.simulatedMarkdown ? '报告草稿已生成' : '案例交付已完成';
       completionSummary = document.createElement('span');
       completionSummary.id = 'completionSummary';
       completionSummary.textContent = '';
@@ -2646,7 +2691,7 @@
       completionCard.hidden = false;
       completionCard.classList.add('show');
       messageInput.placeholder = '继续追问，或提出下一步要求…';
-      notify('案例报告已生成');
+      notify(finalDeliverable.simulatedMarkdown ? '报告草稿已生成' : '案例报告已生成');
       persistConversationState();
       scrollToLatest();
     }
@@ -2717,7 +2762,8 @@
           ? `过程结果 · 当前 ${progress}/${total}`
           : `主任务仍在继续 · 当前 ${progress}/${total}`;
       });
-      advanceBtn.textContent = progress < total ? '模拟推进' : '结束模拟任务';
+      const temporaryConversation = readStoredConversations().find(item => item.id === currentConversationId())?.agent === '临时 API';
+      advanceBtn.textContent = progress < total ? (temporaryConversation ? '下一步' : '模拟推进') : (temporaryConversation ? '生成报告草稿' : '结束模拟任务');
       persistConversationState();
     }
 
@@ -3179,7 +3225,7 @@
         step.classList.add('done');
         step.querySelector('.step-mark').textContent = '✓';
       });
-      taskCardState.statusText = `${taskCardState.title}的案例报告已生成。`;
+      taskCardState.statusText = savedDeliverable?.simulatedMarkdown ? '报告草稿已生成。' : `${taskCardState.title}的案例报告已生成。`;
       currentStep.textContent = taskCardState.statusText;
       renderElapsedTime();
       presenceText.textContent = 'ALEX 已完成';
