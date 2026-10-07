@@ -355,7 +355,7 @@
     .presence-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ca95a; box-shadow: 0 0 0 4px rgba(76, 169, 90, .12); }
 
     .chat-view { min-height: 0; position: relative; overflow: hidden; }
-    .timeline-scroll { height: 100%; overflow-y: auto; overflow-anchor: none; padding: 0 32px var(--composer-safe-space, 150px); scroll-behavior: auto; scrollbar-width: thin; scrollbar-color: rgba(43,43,43,.16) transparent; }
+    .timeline-scroll { height: 100%; overflow-y: auto; overflow-anchor: none; padding: 0 32px calc(var(--composer-safe-space, 150px) + var(--work-card-scroll-room, 0px)); scroll-behavior: auto; scrollbar-width: thin; scrollbar-color: rgba(43,43,43,.16) transparent; }
     .timeline-scroll::-webkit-scrollbar { width: 7px; }
     .timeline-scroll::-webkit-scrollbar-track { background: transparent; }
     .timeline-scroll::-webkit-scrollbar-thumb { min-height: 48px; border-radius: 999px; background: rgba(43,43,43,.14); }
@@ -1010,12 +1010,12 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </main>
 
-  <script src="./file-artifact.js?v=20261007-10"></script>
-  <script src="./vendor/docx.iife.js?v=20261007-10"></script>
-  <script src="./browser-document.js?v=20261007-10"></script>
+  <script src="./file-artifact.js?v=20261007-11"></script>
+  <script src="./vendor/docx.iife.js?v=20261007-11"></script>
+  <script src="./browser-document.js?v=20261007-11"></script>
   <script src="./step-preview.js"></script>
   <script src="./scenario-archive/records.js"></script>
-  <script src="./browser-api.js?v=20261007-10"></script>
+  <script src="./browser-api.js?v=20261007-11"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -2021,7 +2021,7 @@
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-10`);
+      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-11`);
       workspaceViewFrame.title = '新对话';
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
@@ -2034,7 +2034,7 @@
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       workspaceViewFrame.title = '工具';
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-10`);
+      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-11`);
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
@@ -2055,7 +2055,7 @@
         const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
         const target = isLocalFile
           ? new URL(`index.html?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`, window.location.href).href
-          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-10`, window.location.href).href;
+          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-11`, window.location.href).href;
         if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
       }
     }
@@ -2098,6 +2098,7 @@
       previousComposerHeight = composerHeight;
       timelineScroll.style.setProperty('--composer-safe-space', `${composerHeight + 12}px`);
       if (wasNearBottom) scrollToLatest();
+      scheduleStickyCardSync();
     }
 
     const composerResizeObserver = new ResizeObserver(syncComposerSafeSpace);
@@ -2105,10 +2106,29 @@
     window.addEventListener('resize', syncComposerSafeSpace);
     requestAnimationFrame(syncComposerSafeSpace);
 
+    let workCardScrollRoom = 0;
+
+    function syncWorkCardScrollRoom(needed) {
+      let nextRoom = 0;
+      if (needed && !workCard.classList.contains('is-stuck') && !autoCollapseLatched) {
+        const scrollBounds = timelineScroll.getBoundingClientRect();
+        const scrollTopNeeded = workCardSentinel.getBoundingClientRect().bottom
+          - scrollBounds.top + timelineScroll.scrollTop - 4;
+        const timeline = timelineScroll.querySelector('.timeline');
+        const contentBottom = timeline.getBoundingClientRect().bottom - scrollBounds.top + timelineScroll.scrollTop;
+        const naturalContentHeight = contentBottom + composerWrap.getBoundingClientRect().height + 12;
+        nextRoom = Math.max(0, Math.ceil(scrollTopNeeded + timelineScroll.clientHeight - naturalContentHeight + 2));
+      }
+      if (Math.abs(nextRoom - workCardScrollRoom) < 1) return;
+      workCardScrollRoom = nextRoom;
+      timelineScroll.style.setProperty('--work-card-scroll-room', `${workCardScrollRoom}px`);
+    }
+
     function setWorkCardCollapsed(collapsed) {
       workCard.classList.toggle('is-stuck', collapsed);
       workCardToggle.setAttribute('aria-expanded', String(!collapsed));
       workCardToggle.setAttribute('aria-label', collapsed ? '展开进度详情' : '收起进度详情');
+      if (collapsed) syncWorkCardScrollRoom(false);
     }
 
     const workCardResizeObserver = new ResizeObserver(() => {
@@ -2881,6 +2901,7 @@
       const usableConversationArea = Math.max(0, timelineScroll.clientHeight - composerHeight);
       const requiredConversationHeight = Math.max(240, Math.min(360, usableConversationArea * .42));
       const hasEnoughConversation = !aside.hidden && aside.scrollHeight >= requiredConversationHeight;
+      syncWorkCardScrollRoom(hasEnoughConversation);
 
       if (preserveExpandedAfterLaunch && !hasEnoughConversation) return;
       if (hasEnoughConversation) preserveExpandedAfterLaunch = false;
