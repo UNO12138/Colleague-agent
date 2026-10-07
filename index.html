@@ -646,6 +646,9 @@
     .completion-message { margin-bottom: 10px; }
     .file-card { width: min(100%, 560px); display: grid; grid-template-columns: 42px minmax(0, 1fr); align-items: center; gap: 11px; padding: 12px; border: 1px solid rgba(17,17,17,.14); border-radius: 11px; background: #fff; text-align: left; }
     .file-card[hidden] { display: none; }
+    .file-card[role="button"] { cursor: pointer; }
+    .file-card[role="button"]:hover { border-color: #2b579a; }
+    .file-card[role="button"]:focus-visible { outline: 2px solid #2b579a; outline-offset: 2px; }
     .artifact-file-icon { --file-color: #687287; position: relative; width: 38px; height: 43px; display: grid; place-items: end center; padding-bottom: 8px; overflow: hidden; border-radius: 5px 9px 5px 5px; background: var(--file-color); color: #fff; box-shadow: inset 0 -2px 0 #00000014; }
     .artifact-file-icon::before { position: absolute; top: 0; right: 0; width: 12px; height: 12px; border-radius: 0 0 0 3px; background: linear-gradient(225deg, #fff 0 48%, #ffffff66 49% 100%); content: ''; }
     .artifact-file-icon span { font-size: 11px; font-weight: 750; letter-spacing: -.02em; line-height: 1; }
@@ -1004,10 +1007,12 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </main>
 
-  <script src="./file-artifact.js?v=20261007-6"></script>
+  <script src="./file-artifact.js?v=20261007-7"></script>
+  <script src="./vendor/docx.iife.js?v=20261007-7"></script>
+  <script src="./browser-document.js?v=20261007-7"></script>
   <script src="./step-preview.js"></script>
   <script src="./scenario-archive/records.js"></script>
-  <script src="./browser-api.js?v=20261007-6"></script>
+  <script src="./browser-api.js?v=20261007-7"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -1147,6 +1152,7 @@
     let currentPlanText = briefReview.innerText.trim();
     let conversationHistory = [];
     let savedDeliverable = null;
+    let generatedWordBlob = null;
     let pendingChange = null;
     let restoringConversation = false;
     let autoPlanInFlight = false;
@@ -2005,7 +2011,7 @@
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-6`);
+      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-7`);
       workspaceViewFrame.title = '新对话';
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
@@ -2018,7 +2024,7 @@
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       workspaceViewFrame.title = '工具';
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-6`);
+      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-7`);
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
@@ -2039,7 +2045,7 @@
         const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
         const target = isLocalFile
           ? new URL(`index.html?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`, window.location.href).href
-          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-6`, window.location.href).href;
+          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-7`, window.location.href).href;
         if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
       }
     }
@@ -2615,6 +2621,31 @@
     }
 
     function renderDeliverable(deliverable) {
+      fileCard.onclick = null;
+      fileCard.onkeydown = null;
+      fileCard.removeAttribute('role');
+      fileCard.removeAttribute('tabindex');
+      if (deliverable?.wordDocument) {
+        FileArtifact.renderFilePreview(fileCard, { ...deliverable, displayOnly: true }, { label: '最终交付 · 点击下载' });
+        completionSummary.textContent = String(deliverable.summary || 'Word 文档已生成。');
+        fileCard.setAttribute('role', 'button');
+        fileCard.tabIndex = 0;
+        const download = async () => {
+          try {
+            const blob = generatedWordBlob || await BrowserDocument.createWordBlob(deliverable);
+            generatedWordBlob = blob;
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = deliverable.fileName;
+            link.click();
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+          } catch (error) { notify(`Word 文档下载失败：${error.message}`); }
+        };
+        fileCard.onclick = download;
+        fileCard.onkeydown = event => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); void download(); } };
+        return;
+      }
       if (deliverable?.displayOnly) {
         FileArtifact.renderFilePreview(fileCard, deliverable, { label: '最终交付' });
         completionSummary.textContent = String(deliverable.summary || '交付预览已生成。');
@@ -2631,7 +2662,7 @@
       if (taskCompleted) return;
       const activeConversationId = routeParams().get('conversation') || sidebarState.activeConversationId;
       advanceBtn.disabled = true;
-      advanceBtn.textContent = '正在生成交付预览…';
+      advanceBtn.textContent = '正在生成 Word 文档…';
       let finalDeliverable;
       try {
         const activeRecord = readStoredConversations().find(item => item.id === activeConversationId);
@@ -2641,6 +2672,7 @@
             title: taskCardState.title,
             taskBrief: currentPlanText || document.querySelector('.user-message .user-bubble')?.textContent || ''
           });
+          generatedWordBlob = await BrowserDocument.createWordBlob(finalDeliverable);
         } else {
         const response = await fetch(`${LOCAL_AGENT_BASE}/final-result`, {
           method: 'POST',
@@ -2657,8 +2689,8 @@
         }
       } catch (error) {
         advanceBtn.disabled = false;
-        advanceBtn.textContent = '重试生成交付预览';
-        notify(`交付预览未生成：${error.message || '本地 Agent 不可用'}`);
+        advanceBtn.textContent = '重试生成 Word 文档';
+        notify(`Word 文档未生成：${error.message || '本地 Agent 不可用'}`);
         return;
       }
       taskCompleted = true;
@@ -2688,7 +2720,7 @@
       expandedStepIndex = total - 1;
       syncStepExpansion();
 
-      taskCardState.statusText = finalDeliverable.displayOnly ? '交付预览已生成。' : `${taskCardState.title}的案例报告已生成。`;
+      taskCardState.statusText = finalDeliverable.wordDocument ? 'Word 文档已生成。' : finalDeliverable.displayOnly ? '交付预览已生成。' : `${taskCardState.title}的案例报告已生成。`;
       currentStep.textContent = taskCardState.statusText;
       document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = `任务已完成 · ${total}/${total}`);
       presenceText.textContent = 'ALEX 已完成';
@@ -2699,7 +2731,7 @@
       generateStageBtn.disabled = true;
       const completionLabel = document.createElement('span');
       completionLabel.className = 'proactive-label';
-      completionLabel.textContent = finalDeliverable.displayOnly ? '交付预览已生成' : '案例交付已完成';
+      completionLabel.textContent = finalDeliverable.wordDocument ? 'Word 文档已生成' : finalDeliverable.displayOnly ? '交付预览已生成' : '案例交付已完成';
       completionSummary = document.createElement('span');
       completionSummary.id = 'completionSummary';
       completionSummary.textContent = '';
@@ -2709,7 +2741,7 @@
       completionCard.hidden = false;
       completionCard.classList.add('show');
       messageInput.placeholder = '继续追问，或提出下一步要求…';
-      notify(finalDeliverable.displayOnly ? '交付预览已生成' : '案例报告已生成');
+      notify(finalDeliverable.wordDocument ? 'Word 文档已生成' : finalDeliverable.displayOnly ? '交付预览已生成' : '案例报告已生成');
       persistConversationState();
       scrollToLatest();
     }
@@ -2781,7 +2813,7 @@
           : `主任务仍在继续 · 当前 ${progress}/${total}`;
       });
       const temporaryConversation = usesBrowserApi(readStoredConversations().find(item => item.id === currentConversationId()));
-      advanceBtn.textContent = progress < total ? (temporaryConversation ? '下一步' : '模拟推进') : (temporaryConversation ? '生成交付预览' : '结束模拟任务');
+      advanceBtn.textContent = progress < total ? (temporaryConversation ? '下一步' : '模拟推进') : (temporaryConversation ? '生成 Word 文档' : '结束模拟任务');
       persistConversationState();
     }
 
@@ -3284,6 +3316,7 @@
     function restoreCompletedConversation(deliverable) {
       taskCompleted = true;
       savedDeliverable = deliverable || null;
+      generatedWordBlob = null;
       window.clearInterval(elapsedTimer);
       progress = total;
       renderProgress(total);
@@ -3292,7 +3325,7 @@
         step.classList.add('done');
         step.querySelector('.step-mark').textContent = '✓';
       });
-      taskCardState.statusText = savedDeliverable?.displayOnly ? '交付预览已生成。' : `${taskCardState.title}的案例报告已生成。`;
+      taskCardState.statusText = savedDeliverable?.wordDocument ? 'Word 文档已生成。' : savedDeliverable?.displayOnly ? '交付预览已生成。' : `${taskCardState.title}的案例报告已生成。`;
       currentStep.textContent = taskCardState.statusText;
       renderElapsedTime();
       presenceText.textContent = 'ALEX 已完成';

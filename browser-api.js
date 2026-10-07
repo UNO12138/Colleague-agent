@@ -74,17 +74,19 @@
     async generateFinal({ conversationId, title, taskBrief }) {
       const stages = this.listStages(conversationId);
       const result = await request([
-        { role: 'system', content: '你是交付规划协助 Agent。根据任务说明和阶段内容，确定最适合的最终交付文件格式、具体文件名和简短交付摘要。只返回 JSON：{"fileName":"中文文件名.扩展名","extension":"docx|pdf|pptx|xlsx|md|html|png","summary":"一句话说明交付内容"}。选择与任务匹配的格式；文件名须具体，不能包含路径或特殊文件名字符。此处只生成文件展示信息，不生成文件内容、下载链接或文件路径；不得声称已核实外部事实。' },
+        { role: 'system', content: '你是文档协助 Agent。根据任务说明和已生成的阶段内容，撰写一份可交付的中文 Word 报告。只返回 JSON：{"fileName":"具体文件名.docx","summary":"一句话摘要","sections":[{"heading":"章节标题","body":"该章节的具体正文，可用换行分段"}]}。至少 2 个章节，包含任务目标、已有阶段发现和建议；使用输入里的具体信息，不写空泛占位文字。不编造数据、来源或已核实的事实；对未验证的内容明确说明。文件名不能包含路径或特殊文件名字符。' },
         { role: 'user', content: JSON.stringify({ title: String(title || '').slice(0, 80), taskBrief: String(taskBrief || '').slice(0, 4000), stages: stages.map(item => item.markdown.slice(0, 3000)) }) }
       ]);
-      const allowed = new Set(['docx', 'pdf', 'pptx', 'xlsx', 'md', 'html', 'png']);
-      const requestedExtension = String(result.extension || '').replace(/^\./, '').toLowerCase();
-      const nameExtension = String(result.fileName || '').match(/\.([a-z0-9]+)$/i)?.[1].toLowerCase();
-      const extension = allowed.has(requestedExtension) ? requestedExtension : allowed.has(nameExtension) ? nameExtension : 'docx';
+      const extension = 'docx';
       const base = String(result.fileName || title || '任务成果').replace(/\.[a-z0-9]+$/i, '').trim();
       const fileName = owner.FileArtifact?.makeArtifactFileName(base, extension)
         || `${base.normalize('NFKC').replace(/[<>:"/\\|?*\x00-\x1f]/g, ' ').replace(/\s+/g, '-').slice(0, 64) || '任务成果'}.${extension}`;
-      return { displayOnly: true, fileName, extension, summary: String(result.summary || '交付预览已生成。').slice(0, 240) };
+      const sections = Array.isArray(result.sections) ? result.sections.slice(0, 12).map(item => ({
+        heading: String(item.heading || '').trim().slice(0, 100),
+        body: String(item.body || '').trim().slice(0, 5000)
+      })).filter(item => item.heading && item.body) : [];
+      if (sections.length < 2) throw new Error('API 未返回足够的报告正文');
+      return { wordDocument: true, fileName, extension, title: String(title || base).slice(0, 100), summary: String(result.summary || 'Word 报告已生成。').slice(0, 240), sections };
     },
     async ask(message, mode = 'task_message', context = {}) {
       const planning = mode === 'plan_revision' || context.inputIntent === 'planning_question';
