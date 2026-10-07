@@ -36,6 +36,40 @@
     return { fileName, fileType, extension, kind, glyph, path: artifactPath };
   }
 
+  function normalizeFilePreview(value) {
+    if (!value || value.displayOnly !== true || value.path || value.markdownPath) return null;
+    const fileName = String(value.fileName || '').trim();
+    const extension = fileName.match(/\.([a-z0-9]+)$/i)?.[1].toLowerCase() || '';
+    if (!fileName || !extension || fileName.includes('/') || fileName.includes('\\')) return null;
+    const [kind, fileType, glyph] = TYPES[extension] || ['generic', `${extension.toUpperCase()} 文件`, 'FILE'];
+    return { fileName, extension, kind, fileType, glyph };
+  }
+
+  function renderFilePreview(container, value, options = {}) {
+    const artifact = normalizeFilePreview(value);
+    container.replaceChildren();
+    container.hidden = !artifact;
+    if (!artifact) return null;
+    container.classList.add('file-card');
+    container.dataset.fileKind = artifact.kind;
+    container.setAttribute('aria-label', `${artifact.fileName}，${artifact.fileType}`);
+    const icon = document.createElement('span');
+    icon.className = 'artifact-file-icon';
+    icon.setAttribute('aria-hidden', 'true');
+    const glyph = document.createElement('span');
+    glyph.textContent = artifact.glyph;
+    icon.append(glyph);
+    const copy = document.createElement('span');
+    copy.className = 'file-card-copy';
+    const name = document.createElement('strong');
+    name.textContent = artifact.fileName;
+    const meta = document.createElement('span');
+    meta.textContent = [options.label, artifact.fileType].filter(Boolean).join(' · ');
+    copy.append(name, meta);
+    container.append(icon, copy);
+    return artifact;
+  }
+
   function renderFileArtifact(container, value, options = {}) {
     const artifact = normalizeFileArtifact(value);
     container.replaceChildren();
@@ -67,7 +101,7 @@
     return artifact;
   }
 
-  const api = Object.freeze({ makeArtifactFileName, normalizeFileArtifact, renderFileArtifact });
+  const api = Object.freeze({ makeArtifactFileName, normalizeFileArtifact, normalizeFilePreview, renderFileArtifact, renderFilePreview });
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   if (typeof window !== 'undefined') window.FileArtifact = api;
 })();

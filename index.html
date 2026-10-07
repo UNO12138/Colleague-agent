@@ -437,7 +437,7 @@
     .progress-track { height: 5px; margin: 0 20px; overflow: hidden; border-radius: 10px; background: var(--soft); }
     .progress-fill { width: 75%; height: 100%; border-radius: inherit; background: var(--deep); transition: width .45s ease; }
     .work-card-meta { min-height: 28px; display: flex; align-items: center; padding: 7px 20px 0; }
-    .step-list { max-height: min(440px, 55vh); padding: 14px 20px 10px; display: grid; align-content: start; gap: 10px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; opacity: 1; transition: max-height .34s cubic-bezier(.2, .72, .2, 1), padding .34s cubic-bezier(.2, .72, .2, 1), opacity .22s ease; }
+    .step-list { max-height: min(440px, 55vh); padding: 14px 20px 10px; display: grid; align-content: start; gap: 10px; overflow-x: hidden; overflow-y: auto; overscroll-behavior-y: auto; opacity: 1; transition: max-height .34s cubic-bezier(.2, .72, .2, 1), padding .34s cubic-bezier(.2, .72, .2, 1), opacity .22s ease; }
     .step { width: 100%; display: grid; grid-template-columns: 17px minmax(0, 1fr) auto 12px; gap: 10px; align-items: center; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; cursor: pointer; }
     .step:focus-visible { outline: 2px solid #4457de; outline-offset: 3px; border-radius: 4px; }
     .step-mark { width: 16px; height: 16px; display: grid; place-items: center; border: 1px solid rgba(17, 17, 17, .1); border-radius: 50%; background: #fff; font-size: 9px; }
@@ -1004,10 +1004,10 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </main>
 
-  <script src="./file-artifact.js"></script>
+  <script src="./file-artifact.js?v=20261007-6"></script>
   <script src="./step-preview.js"></script>
   <script src="./scenario-archive/records.js"></script>
-  <script src="./browser-api.js?v=20261007-5"></script>
+  <script src="./browser-api.js?v=20261007-6"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -2005,7 +2005,7 @@
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-5`);
+      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-6`);
       workspaceViewFrame.title = '新对话';
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
@@ -2018,7 +2018,7 @@
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       workspaceViewFrame.title = '工具';
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-5`);
+      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-6`);
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
@@ -2039,7 +2039,7 @@
         const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
         const target = isLocalFile
           ? new URL(`index.html?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`, window.location.href).href
-          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-5`, window.location.href).href;
+          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-6`, window.location.href).href;
         if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
       }
     }
@@ -2455,6 +2455,7 @@
         refreshLiveStepPreview(index, step?.classList.contains('done') ? 'done' : 'active');
         generateStageBtn.textContent = '重新生成草稿';
         notify(`${payload.result.source?.provider === 'fallback-demo' ? '已切换为演示生成；阶段文本已保存' : '阶段文本已保存'}：${payload.result.markdownPath}`);
+        return true;
       } catch (error) {
         panel.replaceChildren(GenUIPreview.renderStepPreview({
           title: stepTitle,
@@ -2469,6 +2470,24 @@
       } finally {
         generateStageBtn.disabled = taskCompleted || previewDemoActive;
       }
+    }
+
+    let stageGenerationPromise = null;
+    function generateCurrentStagePreview() {
+      if (stageGenerationPromise) return stageGenerationPromise;
+      advanceBtn.disabled = true;
+      previewDemoBtn.disabled = true;
+      const pending = generateRealStageResult();
+      stageGenerationPromise = pending;
+      const finish = () => {
+        if (stageGenerationPromise === pending) {
+          stageGenerationPromise = null;
+          advanceBtn.disabled = taskCompleted || previewDemoActive;
+          previewDemoBtn.disabled = taskCompleted;
+        }
+      };
+      pending.then(finish, finish);
+      return pending;
     }
 
     function applyTaskCardUpdate(nextCard) {
@@ -2596,23 +2615,9 @@
     }
 
     function renderDeliverable(deliverable) {
-      if (deliverable?.simulatedMarkdown) {
-        fileCard.replaceChildren();
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = '下载报告草稿 · Markdown';
-        button.addEventListener('click', () => {
-          const blob = new Blob([deliverable.simulatedMarkdown], { type: 'text/markdown;charset=utf-8' });
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = '报告草稿.md';
-          link.click();
-          setTimeout(() => URL.revokeObjectURL(url), 1000);
-        });
-        fileCard.append(button);
-        fileCard.hidden = false;
-        completionSummary.textContent = '报告草稿已生成，可下载 Markdown。';
+      if (deliverable?.displayOnly) {
+        FileArtifact.renderFilePreview(fileCard, deliverable, { label: '最终交付' });
+        completionSummary.textContent = String(deliverable.summary || '交付预览已生成。');
         return;
       }
       const artifact = FileArtifact.renderFileArtifact(fileCard, deliverable, { label: '最终交付' });
@@ -2626,17 +2631,16 @@
       if (taskCompleted) return;
       const activeConversationId = routeParams().get('conversation') || sidebarState.activeConversationId;
       advanceBtn.disabled = true;
-      advanceBtn.textContent = '正在生成交付文件…';
+      advanceBtn.textContent = '正在生成交付预览…';
       let finalDeliverable;
       try {
         const activeRecord = readStoredConversations().find(item => item.id === activeConversationId);
         if (usesBrowserApi(activeRecord)) {
-          const simulatedMarkdown = await window.top.temporaryAiApi.generateFinal({
+          finalDeliverable = await window.top.temporaryAiApi.generateFinal({
             conversationId: activeConversationId,
             title: taskCardState.title,
             taskBrief: currentPlanText || document.querySelector('.user-message .user-bubble')?.textContent || ''
           });
-          finalDeliverable = { simulatedMarkdown, summary: '报告草稿已生成。' };
         } else {
         const response = await fetch(`${LOCAL_AGENT_BASE}/final-result`, {
           method: 'POST',
@@ -2653,8 +2657,8 @@
         }
       } catch (error) {
         advanceBtn.disabled = false;
-        advanceBtn.textContent = '重试生成交付文件';
-        notify(`交付文件未生成：${error.message || '本地 Agent 不可用'}`);
+        advanceBtn.textContent = '重试生成交付预览';
+        notify(`交付预览未生成：${error.message || '本地 Agent 不可用'}`);
         return;
       }
       taskCompleted = true;
@@ -2684,7 +2688,7 @@
       expandedStepIndex = total - 1;
       syncStepExpansion();
 
-      taskCardState.statusText = finalDeliverable.simulatedMarkdown ? '报告草稿已生成。' : `${taskCardState.title}的案例报告已生成。`;
+      taskCardState.statusText = finalDeliverable.displayOnly ? '交付预览已生成。' : `${taskCardState.title}的案例报告已生成。`;
       currentStep.textContent = taskCardState.statusText;
       document.querySelectorAll('.aside-meta').forEach(meta => meta.textContent = `任务已完成 · ${total}/${total}`);
       presenceText.textContent = 'ALEX 已完成';
@@ -2695,7 +2699,7 @@
       generateStageBtn.disabled = true;
       const completionLabel = document.createElement('span');
       completionLabel.className = 'proactive-label';
-      completionLabel.textContent = finalDeliverable.simulatedMarkdown ? '报告草稿已生成' : '案例交付已完成';
+      completionLabel.textContent = finalDeliverable.displayOnly ? '交付预览已生成' : '案例交付已完成';
       completionSummary = document.createElement('span');
       completionSummary.id = 'completionSummary';
       completionSummary.textContent = '';
@@ -2705,7 +2709,7 @@
       completionCard.hidden = false;
       completionCard.classList.add('show');
       messageInput.placeholder = '继续追问，或提出下一步要求…';
-      notify(finalDeliverable.simulatedMarkdown ? '报告草稿已生成' : '案例报告已生成');
+      notify(finalDeliverable.displayOnly ? '交付预览已生成' : '案例报告已生成');
       persistConversationState();
       scrollToLatest();
     }
@@ -2777,7 +2781,7 @@
           : `主任务仍在继续 · 当前 ${progress}/${total}`;
       });
       const temporaryConversation = usesBrowserApi(readStoredConversations().find(item => item.id === currentConversationId()));
-      advanceBtn.textContent = progress < total ? (temporaryConversation ? '下一步' : '模拟推进') : (temporaryConversation ? '生成报告草稿' : '结束模拟任务');
+      advanceBtn.textContent = progress < total ? (temporaryConversation ? '下一步' : '模拟推进') : (temporaryConversation ? '生成交付预览' : '结束模拟任务');
       persistConversationState();
     }
 
@@ -2913,7 +2917,16 @@
       preserveManualExpansion = true;
       autoCollapseLatched = false;
       const unit = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : event.deltaMode === WheelEvent.DOM_DELTA_PAGE ? stepList.clientHeight : 1;
-      stepList.scrollTop += event.deltaY * unit;
+      const delta = event.deltaY * unit;
+      const before = stepList.scrollTop;
+      const limit = Math.max(0, stepList.scrollHeight - stepList.clientHeight);
+      const next = Math.max(0, Math.min(limit, before + delta));
+      stepList.scrollTop = next;
+      const overflow = delta - (next - before);
+      if (Math.abs(overflow) > 0.5) {
+        markUserScrollDirection(overflow < 0 ? 'up' : 'down');
+        timelineScroll.scrollTop += overflow;
+      }
     }, { passive: false });
 
     timelineScroll.addEventListener('wheel', event => {
@@ -2982,6 +2995,7 @@
         requestAnimationFrame(() => {
           requestAnimationFrame(scrollWorkCardToTop);
         });
+        if (activeConversationId !== 'weekly-report' || isHostedSite) void generateCurrentStagePreview();
       }
     }
 
@@ -3069,20 +3083,20 @@
       }
     });
 
-    generateStageBtn.addEventListener('click', generateRealStageResult);
+    generateStageBtn.addEventListener('click', () => { void generateCurrentStagePreview(); });
 
     advanceBtn.addEventListener('click', async () => {
-      if (taskCompleted) return;
-      const activeRecord = readStoredConversations().find(item => item.id === currentConversationId());
-      if (usesBrowserApi(activeRecord)) {
-        const stepTitle = taskCardState.steps[progress - 1];
-        const hasStage = window.top.temporaryAiApi.listStages(currentConversationId()).some(item => item.stepTitle === stepTitle);
-        if (!hasStage && !await generateRealStageResult()) return;
+      if (taskCompleted || stageGenerationPromise) return;
+      const localPresetDemo = currentConversationId() === 'weekly-report' && !isHostedSite;
+      if (!localPresetDemo) {
+        const hasStage = Boolean(liveStepPreviews[progress - 1]) && liveStepPreviews[progress - 1].previewType !== 'process';
+        if (!hasStage && !await generateCurrentStagePreview()) return;
       }
       if (progress < total) {
         renderProgress(progress + 1);
         notify(`已推进到第 ${progress}/${total} 步`);
         scrollToLatest();
+        if (!localPresetDemo) void generateCurrentStagePreview();
         return;
       }
       completeTask();
@@ -3278,7 +3292,7 @@
         step.classList.add('done');
         step.querySelector('.step-mark').textContent = '✓';
       });
-      taskCardState.statusText = savedDeliverable?.simulatedMarkdown ? '报告草稿已生成。' : `${taskCardState.title}的案例报告已生成。`;
+      taskCardState.statusText = savedDeliverable?.displayOnly ? '交付预览已生成。' : `${taskCardState.title}的案例报告已生成。`;
       currentStep.textContent = taskCardState.statusText;
       renderElapsedTime();
       presenceText.textContent = 'ALEX 已完成';

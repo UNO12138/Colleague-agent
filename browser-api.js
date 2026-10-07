@@ -74,12 +74,17 @@
     async generateFinal({ conversationId, title, taskBrief }) {
       const stages = this.listStages(conversationId);
       const result = await request([
-        { role: 'system', content: '你是文档协助 Agent。根据给定任务说明和阶段草稿，生成可下载的 Markdown 报告草稿。不得声称已经执行真实任务或核实外部事实。返回 JSON：{"markdown":"完整 Markdown 报告"}。' },
-        { role: 'user', content: JSON.stringify({ title: String(title || '').slice(0, 80), taskBrief: String(taskBrief || '').slice(0, 4000), simulatedStages: stages.map(item => item.markdown.slice(0, 3000)) }) }
+        { role: 'system', content: '你是交付规划协助 Agent。根据任务说明和阶段内容，确定最适合的最终交付文件格式、具体文件名和简短交付摘要。只返回 JSON：{"fileName":"中文文件名.扩展名","extension":"docx|pdf|pptx|xlsx|md|html|png","summary":"一句话说明交付内容"}。选择与任务匹配的格式；文件名须具体，不能包含路径或特殊文件名字符。此处只生成文件展示信息，不生成文件内容、下载链接或文件路径；不得声称已核实外部事实。' },
+        { role: 'user', content: JSON.stringify({ title: String(title || '').slice(0, 80), taskBrief: String(taskBrief || '').slice(0, 4000), stages: stages.map(item => item.markdown.slice(0, 3000)) }) }
       ]);
-      const markdown = String(result.markdown || '').trim();
-      if (markdown.length < 100) throw new Error('API 未返回有效的报告草稿');
-      return `${markdown}\n`;
+      const allowed = new Set(['docx', 'pdf', 'pptx', 'xlsx', 'md', 'html', 'png']);
+      const requestedExtension = String(result.extension || '').replace(/^\./, '').toLowerCase();
+      const nameExtension = String(result.fileName || '').match(/\.([a-z0-9]+)$/i)?.[1].toLowerCase();
+      const extension = allowed.has(requestedExtension) ? requestedExtension : allowed.has(nameExtension) ? nameExtension : 'docx';
+      const base = String(result.fileName || title || '任务成果').replace(/\.[a-z0-9]+$/i, '').trim();
+      const fileName = owner.FileArtifact?.makeArtifactFileName(base, extension)
+        || `${base.normalize('NFKC').replace(/[<>:"/\\|?*\x00-\x1f]/g, ' ').replace(/\s+/g, '-').slice(0, 64) || '任务成果'}.${extension}`;
+      return { displayOnly: true, fileName, extension, summary: String(result.summary || '交付预览已生成。').slice(0, 240) };
     },
     async ask(message, mode = 'task_message', context = {}) {
       const planning = mode === 'plan_revision' || context.inputIntent === 'planning_question';

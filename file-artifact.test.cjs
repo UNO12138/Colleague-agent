@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { makeArtifactFileName, normalizeFileArtifact } = require('./file-artifact.js');
+const { makeArtifactFileName, normalizeFileArtifact, normalizeFilePreview } = require('./file-artifact.js');
 
 test('file icons and labels follow the saved file extension', () => {
   const expected = [
@@ -28,4 +28,12 @@ test('pending or pathless results do not appear as completed files', () => {
 test('generated names are specific and Windows-safe', () => {
   assert.equal(makeArtifactFileName('Linear · 状态/协作', 'md', '阶段草稿'), 'Linear-状态-协作-阶段草稿.md');
   assert.equal(makeArtifactFileName('CON', '.pdf'), '任务-CON.pdf');
+});
+
+test('display-only file preview uses the same file type without a path', () => {
+  assert.deepEqual(normalizeFilePreview({ displayOnly: true, fileName: '分析报告.pdf' }), {
+    fileName: '分析报告.pdf', extension: 'pdf', kind: 'pdf', fileType: 'PDF 文档', glyph: 'PDF'
+  });
+  assert.equal(normalizeFilePreview({ displayOnly: true, fileName: '分析报告.pdf', path: '/fake/report.pdf' }), null);
+  assert.equal(normalizeFilePreview({ displayOnly: true, fileName: '../分析报告.pdf' }), null);
 });
