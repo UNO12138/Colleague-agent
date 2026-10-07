@@ -21,8 +21,16 @@
     <section class="workspace">
       <div class="tools-page">
         <header><h1>工具</h1><p>为主进程 Agent 提供统一入口</p></header>
-        <div class="toolbar"><div class="tabs" role="tablist" aria-label="Agent 位置"><button class="tab" type="button" role="tab" data-tab="local" aria-selected="true">本地 <span>4</span></button><button class="tab" type="button" role="tab" data-tab="cloud" aria-selected="false">云端 <span>4</span></button></div><label class="search"><img src="../assets/figma-agents/230-imgFrame10.svg" alt="" /><input id="agentSearch" type="search" placeholder="搜索可用 Agent" aria-label="搜索可用 Agent" /></label></div>
+        <div class="toolbar"><div class="tabs" role="tablist" aria-label="Agent 位置"><button class="tab" type="button" role="tab" data-tab="local" aria-selected="true">本地 <span>4</span></button><button class="tab" type="button" role="tab" data-tab="cloud" aria-selected="false">云端 <span>1</span></button></div><label class="search"><img src="../assets/figma-agents/230-imgFrame10.svg" alt="" /><input id="agentSearch" type="search" placeholder="搜索可用 Agent" aria-label="搜索可用 Agent" /></label></div>
         <div class="agent-list" id="agentList" aria-label="Agent 列表"></div>
+        <section class="temporary-api" id="temporaryApi" hidden aria-labelledby="temporaryApiTitle">
+          <h2 id="temporaryApiTitle">临时 API · DeepSeek</h2>
+          <p>输入自己的 DeepSeek API 密钥，即可在网页中使用 AI。密钥只在当前页面内存中保留；刷新或关闭页面即清除。每次请求独立处理，不发送聊天历史。</p>
+          <form id="temporaryApiKeyForm"><label for="temporaryApiKey">API 密钥</label><div class="api-key-entry"><input id="temporaryApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…" required /><button type="submit">连接</button><button id="clearTemporaryApi" type="button">清除</button></div></form>
+          <p id="temporaryApiStatus" role="status">尚未连接</p>
+          <form id="temporaryApiAskForm"><label for="temporaryApiQuestion">单次提问</label><textarea id="temporaryApiQuestion" placeholder="输入问题；这次提问不会引用之前的对话" required></textarea><button type="submit">发送</button></form>
+          <div class="temporary-api-answer" id="temporaryApiAnswer" role="status" aria-live="polite"></div>
+        </section>
       </div>
     </section>
   </main>
@@ -38,6 +46,7 @@
     </section>
   </div>
   <script>(()=>{const electron=document.body.classList.contains('electron-window');document.getElementById('newConversation').onclick=()=>{if(window.parent!==window){window.parent.postMessage({type:'open-view',view:'new'},location.protocol==='file:'?'*':location.origin);return}location.assign(new URL(location.protocol==='file:'?'../index.html?electron=1#view=new':`../new-conversation/${electron?'?electron=1':''}`,location.href).href)}})()</script>
+  <script src="../browser-api.js"></script>
   <script src="./page.js"></script>
 </body>
 </html>

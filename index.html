@@ -1007,6 +1007,7 @@
   <script src="./file-artifact.js"></script>
   <script src="./step-preview.js"></script>
   <script src="./scenario-archive/records.js"></script>
+  <script src="./browser-api.js"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -1284,11 +1285,13 @@
       const conversationId = routeParams().get('conversation');
       const activeRecord = readStoredConversations().find(item => item.id === conversationId);
       const usingCodex = activeRecord?.agent === 'Codex';
+      const usingTemporaryApi = activeRecord?.agent === '临时 API';
       const controller = new AbortController();
       const timeout = window.setTimeout(() => controller.abort(), usingCodex ? 60000 : 17000);
       composer.classList.add('is-agent-busy');
       sendBtn.disabled = true;
       try {
+        if (usingTemporaryApi) return await window.top.temporaryAiApi.ask(message, mode);
         const response = await fetch(LOCAL_AGENT_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1322,6 +1325,10 @@
         }
         return payload.result;
       } catch (error) {
+        if (usingTemporaryApi) {
+          notify(`临时 API：${error.message}`);
+          return { kind: 'discussion', message: `临时 API 调用失败：${error.message}`, planSummary: '', taskCard: { title: '', statusText: '', steps: [] }, error: true };
+        }
         if (usingCodex) {
           const detail = error.name === 'AbortError' ? '等待响应超时' : error.message;
           notify(`模型连接失败，已切换为本地演示规则：${detail}`);

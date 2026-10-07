@@ -14,7 +14,8 @@
     return `<article class="agent-row" data-agent="${a.id}"><div class="agent-identity"><img class="agent-logo" src="${asset+a.logo}" alt="" /><div class="agent-copy"><h2 class="agent-name">${a.name}</h2><span class="agent-status"><img class="status-dot" src="${asset}${a.status==='ready'?'230-imgEllipse8.svg':'230-imgEllipse9.svg'}" alt="" />${statusText(a)}</span></div></div><div class="agent-actions">${a.status!=='disconnected'||a.id==='codex'?`<button class="more-button" type="button" data-action="manage" aria-label="管理 ${a.name}"><img src="${asset}230-imgFrame11.svg" alt="" /></button>`:''}<button class="action-button ${a.status==='stopped'?'primary':''}" type="button" data-action="${action[0]}">${action[1]}</button></div></article>`;
   }
   function render(){
-    if(activeTab==='cloud'){list.innerHTML='<p class="empty-state">云端 Agent 接入界面待设计</p>';return}
+    document.getElementById('temporaryApi').hidden=activeTab!=='cloud';
+    if(activeTab==='cloud'){list.innerHTML='';return}
     const q=search.value.trim().toLowerCase(),shown=agents.filter(a=>a.name.toLowerCase().includes(q));
     list.innerHTML=shown.length?shown.map((a,i)=>`${i===3?`<img class="agent-divider" src="${asset}230-imgVector4298.svg" alt="" />`:''}${row(a)}`).join(''):'<p class="empty-state">没有找到匹配的 Agent</p>';
   }
@@ -87,6 +88,30 @@
     }catch(error){status.textContent=error.message||'保存失败';showToast(status.textContent)}
     finally{button.disabled=false}
   });
+  const temporaryApi=window.top.temporaryAiApi;
+  const temporaryStatus=document.getElementById('temporaryApiStatus');
+  function syncTemporaryStatus(){temporaryStatus.textContent=temporaryApi.ready()?'已连接 · 刷新页面后自动清除':'尚未连接'}
+  document.getElementById('temporaryApiKeyForm').addEventListener('submit',event=>{
+    event.preventDefault();
+    const input=document.getElementById('temporaryApiKey');
+    temporaryApi.setKey(input.value);
+    input.value='';
+    syncTemporaryStatus();
+    showToast('临时 API 已连接');
+  });
+  document.getElementById('clearTemporaryApi').addEventListener('click',()=>{temporaryApi.clear();syncTemporaryStatus();showToast('临时密钥已清除')});
+  document.getElementById('temporaryApiAskForm').addEventListener('submit',async event=>{
+    event.preventDefault();
+    const output=document.getElementById('temporaryApiAnswer');
+    const button=event.currentTarget.querySelector('button[type="submit"]');
+    const question=document.getElementById('temporaryApiQuestion').value.trim();
+    if(!question)return;
+    button.disabled=true;output.textContent='正在获取回答…';
+    try{const answer=await temporaryApi.ask(question);output.textContent=answer.message||'API 未返回回答'}
+    catch(error){output.textContent=error.message||'请求失败'}
+    finally{button.disabled=false}
+  });
+  syncTemporaryStatus();
   document.getElementById('uninstallButton').addEventListener('click',()=>showToast('卸载流程尚未接入'));
   for(const id of ['dialogClose','dialogCancel'])document.getElementById(id).addEventListener('click',closeDialog);
   layer.addEventListener('click',e=>{if(e.target===layer)closeDialog()});
