@@ -1007,7 +1007,7 @@
   <script src="./file-artifact.js"></script>
   <script src="./step-preview.js"></script>
   <script src="./scenario-archive/records.js"></script>
-  <script src="./browser-api.js"></script>
+  <script src="./browser-api.js?v=20261007-2"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -1993,7 +1993,7 @@
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}`);
+      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-2`);
       workspaceViewFrame.title = '新对话';
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
@@ -2006,7 +2006,7 @@
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       workspaceViewFrame.title = '工具';
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('tools', `embedded=1${electronQuery}`);
+      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-2`);
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
