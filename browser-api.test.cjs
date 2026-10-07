@@ -7,7 +7,10 @@ test('temporary API keeps key in memory and produces stage and report drafts', a
   const requests = [];
   const responses = [
     { kind: 'discussion', message: '本次回答' },
+    { kind: 'plan_revision', message: '已加入预算', planSummary: '包含预算的新规划', taskCard: { title: '规划', statusText: '待确认', steps: ['梳理', '比较'] } },
     { summary: '阶段摘要', sections: [{ title: '发现', body: '这是当前步骤的内容。' }, { title: '建议', body: '下一步建议。' }] },
+    { summary: '对比摘要', table: { columns: ['产品', '特点'], rows: [['A', '快速'], ['B', '稳定']] } },
+    { summary: '耗时摘要', table: { columns: ['阶段', '分钟'], rows: [['设计', '20'], ['开发', '40']] } },
     { markdown: '# 报告草稿\n\n' + '正文。'.repeat(40) }
   ];
   const context = {
@@ -28,15 +31,29 @@ test('temporary API keeps key in memory and produces stage and report drafts', a
   const api = context.window.temporaryAiApi;
   api.setKey('test-key');
   assert.equal((await api.ask('本次问题')).message, '本次回答');
+  const revision = await api.ask('再加上预算', 'plan_revision', { currentPlan: '旧规划', planningHistory: [
+    { role: 'user', content: '先比较成本' }, { role: 'assistant', content: '已把成本加入分析重点' }
+  ] });
+  assert.equal(revision.planSummary, '包含预算的新规划');
   const stage = await api.generateStage({ conversationId: 'one', stepTitle: '步骤一', taskBrief: '任务说明' });
   assert.equal(stage.preview.previewType, 'document');
-  assert.equal(api.listStages('one').length, 1);
+  assert.equal(stage.preview.previewData.template, 'summary');
+  const comparison = await api.generateStage({ conversationId: 'one', stepTitle: '产品对比', taskBrief: '任务说明' });
+  assert.equal(comparison.preview.previewData.template, 'comparison');
+  assert.match(comparison.markdown, /\| 产品 \| 特点 \|/);
+  const chart = await api.generateStage({ conversationId: 'one', stepTitle: '阶段耗时', taskBrief: '任务说明' });
+  assert.equal(chart.preview.previewData.template, 'chart');
+  assert.equal(api.listStages('one').length, 3);
   assert.match(await api.generateFinal({ conversationId: 'one', title: '报告', taskBrief: '任务说明' }), /报告草稿/);
   assert.deepEqual(JSON.parse(requests[0].messages[1].content), {
     mode: 'task_message', message: '本次问题',
     taskContext: { currentPlan: '', currentStep: '', progress: '', taskStarted: false, inputIntent: '' }
   });
-  assert.equal(requests[2].messages[1].content.includes('这是当前步骤的内容'), true);
+  assert.equal(requests[1].messages.length, 4);
+  assert.equal(requests[1].messages[1].content, '先比较成本');
+  assert.equal(requests[1].messages[2].content, '已把成本加入分析重点');
+  assert.equal(JSON.parse(requests[1].messages[3].content).taskContext.currentPlan, '旧规划');
+  assert.equal(requests[5].messages[1].content.includes('这是当前步骤的内容'), true);
   api.clear();
   assert.equal(api.ready(), false);
   await assert.rejects(api.ask('再次提问'), /配置临时 API 密钥/);

@@ -675,7 +675,6 @@
     .launch-confirm-copy > span { display: block; color: rgba(17,17,17,.58); font-size: 14px; line-height: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .launch-confirm .btn { min-height: 36px; flex: 0 0 auto; gap: 10px; padding: 8px 16px; border-color: rgba(68,87,222,.6); border-radius: 10px; background: rgba(68,87,222,.16); color: #4457de; font-size: 14px; font-weight: 560; line-height: 18px; }
     .launch-confirm .btn:hover { border-color: #4457de; background: rgba(68,87,222,.22); }
-    #regeneratePlanBtn[hidden] { display: none; }
     .permission-prompt { min-height: 102px; padding: 20px 12px 20px 16px; border-bottom: 1px solid var(--line); border-radius: 15px 15px 0 0; background: #fafafa; animation: rise .3s ease both; }
     .permission-prompt[hidden] { display: none; }
     .permission-prompt-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
@@ -913,7 +912,6 @@
           <form class="composer" id="composer">
             <div class="launch-confirm" id="launchConfirm">
               <div class="launch-confirm-copy"><strong>任务规划待确认</strong><span>确认后 Alex 将按上述规划开始执行</span></div>
-              <button class="btn" id="regeneratePlanBtn" type="button" hidden>用 AI 生成规划</button>
               <button class="btn confirm-launch-btn" id="confirmBriefBtn" type="button"><span>确认并开始执行</span><span class="key-hint" aria-hidden="true">Ctrl + Enter</span></button>
             </div>
             <div class="permission-prompt" id="permissionEvent" hidden>
@@ -1009,7 +1007,7 @@
   <script src="./file-artifact.js"></script>
   <script src="./step-preview.js"></script>
   <script src="./scenario-archive/records.js"></script>
-  <script src="./browser-api.js?v=20261007-4"></script>
+  <script src="./browser-api.js?v=20261007-5"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -1042,7 +1040,6 @@
     const briefReview = document.getElementById('briefReview');
     const briefConfirmed = document.getElementById('briefConfirmed');
     const confirmBriefBtn = document.getElementById('confirmBriefBtn');
-    const regeneratePlanBtn = document.getElementById('regeneratePlanBtn');
     const executionStage = document.getElementById('executionStage');
     const presenceText = document.querySelector('.agent-presence span:last-child');
     const briefRevisionStream = document.getElementById('briefRevisionStream');
@@ -1078,7 +1075,6 @@
     const isLocalFile = window.location.protocol === 'file:';
     const isHostedSite = window.location.hostname.endsWith('github.io');
     const usesBrowserApi = record => isHostedSite || record?.agent === '临时 API';
-    regeneratePlanBtn.hidden = !isHostedSite;
     if (isHostedSite) document.getElementById('modelName').textContent = 'DeepSeek · 临时 API';
     function routeParams() {
       return new URLSearchParams(isLocalFile && window.location.hash ? window.location.hash.slice(1) : window.location.search);
@@ -1153,6 +1149,8 @@
     let savedDeliverable = null;
     let pendingChange = null;
     let restoringConversation = false;
+    let autoPlanInFlight = false;
+    let autoPlanComplete = false;
     let taskCardState = {
       title: workCardTitle.textContent.trim(),
       statusText: currentStep.textContent.trim(),
@@ -1303,7 +1301,8 @@
           currentStep: currentStep.textContent,
           progress: `${progress}/${total}`,
           taskStarted,
-          inputIntent: extraContext.inputIntent || ''
+          inputIntent: extraContext.inputIntent || '',
+          planningHistory: !taskStarted && mode !== 'initial_plan' ? recentPlanningHistory(message) : []
         });
         const response = await fetch(LOCAL_AGENT_URL, {
           method: 'POST',
@@ -2006,7 +2005,7 @@
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-4`);
+      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-5`);
       workspaceViewFrame.title = '新对话';
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
@@ -2019,7 +2018,7 @@
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       workspaceViewFrame.title = '工具';
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-4`);
+      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-5`);
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
@@ -2034,12 +2033,13 @@
       toolsAction.classList.remove('active');
       workspaceViewFrame.setAttribute('aria-hidden', String(conversationId === loadedConversationId));
       setActiveConversation(conversationId);
+      if (conversationId === loadedConversationId && conversationId === 'weekly-report') void maybeAutoPlanPreset();
       if (conversationId !== loadedConversationId) {
         workspaceViewFrame.title = '对话';
         const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
         const target = isLocalFile
           ? new URL(`index.html?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`, window.location.href).href
-          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-4`, window.location.href).href;
+          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-5`, window.location.href).href;
         if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
       }
     }
@@ -2986,11 +2986,14 @@
     }
 
     confirmBriefBtn.addEventListener('click', () => beginTaskExecution());
-    regeneratePlanBtn.addEventListener('click', async () => {
+    async function maybeAutoPlanPreset() {
+      if (!isHostedSite || routeParams().get('view') || loadedConversationId !== 'weekly-report'
+        || taskStarted || autoPlanInFlight || autoPlanComplete || !window.top.temporaryAiApi?.ready()) return;
       const prompt = document.querySelector('.user-message .user-bubble')?.textContent?.trim();
-      if (!prompt || taskStarted) return;
-      regeneratePlanBtn.disabled = true;
-      regeneratePlanBtn.textContent = '正在生成规划…';
+      if (!prompt) return;
+      autoPlanInFlight = true;
+      presenceText.textContent = 'ALEX 正在规划';
+      confirmBriefBtn.disabled = true;
       try {
         const result = await callLocalAgent('initial_plan', prompt);
         if (result.error) { notify(result.message); return; }
@@ -2998,20 +3001,11 @@
         currentPlanText = result.planSummary;
         renderInitialBrief(currentPlanText);
         if (result.taskCard?.steps?.length) applyTaskCardUpdate(result.taskCard);
-        const conversationId = routeParams().get('conversation');
-        if (conversationId) {
-          const records = readStoredConversations();
-          const record = records.find(item => item.id === conversationId);
-          if (record) {
-            record.planSummary = currentPlanText;
-            record.taskCard = result.taskCard;
-            writeStoredConversations(records);
-          }
-        }
-        notify('任务规划已更新');
+        autoPlanComplete = true;
+        notify('任务规划已生成');
       } catch (error) { notify(error.message || '规划生成失败'); }
-      finally { regeneratePlanBtn.disabled = false; regeneratePlanBtn.textContent = '用 AI 生成规划'; }
-    });
+      finally { autoPlanInFlight = false; confirmBriefBtn.disabled = false; presenceText.textContent = 'ALEX 等待确认'; }
+    }
 
     askBtn.addEventListener('click', () => {
       const isHidden = aside.hidden;
@@ -3197,6 +3191,15 @@
       if (restoringConversation) return;
       conversationHistory.push(event);
       persistConversationState();
+    }
+
+    function recentPlanningHistory(currentMessage) {
+      const entries = conversationHistory.filter(item => item.phase === 'planning');
+      if (entries.at(-1)?.role === 'user' && entries.at(-1)?.text === currentMessage) entries.pop();
+      return entries.slice(-10).map(item => ({
+        role: item.role === 'user' ? 'user' : 'assistant',
+        content: String(item.role === 'revision' ? (item.sections || []).join('\n\n') : item.text || '').slice(0, 1200)
+      })).filter(item => item.content);
     }
 
     function persistConversationState() {
@@ -3397,6 +3400,23 @@
         restoringConversation = false;
         persistConversationState();
         scrollToLatest();
+        if (isHostedSite && !wasStarted && record.planSource !== 'browser-api' && window.top.temporaryAiApi?.ready()) {
+          presenceText.textContent = 'ALEX 正在规划';
+          confirmBriefBtn.disabled = true;
+          try {
+            const generated = await callLocalAgent('initial_plan', record.prompt);
+            if (!generated.error && generated.planSummary) {
+              currentPlanText = generated.planSummary;
+              renderInitialBrief(currentPlanText);
+              if (generated.taskCard?.steps?.length) applyTaskCardUpdate(generated.taskCard);
+              const fresh = readStoredConversations();
+              const saved = fresh.find(item => item.id === record.id);
+              if (saved) { saved.planSummary = currentPlanText; saved.taskCard = generated.taskCard; saved.planSource = 'browser-api'; writeStoredConversations(fresh); }
+              notify('任务规划已生成');
+            } else if (generated.error) notify(generated.message);
+          } catch (error) { notify(error.message || '规划生成失败'); }
+          finally { confirmBriefBtn.disabled = false; presenceText.textContent = 'ALEX 等待确认'; }
+        }
         return;
       }
       briefReview.innerHTML = '<div class="aside-heading agent-thinking-status">Alex 正在思考</div>';
@@ -3426,6 +3446,7 @@
       if (updatedRecord) {
         updatedRecord.planSummary = currentPlanText;
         updatedRecord.taskCard = result.taskCard || null;
+        updatedRecord.planSource = usesBrowserApi(updatedRecord) ? 'browser-api' : 'local';
         writeStoredConversations(updatedRecords);
       }
       notify('新对话已创建，Alex 已生成任务 brief');
