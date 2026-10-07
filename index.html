@@ -370,6 +370,13 @@
 
     .timeline-item { position: relative; }
     .timeline-item + .timeline-item { margin-top: 18px; }
+    .completed-task-archive { padding: 15px 18px; border: 1px solid var(--line); border-radius: 13px; background: #fafbfe; color: #30384a; }
+    .completed-task-archive summary { cursor: pointer; font-size: 14px; font-weight: 600; }
+    .completed-task-archive p { margin: 12px 0 0; white-space: pre-wrap; line-height: 1.65; }
+    .completed-task-archive ul { margin: 12px 0; padding-left: 20px; line-height: 1.7; }
+    .completed-task-archive .archive-message { padding: 8px 10px; border-radius: 8px; background: #fff; font-size: 12px; }
+    .completed-task-archive .file-card { margin-top: 12px; }
+    .completed-task-archive .file-card[role="button"] { cursor: pointer; }
     .event-label { display: flex; align-items: center; gap: 7px; height: 28px; margin-bottom: 8px; font-size: 12px; color: var(--muted); }
     .event-label strong { color: var(--ink); font-weight: 560; }
     .status-chip { padding: 3px 7px; border-radius: 999px; background: #edf7ed; color: #2f6c3a; font-size: 10px; font-weight: 650; letter-spacing: .03em; }
@@ -1010,12 +1017,12 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </main>
 
-  <script src="./file-artifact.js?v=20261007-13"></script>
-  <script src="./vendor/docx.iife.js?v=20261007-13"></script>
-  <script src="./browser-document.js?v=20261007-13"></script>
+  <script src="./file-artifact.js?v=20261007-14"></script>
+  <script src="./vendor/docx.iife.js?v=20261007-14"></script>
+  <script src="./browser-document.js?v=20261007-14"></script>
   <script src="./step-preview.js"></script>
   <script src="./scenario-archive/records.js"></script>
-  <script src="./browser-api.js?v=20261007-13"></script>
+  <script src="./browser-api.js?v=20261007-14"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -1028,6 +1035,8 @@
     const intentCard = document.getElementById('intentCard');
     const taskUpdate = document.getElementById('taskUpdate');
     const timelineScroll = document.getElementById('timelineScroll');
+    const taskTimelineItem = document.getElementById('taskTimelineItem');
+    const initialUserMessage = document.querySelector('.timeline > .user-message');
     const previewDemoBtn = document.getElementById('previewDemoBtn');
     const generateStageBtn = document.getElementById('generateStageBtn');
     const advanceBtn = document.getElementById('advanceBtn');
@@ -1154,6 +1163,9 @@
     let elapsedTimer;
     let currentDecision = { subject: 'Linear 官网' };
     let currentPlanText = briefReview.innerText.trim();
+    let currentTaskPrompt = initialUserMessage.querySelector('.user-bubble').textContent.trim();
+    let currentTaskRunId = loadedConversationId;
+    let completedTaskSnapshots = [];
     let conversationHistory = [];
     let savedDeliverable = null;
     let generatedWordBlob = null;
@@ -1296,7 +1308,7 @@
     }
 
     async function callLocalAgent(mode, message, extraContext = {}) {
-      const conversationId = routeParams().get('conversation');
+      const conversationId = currentConversationId();
       const activeRecord = readStoredConversations().find(item => item.id === conversationId);
       const usingCodex = activeRecord?.agent === 'Codex';
       const usingTemporaryApi = usesBrowserApi(activeRecord);
@@ -2019,7 +2031,7 @@
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-13`);
+      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-14`);
       workspaceViewFrame.title = '新对话';
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
@@ -2032,7 +2044,7 @@
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       workspaceViewFrame.title = '工具';
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-13`);
+      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-14`);
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
@@ -2052,7 +2064,7 @@
         const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
         const target = isLocalFile
           ? new URL(`index.html?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`, window.location.href).href
-          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-13`, window.location.href).href;
+          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-14`, window.location.href).href;
         if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
       }
     }
@@ -2323,8 +2335,8 @@
     }
 
     function captureMainProcessData(stepTitle) {
-      const visibleResults = [...document.querySelectorAll('.user-bubble, .aside-stream-item:not([hidden])')]
-        .map(node => String(node.textContent || '').replace(/\s+/g, ' ').trim())
+      const visibleResults = [currentTaskPrompt, ...Array.from(aside.querySelectorAll('.aside-stream-item:not([hidden])'), node => node.textContent)]
+        .map(value => String(value || '').replace(/\s+/g, ' ').trim())
         .filter(Boolean)
         .slice(-12);
       return {
@@ -2339,11 +2351,12 @@
 
     async function restoreStageResults() {
       const conversationId = currentConversationId();
+      const runId = currentTaskRunId;
       const activeRecord = readStoredConversations().find(item => item.id === conversationId);
-      const archived = conversationId === 'weekly-report' && !isHostedSite ? [...(window.OfflineScenarioRecords || [])] : [];
-      const temporaryResults = usesBrowserApi(activeRecord) ? window.top.temporaryAiApi.listStages(conversationId) : [];
+      const archived = runId === 'weekly-report' && !isHostedSite ? [...(window.OfflineScenarioRecords || [])] : [];
+      const temporaryResults = usesBrowserApi(activeRecord) ? window.top.temporaryAiApi.listStages(runId) : [];
       function showResults(results) {
-        if (currentConversationId() !== conversationId) return;
+        if (currentConversationId() !== conversationId || currentTaskRunId !== runId) return;
         const seen = new Set();
         for (const result of [...results].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)))) {
           if (activeRecord?.agent === 'Codex' && result.source?.provider !== 'codex') continue;
@@ -2364,7 +2377,7 @@
       showResults([...archived, ...temporaryResults]);
       if (usesBrowserApi(activeRecord)) return;
       try {
-        const response = await fetch(`${LOCAL_AGENT_BASE}/stage-results?conversationId=${encodeURIComponent(conversationId)}`);
+        const response = await fetch(`${LOCAL_AGENT_BASE}/stage-results?conversationId=${encodeURIComponent(runId)}`);
         if (!response.ok) return;
         const payload = await response.json();
         const byId = new Map(archived.map(result => [result.id, result]));
@@ -2384,6 +2397,7 @@
       const index = progress - 1;
       const stepTitle = taskCardState.steps[index];
       const conversationId = currentConversationId();
+      const runId = currentTaskRunId;
       const activeRecord = readStoredConversations().find(item => item.id === conversationId);
       const usingCodex = activeRecord?.agent === 'Codex';
       const usingTemporaryApi = usesBrowserApi(activeRecord);
@@ -2402,10 +2416,10 @@
       try {
         if (usingTemporaryApi) {
           const result = await window.top.temporaryAiApi.generateStage({
-            conversationId, stepTitle,
-            taskBrief: currentPlanText || document.querySelector('.user-message .user-bubble')?.textContent || ''
+            conversationId: runId, stepTitle,
+            taskBrief: currentPlanText || currentTaskPrompt
           });
-          if (currentConversationId() !== conversationId || taskCardState.steps[index] !== stepTitle) return;
+          if (currentConversationId() !== conversationId || currentTaskRunId !== runId || taskCardState.steps[index] !== stepTitle) return;
           liveStepPreviews[index] = result.preview;
           const step = stepList.querySelectorAll('.step')[index];
           refreshLiveStepPreview(index, step?.classList.contains('done') ? 'done' : 'active');
@@ -2417,11 +2431,11 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            conversationId,
+            conversationId: runId,
             stepTitle,
             agent: activeRecord?.agent || 'DeepSeek Harness',
             threadId: usingCodex ? activeRecord.codexThreadId || null : null,
-            taskBrief: currentPlanText || document.querySelector('.user-message .user-bubble')?.textContent || '',
+            taskBrief: currentPlanText || currentTaskPrompt,
             mainProcessData: captureMainProcessData(stepTitle)
           })
         });
@@ -2433,7 +2447,7 @@
           const statusResponse = await fetch(`${LOCAL_AGENT_BASE}/stage-result/status?id=${encodeURIComponent(started.id)}`);
           const status = await statusResponse.json();
           if (!statusResponse.ok || !status.ok) throw new Error(status.error || '进度读取失败');
-          if (currentConversationId() === conversationId && taskCardState.steps[index] === stepTitle) {
+          if (currentConversationId() === conversationId && currentTaskRunId === runId && taskCardState.steps[index] === stepTitle) {
             const seconds = Math.floor(status.elapsedMs / 1000);
             generateStageBtn.textContent = `${status.progress} · ${seconds} 秒`;
             const latestAction = status.actions?.at(-1);
@@ -2452,7 +2466,7 @@
           const record = records.find(item => item.id === conversationId);
           if (record) { record.codexThreadId = payload.threadId; writeStoredConversations(records); }
         }
-        if (currentConversationId() !== conversationId || taskCardState.steps[index] !== stepTitle) return;
+        if (currentConversationId() !== conversationId || currentTaskRunId !== runId || taskCardState.steps[index] !== stepTitle) return;
         liveStepPreviews[index] = payload.result.preview;
         const step = stepList.querySelectorAll('.step')[index];
         refreshLiveStepPreview(index, step?.classList.contains('done') ? 'done' : 'active');
@@ -2460,6 +2474,7 @@
         notify(`${payload.result.source?.provider === 'fallback-demo' ? '已切换为演示生成；阶段文本已保存' : '阶段文本已保存'}：${payload.result.markdownPath}`);
         return true;
       } catch (error) {
+        if (currentTaskRunId !== runId) return false;
         panel.replaceChildren(GenUIPreview.renderStepPreview({
           title: stepTitle,
           status: 'active',
@@ -2471,7 +2486,7 @@
         notify(`阶段结果未生成：${error.message || '本地 Agent 不可用'}`);
         return false;
       } finally {
-        generateStageBtn.disabled = taskCompleted || previewDemoActive;
+        if (currentTaskRunId === runId) generateStageBtn.disabled = taskCompleted || previewDemoActive;
       }
     }
 
@@ -2690,9 +2705,9 @@
         const activeRecord = readStoredConversations().find(item => item.id === activeConversationId);
         if (usesBrowserApi(activeRecord)) {
           finalDeliverable = await window.top.temporaryAiApi.generateFinal({
-            conversationId: activeConversationId,
+            conversationId: currentTaskRunId,
             title: taskCardState.title,
-            taskBrief: currentPlanText || document.querySelector('.user-message .user-bubble')?.textContent || ''
+            taskBrief: currentPlanText || currentTaskPrompt
           });
           generatedWordBlob = await BrowserDocument.createWordBlob(finalDeliverable);
         } else {
@@ -2700,9 +2715,9 @@
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            conversationId: activeConversationId,
+            conversationId: currentTaskRunId,
             title: taskCardState.title,
-            taskBrief: currentPlanText || document.querySelector('.user-message .user-bubble')?.textContent || ''
+            taskBrief: currentPlanText || currentTaskPrompt
           })
         });
         const payload = await response.json();
@@ -2762,7 +2777,7 @@
       aside.appendChild(completionCard);
       completionCard.hidden = false;
       completionCard.classList.add('show');
-      messageInput.placeholder = '继续追问，或提出下一步要求…';
+      messageInput.placeholder = '描述下一个任务，Alex 会先复述任务规划…';
       notify(finalDeliverable.wordDocument ? 'Word 文档已生成' : finalDeliverable.displayOnly ? '交付预览已生成' : '案例报告已生成');
       persistConversationState();
       scrollToLatest();
@@ -3012,7 +3027,7 @@
       aside.hidden = true;
       askBtn.textContent = '问问 Alex';
       const activeConversationId = routeParams().get('conversation') || sidebarState.activeConversationId;
-      if (activeConversationId === 'weekly-report' && !restoring && !isHostedSite) {
+      if (currentTaskRunId === 'weekly-report' && !restoring && !isHostedSite) {
         startProgressDemo(startConversationDemo);
       } else {
         progressTimers.forEach(timer => window.clearTimeout(timer));
@@ -3026,7 +3041,7 @@
         requestAnimationFrame(() => {
           requestAnimationFrame(scrollWorkCardToTop);
         });
-        if (activeConversationId !== 'weekly-report' || isHostedSite) void generateCurrentStagePreview();
+        if (currentTaskRunId !== 'weekly-report' || isHostedSite) void generateCurrentStagePreview();
       }
     }
 
@@ -3097,7 +3112,7 @@
 
     advanceBtn.addEventListener('click', async () => {
       if (taskCompleted || stageGenerationPromise) return;
-      const localPresetDemo = currentConversationId() === 'weekly-report' && !isHostedSite;
+      const localPresetDemo = currentTaskRunId === 'weekly-report' && !isHostedSite;
       if (!localPresetDemo) {
         const hasStage = Boolean(liveStepPreviews[progress - 1]) && liveStepPreviews[progress - 1].previewType !== 'process';
         if (!hasStage && !await generateCurrentStagePreview()) return;
@@ -3112,11 +3127,121 @@
       completeTask();
     });
 
+    async function startNextTask(prompt) {
+      completedTaskSnapshots.push({
+        prompt: currentTaskPrompt,
+        title: taskCardState.title,
+        planSummary: currentPlanText,
+        steps: [...taskCardState.steps],
+        previews: liveStepPreviews,
+        history: [...conversationHistory],
+        deliverable: savedDeliverable
+      });
+      currentTaskPrompt = prompt;
+      currentTaskRunId = `${currentConversationId()}-run-${Date.now()}`;
+      stageGenerationPromise = null;
+      taskStarted = false;
+      taskCompleted = false;
+      progress = 1;
+      elapsedSeconds = 0;
+      currentPlanText = '';
+      conversationHistory = [];
+      savedDeliverable = null;
+      generatedWordBlob = null;
+      pendingChange = null;
+      confirmedRequirements = '';
+      progressTimers.forEach(timer => window.clearTimeout(timer));
+      conversationTimers.forEach(timer => window.clearTimeout(timer));
+      progressTimers = [];
+      conversationTimers = [];
+      window.clearInterval(elapsedTimer);
+      window.clearTimeout(accessRequestTimer);
+      window.clearTimeout(completionTimer);
+      const stableChildren = new Set([aside.querySelector('.aside-heading'), ...conversationItems, intentCard, taskUpdate, decisionRecord, completionCard]);
+      [...aside.children].forEach(node => { if (!stableChildren.has(node)) node.remove(); });
+      conversationItems.forEach(node => { node.hidden = true; });
+      intentCard.hidden = true;
+      taskUpdate.hidden = true;
+      decisionRecord.hidden = true;
+      completionCard.hidden = true;
+      permissionEvent.hidden = true;
+      permissionSecondary.hidden = true;
+      aside.hidden = true;
+      askBtn.textContent = '问问 Alex';
+      taskRequirements.hidden = true;
+      taskRequirements.textContent = '';
+      briefRevisionStream.replaceChildren();
+      briefReview.innerHTML = '<div class="aside-heading agent-thinking-status">Alex 正在思考</div>';
+      briefConfirmed.hidden = true;
+      executionStage.classList.remove('active');
+      executionStage.setAttribute('aria-hidden', 'true');
+      launchConfirm.hidden = false;
+      confirmBriefBtn.disabled = true;
+      previewDemoActive = false;
+      preserveManualExpansion = false;
+      preserveExpandedAfterLaunch = false;
+      autoCollapseLatched = false;
+      setWorkCardCollapsed(false);
+      syncWorkCardScrollRoom(false);
+      presenceText.textContent = 'ALEX 正在规划';
+      messageInput.value = '';
+      messageInput.placeholder = '继续补充或调整本次任务规划…';
+      sendBtn.classList.add('editing');
+      sendBtn.setAttribute('aria-label', '修改任务规划');
+      sendBtn.innerHTML = '<img class="send-edit-icon" src="./assets/composer/edit.svg" alt="" /><span>修改</span>';
+      voiceIcon.src = './assets/composer/stop.svg';
+      clearComposerAttachments();
+      taskCardState = { title: '当前任务', statusText: '正在规划', steps: ['明确目标与范围', '收集并整理资料', '形成方案与结论', '整理最终交付'] };
+      liveStepPreviews = taskCardState.steps.map(title => ({ title, previewType: 'process', artifactState: 'pending' }));
+      applyTaskCardUpdate(taskCardState, { restoreExisting: false });
+      renderTaskCycleHistory();
+      const records = readStoredConversations();
+      const conversationId = currentConversationId();
+      const record = records.find(item => item.id === conversationId);
+      if (record) {
+        record.prompt = prompt;
+        record.planSummary = '';
+        record.taskCard = null;
+        record.status = 'idle';
+        record.codexThreadId = null;
+        writeStoredConversations(records);
+      }
+      persistConversationState();
+      scrollToLatest();
+      try {
+        const runId = currentTaskRunId;
+        const result = await callLocalAgent('initial_plan', prompt, {
+          inputIntent: 'initial_task_brief', currentPlan: '', currentTaskCard: { title: '', statusText: '', steps: [] },
+          outputRequirement: '这是同一对话中的新任务。只根据本次输入重新生成完整任务 brief，按任务目标、调研对象、分析重点、推进方式、最终交付和确认句组织；不要沿用上一任务的目标或步骤。'
+        });
+        if (runId !== currentTaskRunId) return;
+        if (result.error) throw new Error(result.message);
+        const fallbackPlan = `任务目标：完成用户提出的新任务：“${prompt}”。 调研对象：围绕本次任务涉及的对象与资料展开。 分析重点：明确目标、范围与完成标准。 推进方式：按步骤执行并同步过程结果。 最终交付：形成可直接使用的成果。 如果这个理解没有偏差，你确认后我就按这个规划开始。`;
+        currentPlanText = sanitizeRevisedPlan(result.planSummary) || fallbackPlan;
+        renderInitialBrief(currentPlanText);
+        const nextCard = result.taskCard?.steps?.length >= 2 ? result.taskCard : {
+          title: '当前任务', statusText: '等待确认后开始执行',
+          steps: ['明确目标与范围', '收集并整理资料', '形成方案与结论', '整理最终交付']
+        };
+        applyTaskCardUpdate(nextCard, { restoreExisting: false });
+        notify('新任务规划已生成，请确认后开始');
+      } catch (error) {
+        briefReview.textContent = `新任务规划失败：${error.message || '请重试'}`;
+        notify('新任务规划失败，请刷新页面重试');
+      } finally {
+        confirmBriefBtn.disabled = !currentPlanText;
+        presenceText.textContent = 'ALEX 等待确认';
+        persistConversationState();
+        scrollToLatest();
+      }
+    }
+
     composer.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (sendBtn.disabled) return;
       const value = messageInput.value.trim();
       if (!value) return;
+      if (taskCompleted) { await startNextTask(value); return; }
       const attachments = selectedComposerFiles.map(file => ({ name: file.name, size: file.size, type: file.type || 'application/octet-stream' }));
       if (!taskStarted) {
         if (isStartConfirmation(value)) {
@@ -3216,6 +3341,87 @@
       window.localStorage.setItem(conversationStorageKey, JSON.stringify(records));
     }
 
+    function renderTaskCycleHistory() {
+      document.querySelectorAll('.task-cycle-message, .completed-task-archive').forEach(node => node.remove());
+      initialUserMessage.querySelector('.user-bubble').textContent = completedTaskSnapshots[0]?.prompt || currentTaskPrompt;
+      completedTaskSnapshots.forEach((snapshot, index) => {
+        if (index > 0) {
+          const message = document.createElement('div');
+          message.className = 'user-message task-cycle-message';
+          const bubble = document.createElement('div');
+          bubble.className = 'user-bubble';
+          bubble.textContent = snapshot.prompt;
+          message.appendChild(bubble);
+          taskTimelineItem.before(message);
+        }
+        const archive = document.createElement('article');
+        archive.className = 'timeline-item completed-task-archive';
+        const details = document.createElement('details');
+        const heading = document.createElement('summary');
+        heading.textContent = `已完成任务 ${index + 1} · ${snapshot.title || '任务结果'}`;
+        details.appendChild(heading);
+        const plan = document.createElement('p');
+        plan.textContent = snapshot.planSummary || '';
+        details.appendChild(plan);
+        if (Array.isArray(snapshot.steps) && snapshot.steps.length) {
+          const steps = document.createElement('ul');
+          snapshot.steps.forEach((label, stepIndex) => {
+            const item = document.createElement('li');
+            item.textContent = String(label);
+            const preview = snapshot.previews?.[stepIndex];
+            if (preview && preview.previewType !== 'process') item.appendChild(GenUIPreview.renderStepPreview(preview));
+            steps.appendChild(item);
+          });
+          details.appendChild(steps);
+        }
+        for (const event of snapshot.history || []) {
+          const content = String(event.text || (Array.isArray(event.sections) ? event.sections.join('\n') : '')).trim();
+          if (!content) continue;
+          const line = document.createElement('p');
+          line.className = 'archive-message';
+          line.textContent = `${event.role === 'user' ? '你' : 'Alex'}：${content}`;
+          details.appendChild(line);
+        }
+        archive.appendChild(details);
+        if (snapshot.deliverable?.wordDocument) {
+          const card = document.createElement('div');
+          FileArtifact.renderFilePreview(card, { ...snapshot.deliverable, displayOnly: true }, { label: '已完成 · 点击下载' });
+          card.setAttribute('role', 'button');
+          card.tabIndex = 0;
+          const download = async () => {
+            try {
+              const blob = await BrowserDocument.createWordBlob(snapshot.deliverable);
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.download = snapshot.deliverable.fileName;
+              link.click();
+              setTimeout(() => URL.revokeObjectURL(url), 1000);
+            } catch (error) { notify(`Word 文档下载失败：${error.message}`); }
+          };
+          card.addEventListener('click', download);
+          card.addEventListener('keydown', event => {
+            if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); void download(); }
+          });
+          archive.appendChild(card);
+        } else if (snapshot.deliverable?.artifactState === 'available') {
+          const card = document.createElement('div');
+          FileArtifact.renderFileArtifact(card, snapshot.deliverable, { label: '已完成' });
+          archive.appendChild(card);
+        }
+        taskTimelineItem.before(archive);
+      });
+      if (completedTaskSnapshots.length) {
+        const message = document.createElement('div');
+        message.className = 'user-message task-cycle-message';
+        const bubble = document.createElement('div');
+        bubble.className = 'user-bubble';
+        bubble.textContent = currentTaskPrompt;
+        message.appendChild(bubble);
+        taskTimelineItem.before(message);
+      }
+    }
+
     function recordConversationEvent(event) {
       if (restoringConversation) return;
       conversationHistory.push(event);
@@ -3233,11 +3439,17 @@
 
     function persistConversationState() {
       if (restoringConversation) return;
-      const conversationId = routeParams().get('conversation');
-      if (!conversationId || conversationId === 'weekly-report') return;
+      const conversationId = currentConversationId();
+      if (conversationId === 'weekly-report' && !completedTaskSnapshots.length) return;
       const records = readStoredConversations();
-      const record = records.find(item => item.id === conversationId);
+      let record = records.find(item => item.id === conversationId);
+      if (!record && conversationId === 'weekly-report') {
+        record = { id: conversationId, title: '这个对话我们来解决周二的汇报问题', prompt: currentTaskPrompt,
+          projectId: 'product-innovation', agent: isHostedSite ? '临时 API' : 'Codex', createdAt: new Date().toISOString() };
+        records.push(record);
+      }
       if (!record) return;
+      record.prompt = currentTaskPrompt;
       if (currentPlanText) record.planSummary = currentPlanText;
       if (taskCardState.steps.length) record.taskCard = getCurrentTaskCardContext();
       record.uiState = {
@@ -3247,6 +3459,8 @@
         progress,
         elapsedSeconds,
         history: conversationHistory,
+        taskRunId: currentTaskRunId,
+        completedTasks: completedTaskSnapshots,
         asideOpen: !aside.hidden,
         pendingChange,
         confirmedRequirements,
@@ -3320,7 +3534,7 @@
       completionCard.classList.add('show');
       aside.appendChild(completionCard);
       renderDeliverable(savedDeliverable);
-      messageInput.placeholder = '继续追问，或提出下一步要求…';
+      messageInput.placeholder = '描述下一个任务，Alex 会先复述任务规划…';
       setConversationWorking(currentConversationId(), false);
     }
 
@@ -3377,18 +3591,20 @@
     async function initializeStoredConversation() {
       const records = readStoredConversations();
       hydrateStoredConversationLists(records);
-      const conversationId = routeParams().get('conversation');
-      if (!conversationId) return;
+      const conversationId = routeParams().get('conversation') || 'weekly-report';
       const record = records.find(item => item.id === conversationId);
       if (!record) return;
 
       document.querySelector('.workspace-header .header-title strong').textContent = record.title;
-      document.querySelector('.user-message .user-bubble').textContent = record.prompt;
+      const state = record.uiState?.version === 1 ? record.uiState : null;
+      currentTaskPrompt = String(record.prompt || '');
+      currentTaskRunId = String(state?.taskRunId || conversationId);
+      completedTaskSnapshots = Array.isArray(state?.completedTasks) ? state.completedTasks : [];
+      renderTaskCycleHistory();
       document.getElementById('modelName').textContent = isHostedSite ? 'DeepSeek · 临时 API' : record.agent === 'Codex' ? 'Codex · GPT-5.6 Luna' : record.agent;
       briefRevisionStream.replaceChildren();
       if (record.planSummary) {
         restoringConversation = true;
-        const state = record.uiState?.version === 1 ? record.uiState : null;
         let recoveredStep = -1;
         if (!state) {
           try {
