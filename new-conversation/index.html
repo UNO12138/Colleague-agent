@@ -135,10 +135,15 @@
         'product-innovation':{name:'体验与智能产品创新',banner:'今天想在这个项目里推进什么？'},
         'basketball-comparison':{name:'科比和詹姆斯对比',banner:'今天想继续比较什么？'}
       };
-      let selectedProject=''; let selectedAgent='Codex';
+      let selectedProject=''; let selectedAgent=location.hostname.endsWith('github.io')?'临时 API':'Codex';
       const prompt=document.getElementById('prompt'); const sendBtn=document.getElementById('sendBtn');
       const projectMenu=document.getElementById('projectMenu'); const agentMenu=document.getElementById('agentMenu');
       const workspace=document.querySelector('.workspace'); const welcome=document.querySelector('.welcome'); const newComposer=document.querySelector('.new-composer');
+      if(selectedAgent==='临时 API'){
+        document.getElementById('agentSelectorLabel').textContent='临时 API';
+        document.getElementById('modelLabel').textContent='DeepSeek · 临时 API';
+        agentMenu.querySelectorAll('button').forEach(item=>{item.hidden=item.dataset.value!==selectedAgent;item.classList.toggle('selected',item.dataset.value===selectedAgent)});
+      }
       const readConversations=()=>{try{return JSON.parse(localStorage.getItem(storageKey))||[]}catch{return[]}};
       const writeConversations=value=>localStorage.setItem(storageKey,JSON.stringify(value));
       function destination(path){

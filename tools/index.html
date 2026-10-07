@@ -11,7 +11,7 @@
     body.embedded .bar,body.embedded .sidebar{display:none}
     body.embedded .workspace{width:100%;height:100%;margin:0;border:0;border-radius:0}
   </style>
-  <link rel="stylesheet" href="./page.css?v=20261007-3" />
+  <link rel="stylesheet" href="./page.css?v=20261007-4" />
 </head>
 <body>
   <script>(()=>{const params=new URLSearchParams(location.search);if(params.has('electron'))document.body.classList.add('electron-window');if(params.has('embedded'))document.body.classList.add('embedded');else location.replace(new URL(location.protocol==='file:'?'../index.html?electron=1#view=tools':`../?view=tools${params.has('electron')?'&electron=1':''}`,location.href).href)})()</script>
@@ -46,7 +46,7 @@
     </section>
   </div>
   <script>(()=>{const electron=document.body.classList.contains('electron-window');document.getElementById('newConversation').onclick=()=>{if(window.parent!==window){window.parent.postMessage({type:'open-view',view:'new'},location.protocol==='file:'?'*':location.origin);return}location.assign(new URL(location.protocol==='file:'?'../index.html?electron=1#view=new':`../new-conversation/${electron?'?electron=1':''}`,location.href).href)}})()</script>
-  <script src="../browser-api.js?v=20261007-3"></script>
-  <script src="./page.js?v=20261007-3"></script>
+  <script src="../browser-api.js?v=20261007-4"></script>
+  <script src="./page.js?v=20261007-4"></script>
 </body>
 </html>

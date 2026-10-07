@@ -59,10 +59,17 @@
       if (markdown.length < 100) throw new Error('API 未返回有效的报告草稿');
       return `${markdown}\n`;
     },
-    async ask(message, mode = 'task_message') {
+    async ask(message, mode = 'task_message', context = {}) {
+      const taskContext = mode === 'initial_plan' ? {} : {
+        currentPlan: String(context.currentPlan || '').slice(0, 3000),
+        currentStep: String(context.currentStep || '').slice(0, 240),
+        progress: String(context.progress || '').slice(0, 20),
+        taskStarted: Boolean(context.taskStarted),
+        inputIntent: String(context.inputIntent || '').slice(0, 40)
+      };
       const result = await request([
-              { role: 'system', content: '你是协作助手 Alex。每次请求都是独立的，不存在聊天历史。只根据本次用户输入回答。返回 JSON 对象，字段为 kind、message、planSummary、taskCard。initial_plan 模式下 kind 为 plan_revision，planSummary 应包含任务目标、调研对象、分析重点、推进方式、最终交付及确认句，taskCard 包含 title、statusText 和 2 到 8 条 steps。plan_revision 模式下若用户明确要求调整则返回完整新规划，否则 kind 为 discussion。task_message 模式下直接回答，kind 为 discussion。不得声称已执行真实任务或生成文件。' },
-              { role: 'user', content: JSON.stringify({ mode, message: String(message || '').slice(0, 12000) }) }
+              { role: 'system', content: '你是协作助手 Alex。每次请求都不含聊天历史，但会提供当前任务规划和进度。直接、有针对性地回答本次问题，不要只回复“收到”或复述固定进度。只返回 JSON 对象，字段为 kind、message、planSummary、taskCard。initial_plan：kind 为 plan_revision，从用户任务生成完整规划，planSummary 依次包含任务目标、调研对象、分析重点、推进方式、最终交付和确认句；taskCard 包含 title、statusText 和 2 到 8 条具体步骤。plan_revision：若本次输入明确要求调整，结合 currentPlan 生成吸收修改后的完整规划和任务卡，kind 为 plan_revision；若只是提问，kind 为 discussion，直接回答，不改规划。task_message：结合 currentPlan、currentStep 和 progress 回答本次问题，kind 默认为 discussion；不要把页面进度说成已验证的真实执行结果。不得声称已运行工具或生成文件。' },
+              { role: 'user', content: JSON.stringify({ mode, message: String(message || '').slice(0, 12000), taskContext }) }
       ]);
         return {
           kind: ['discussion', 'plan_revision', 'task_change', 'decision_request'].includes(result.kind) ? result.kind : 'discussion',

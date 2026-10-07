@@ -32,7 +32,10 @@ test('temporary API keeps key in memory and produces stage and report drafts', a
   assert.equal(stage.preview.previewType, 'document');
   assert.equal(api.listStages('one').length, 1);
   assert.match(await api.generateFinal({ conversationId: 'one', title: '报告', taskBrief: '任务说明' }), /报告草稿/);
-  assert.equal(requests[0].messages[1].content, JSON.stringify({ mode: 'task_message', message: '本次问题' }));
+  assert.deepEqual(JSON.parse(requests[0].messages[1].content), {
+    mode: 'task_message', message: '本次问题',
+    taskContext: { currentPlan: '', currentStep: '', progress: '', taskStarted: false, inputIntent: '' }
+  });
   assert.equal(requests[2].messages[1].content.includes('这是当前步骤的内容'), true);
   api.clear();
   assert.equal(api.ready(), false);
