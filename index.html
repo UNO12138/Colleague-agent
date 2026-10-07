@@ -419,8 +419,7 @@
     .brief-confirmed { animation: rise .3s ease both; }
     .work-card-sentinel { height: 1px; margin-bottom: -1px; pointer-events: none; }
     .work-card {
-      position: sticky;
-      top: 4px;
+      position: relative;
       z-index: 4;
       border: 1px solid var(--line);
       border-radius: 16px;
@@ -429,6 +428,7 @@
       overflow: hidden;
       will-change: transform;
     }
+    .work-card.is-stuck { position: sticky; top: 4px; }
     .work-card-head { display: flex; justify-content: space-between; gap: 18px; padding: 14px 20px 11px; transition: padding .22s ease; }
     .eyebrow { max-height: 18px; overflow: hidden; color: var(--muted); font-size: 11px; letter-spacing: .08em; text-transform: uppercase; opacity: 1; transition: max-height .22s ease, opacity .16s ease; }
     .work-card p { margin: 0; color: var(--muted); line-height: 1.55; }
@@ -1010,12 +1010,12 @@
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
   </main>
 
-  <script src="./file-artifact.js?v=20261007-12"></script>
-  <script src="./vendor/docx.iife.js?v=20261007-12"></script>
-  <script src="./browser-document.js?v=20261007-12"></script>
+  <script src="./file-artifact.js?v=20261007-13"></script>
+  <script src="./vendor/docx.iife.js?v=20261007-13"></script>
+  <script src="./browser-document.js?v=20261007-13"></script>
   <script src="./step-preview.js"></script>
   <script src="./scenario-archive/records.js"></script>
-  <script src="./browser-api.js?v=20261007-12"></script>
+  <script src="./browser-api.js?v=20261007-13"></script>
   <script>
     (() => {
     const appShell = document.querySelector('.app-shell');
@@ -2019,7 +2019,7 @@
       document.querySelectorAll('.conversation-item.active').forEach(item => item.classList.remove('active'));
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-12`);
+      const target = embeddedPage('new-conversation', `embedded=1${electronQuery}&v=20261007-13`);
       workspaceViewFrame.title = '新对话';
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
@@ -2032,7 +2032,7 @@
       workspaceViewFrame.setAttribute('aria-hidden', 'false');
       workspaceViewFrame.title = '工具';
       const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
-      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-12`);
+      const target = embeddedPage('tools', `embedded=1${electronQuery}&v=20261007-13`);
       if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
     }
 
@@ -2052,7 +2052,7 @@
         const electronQuery = document.body.classList.contains('electron-window') ? '&electron=1' : '';
         const target = isLocalFile
           ? new URL(`index.html?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}`, window.location.href).href
-          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-12`, window.location.href).href;
+          : new URL(`?conversation=${encodeURIComponent(conversationId)}&embedded=1${electronQuery}&v=20261007-13`, window.location.href).href;
         if (!workspaceViewFrame.src.endsWith(target)) workspaceViewFrame.src = target;
       }
     }
@@ -2981,6 +2981,13 @@
       preserveManualExpansion = isCollapsed;
       autoCollapseLatched = !isCollapsed;
       setWorkCardCollapsed(!isCollapsed);
+      if (isCollapsed) {
+        requestAnimationFrame(() => {
+          const cardTop = workCardSentinel.getBoundingClientRect().top;
+          const viewportTop = timelineScroll.getBoundingClientRect().top;
+          timelineScroll.scrollTop = Math.max(0, timelineScroll.scrollTop + cardTop - viewportTop - 4);
+        });
+      }
     });
 
     function beginTaskExecution(restoring = false) {
